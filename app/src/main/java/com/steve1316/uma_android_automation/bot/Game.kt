@@ -2689,11 +2689,14 @@ class Game(val myContext: Context) {
 			findAndTapImage("next", tries = 1, region = imageUtils.regionBottomHalf)
 			wait(1.0)
 		} else if (imageUtils.findImage("crane_game", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
-			// Stop when the bot has reached the Crane Game Event.
-			printToLog("\n[END] Bot will stop due to the detection of the Crane Game Event. Please complete it and restart the bot.")
-			notificationMessage = "Bot will stop due to the detection of the Crane Game Event. Please complete it and restart the bot."
-			return false
-		} else if (findAndTapImage("race_retry", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
+			findAndTapImage("crane_game", tries = 1, region = imageUtils.regionBottomHalf)
+			wait(5.0)
+		} else if (
+			imageUtils.findImage("ordinary_cuties", tries = 1, region = imageUtils.regionBottomHalf).first != null &&
+			imageUtils.findImage("crane_ok", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
+			findAndTapImage("crane_ok", tries=1, region = imageUtils.regionBottomHalf)
+			wait(1.0)
+		}  else if (findAndTapImage("race_retry", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
 			printToLog("[INFO] There is a race retry popup.")
 			wait(5.0)
 		} else if (findAndTapImage("race_accept_trophy", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
