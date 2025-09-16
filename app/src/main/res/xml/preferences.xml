@@ -97,6 +97,11 @@
             app:summary="Overrides all stat weight prioritization settings and have the bot pick options that give the highest Energy. Will fallback to the current stat weight prioritization settings if no option for that is available."
             app:title="Prioritize Energy Above All Else" />
 
+        <CheckBoxPreference
+            app:key="enableSkipCraneGame"
+            app:summary="Forces bot to fail the crane game event automatically. This way no user input is required."
+            app:title="Skip Crane Game (Auto fail)" />
+
     </PreferenceCategory>
 
     <PreferenceCategory app:title="Debug Options">

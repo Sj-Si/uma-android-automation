@@ -68,6 +68,7 @@ class Game(val myContext: Context) {
 	private val blacklist: List<String> = sharedPreferences.getStringSet("trainingBlacklist", setOf())!!.toList()
 	private var statPrioritization: List<String> = sharedPreferences.getString("statPrioritization", "Speed|Stamina|Power|Guts|Wit")!!.split("|")
 	private val enablePrioritizeEnergyOptions: Boolean = sharedPreferences.getBoolean("enablePrioritizeEnergyOptions", false)
+    private val enableSkipCraneGame: Boolean = sharedPreferences.getBoolean("enableSkipCraneGame", false)
 	private val maximumFailureChance: Int = sharedPreferences.getInt("maximumFailureChance", 15)
 	private val disableTrainingOnMaxedStat: Boolean = sharedPreferences.getBoolean("disableTrainingOnMaxedStat", true)
 	private val focusOnSparkStatTarget: Boolean = sharedPreferences.getBoolean("focusOnSparkStatTarget", false)
@@ -2689,11 +2690,19 @@ class Game(val myContext: Context) {
 			findAndTapImage("next", tries = 1, region = imageUtils.regionBottomHalf)
 			wait(1.0)
 		} else if (imageUtils.findImage("crane_game", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
-			findAndTapImage("crane_game", tries = 1, region = imageUtils.regionBottomHalf)
-			wait(5.0)
+            if (enableSkipCraneGame) {
+                printToLog("[INFO] Crane game event detected. Auto failing since skip crane game setting is enabled.")
+                findAndTapImage("crane_game", tries = 1, region = imageUtils.regionBottomHalf)
+			    wait(5.0)
+            } else {
+                printToLog("\n[END] Bot will stop due to the detection of the Crane Game Event. Please complete it and restart the bot.")
+                notificationMessage = "Bot will stop due to the detection of the Crane Game Event. Please complete it and restart the bot."
+                return false
+            }
 		} else if (
 			imageUtils.findImage("ordinary_cuties", tries = 1, region = imageUtils.regionBottomHalf).first != null &&
 			imageUtils.findImage("crane_ok", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
+            printToLog("[INFO] Crane game complete screen.")
 			findAndTapImage("crane_ok", tries=1, region = imageUtils.regionBottomHalf)
 			wait(1.0)
 		}  else if (findAndTapImage("race_retry", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {

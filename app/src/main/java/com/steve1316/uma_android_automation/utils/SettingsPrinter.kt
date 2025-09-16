@@ -31,6 +31,7 @@ object SettingsPrinter {
 		val enableStopOnMandatoryRace: Boolean = sharedPreferences.getBoolean("enableStopOnMandatoryRace", false)
 		val enableForceRacing: Boolean = sharedPreferences.getBoolean("enableForceRacing", false)
 		val enablePrioritizeEnergyOptions: Boolean = sharedPreferences.getBoolean("enablePrioritizeEnergyOptions", false)
+        val enableSkipCraneGame: Boolean = sharedPreferences.getBoolean("enableSkipCraneGame", false)
 		
 		// Training Settings
 		val trainingBlacklist: Set<String> = sharedPreferences.getStringSet("trainingBlacklist", setOf<String>()) as Set<String>
@@ -187,6 +188,7 @@ object SettingsPrinter {
 			appendLine("Skill Point Check: ${if (enableSkillPointCheck) "✅ Stop on $skillPointCheck Skill Points or more" else "❌"}")
 			appendLine("Popup Check: ${if (enablePopupCheck) "✅" else "❌"}")
 			appendLine("Prioritize Energy Options: ${if (enablePrioritizeEnergyOptions) "✅" else "❌"}")
+            appendLine("Skip Crane Game: ${if (enableSkipCraneGame) "✅" else "❌"}")
 			appendLine()
 			appendLine("---------- Debug Options ----------")
 			appendLine("Debug Mode: ${if (debugMode) "✅" else "❌"}")
