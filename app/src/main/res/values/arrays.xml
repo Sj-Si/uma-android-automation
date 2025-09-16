@@ -5,6 +5,14 @@
 <!--        <item>Ao Haru</item>-->
     </string-array>
 
+    <string-array name="strategies">
+        <item>Default</item>
+        <item>Front Runner</item>
+        <item>Pace Chaser</item>
+        <item>Late Surger</item>
+        <item>End Closer</item>
+    </string-array>
+
     <string-array name="stats">
         <item>Speed</item>
         <item>Stamina</item>

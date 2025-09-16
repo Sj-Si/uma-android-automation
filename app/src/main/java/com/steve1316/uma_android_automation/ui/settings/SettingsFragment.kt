@@ -26,6 +26,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
 						commit()
 					}
 				}
+				"strategy" -> {
+					val strategyListPreference = findPreference<ListPreference>("strategy")!!
+					strategyListPreference.summary = "Selected ${strategyListPreference.value}"
+					sharedPreferences.edit {
+						putString("strategy", strategyListPreference.value)
+						commit()
+					}
+				}
 				"enableFarmingFans" -> {
 					val enableFarmingFansPreference = findPreference<CheckBoxPreference>("enableFarmingFans")!!
 					val daysToRunExtraRacesPreference = findPreference<SeekBarPreference>("daysToRunExtraRaces")!!
@@ -185,6 +193,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 		
 		// Grab the saved preferences from the previous time the user used the app.
 		val campaign: String = sharedPreferences.getString("campaign", "")!!
+		val strategy: String = sharedPreferences.getString("strategy", "")!!
 		val enableFarmingFans: Boolean = sharedPreferences.getBoolean("enableFarmingFans", false)
 		val daysToRunExtraRaces: Int = sharedPreferences.getInt("daysToRunExtraRaces", 4)
 		val enableSkillPointCheck: Boolean = sharedPreferences.getBoolean("enableSkillPointCheck", false)
@@ -204,6 +213,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 		
 		// Get references to the Preference components.
 		val campaignListPreference = findPreference<ListPreference>("campaign")!!
+		val strategyListPreference = findPreference<ListPreference>("strategy")!!
 		val enableFarmingFansPreference = findPreference<CheckBoxPreference>("enableFarmingFans")!!
 		val daysToRunExtraRacesPreference = findPreference<SeekBarPreference>("daysToRunExtraRaces")!!
 		val enableSkillPointCheckPreference = findPreference<CheckBoxPreference>("enableSkillPointCheck")!!
@@ -225,6 +235,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
 		campaignListPreference.value = campaign
 		if (campaign != "") {
 			campaignListPreference.summary = "Selected: ${campaignListPreference.value}"
+		}
+		strategyListPreference.value = strategy
+		if (strategy != "") {
+			strategyListPreference.summary = "Selected: ${strategyListPreference.value}"
 		}
 		enableFarmingFansPreference.isChecked = enableFarmingFans
 		daysToRunExtraRacesPreference.isEnabled = enableFarmingFansPreference.isChecked

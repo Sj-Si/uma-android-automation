@@ -21,6 +21,7 @@ object SettingsPrinter {
 		
 		// Main Settings
 		val campaign: String = sharedPreferences.getString("campaign", "")!!
+        val strategy: String = sharedPreferences.getString("strategy", "")!!
 		val enableFarmingFans = sharedPreferences.getBoolean("enableFarmingFans", false)
 		val daysToRunExtraRaces: Int = sharedPreferences.getInt("daysToRunExtraRaces", 4)
 		val enableSkillPointCheck: Boolean = sharedPreferences.getBoolean("enableSkillPointCheck", false)
@@ -96,6 +97,12 @@ object SettingsPrinter {
 		} else {
 			"⚠️ Please select one in the Select Campaign option"
 		}
+
+        val strategyString: String = if (strategy != "") {
+            "🎯 $strategy"
+        } else {
+            "⚠️ Please select one in the Select Race Strategy option"
+        }
 		
 		val characterString: String = if (selectAllCharacters) {
 			"👥 All Characters Selected"
@@ -145,6 +152,8 @@ object SettingsPrinter {
 		val settingsString = buildString {
 			appendLine("Campaign Selected: $campaignString")
 			appendLine()
+            appendLine("Race Strategy Selected: $strategyString")
+            appendLine()
 			appendLine("---------- Training Event Options ----------")
 			appendLine("Character Selected: $characterString")
 			appendLine("Support(s) Selected: $supportCardListString")

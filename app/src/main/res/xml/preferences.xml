@@ -11,6 +11,13 @@
             android:summary="Choose your selected Campaign"
             app:key="campaign"
             app:title="Select Campaign *" />
+        
+        <ListPreference
+            android:entries="@array/strategies"
+            android:entryValues="@array/strategies"
+            android:summary="Choose your preferred race strategy"
+            app:key="strategy"
+            app:title="Race Strategy" />
 
         <Preference
             app:fragment="com.steve1316.uma_android_automation.ui.settings.TrainingFragment"
