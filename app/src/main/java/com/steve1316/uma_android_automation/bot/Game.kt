@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.preference.PreferenceManager
 import com.steve1316.uma_android_automation.MainActivity
+import com.steve1316.uma_android_automation.bot.campaigns.DailyTasks
 import com.steve1316.uma_android_automation.bot.campaigns.AoHaru
 import com.steve1316.uma_android_automation.utils.BotService
 import com.steve1316.uma_android_automation.utils.ImageUtils
@@ -408,6 +409,522 @@ class Game(val myContext: Context) {
 		analyzeTrainings(test = true)
 		printTrainingMap()
 	}
+
+    // ====================
+    //    GENERAL MENUS
+    // ====================
+
+    fun checkTitleScreen(): Boolean {
+        return imageUtils.findImage("title_screen_logo", tries = 1, region = imageUtils.regionBottomHalf).first != null
+    }
+
+    fun clickTitleScreen(): Boolean {
+        return findAndTapImage("title_screen_logo", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun closeDialog(): Boolean {
+        if (findAndTapImage("no", tries = 1)) {
+            return true
+        }
+
+        if (findAndTapImage("cancel", tries = 1)) {
+            return true
+        }
+
+        if (findAndTapImage("close", tries = 1)) {
+            return true
+        }
+
+        if (findAndTapImage("back", tries = 1)) {
+            return true
+        }
+
+        return false
+    }
+
+    fun checkDialog(): Boolean {
+        return (
+            imageUtils.findImage("no", tries = 1).first != null ||
+            imageUtils.findImage("cancel", tries = 1).first != null ||
+            imageUtils.findImage("close", tries = 1).first != null ||
+            imageUtils.findImage("back", tries = 1).first != null
+        )
+    }
+
+    fun clickSkipButton(): Boolean {
+        return findAndTapImage("race_skip_manual", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun checkMenuBar(): Boolean {
+        printToLog("[INFO] Checking if the main menu bar is visible.")
+        return (
+            imageUtils.findImage("menu_bar_home_unselected", tries = 1, region = imageUtils.regionBottomHalf).first != null ||
+            imageUtils.findImage("menu_bar_race_unselected", tries = 1, region = imageUtils.regionBottomHalf).first != null
+        )
+    }
+
+    fun checkHomeMenu(): Boolean {
+        printToLog("\n[INFO] Checking if at the home menu.")
+        return imageUtils.findImage("menu_bar_home_selected", tries = 1, region = imageUtils.regionBottomHalf).first != null
+    }
+
+    fun checkRaceMenu(): Boolean {
+        printToLog("\n[INFO] Checking if at the race menu.")
+        return imageUtils.findImage("menu_bar_race_selected", tries = 1, region = imageUtils.regionBottomHalf).first != null
+    }
+
+    fun gotoHomeMenu(): Boolean {
+        printToLog("\n[INFO] Navigating: Home")
+        if (checkHomeMenu()) {
+            return true
+        }
+        return findAndTapImage("menu_bar_home_unselected", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun gotoRaceMenu(): Boolean {
+        printToLog("\n[INFO] Navigating: Race")
+        if (checkRaceMenu()) {
+            return true
+        }
+        return findAndTapImage("menu_bar_race_unselected", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    // ====================
+    //      RACE MENU
+    // ====================
+
+    fun gotoTeamTrialsMenu(): Boolean {
+        printToLog("\n[INFO] Navigating: Race -> Team Trials")
+        if (!checkRaceMenu()) {
+            printToLog("\n[INFO] Navigation failed. Not in race menu.")
+            return false
+        }
+
+        return findAndTapImage("race_menu_team_trials", tries = 1)
+    }
+
+    fun gotoDailyRacesMenu(): Boolean {
+        printToLog("\n[INFO] Navigating: Race -> Daily Races")
+        if (!checkRaceMenu()) {
+            printToLog("\n[INFO] Navigation failed. Not in race menu.")
+            return false
+        }
+
+        return findAndTapImage("race_menu_daily_races", tries = 1)
+    }
+
+    fun gotoRaceEventsMenu(): Boolean {
+        printToLog("\n[INFO] Navigating: Race -> Race Events")
+        if (!checkRaceMenu()) {
+            printToLog("\n[INFO] Navigation failed. Not in race menu.")
+            return false
+        }
+
+        return findAndTapImage("race_menu_race_events", tries = 1)
+    }
+
+    // ====================
+    //      TEAM TRIALS
+    // ====================
+
+    fun checkTeamTrialsBanner(): Boolean {
+        // Banner at the top of most team trials pages
+        return imageUtils.findImage("team_trials_banner", tries = 1, region = imageUtils.regionTopHalf).first != null
+    }
+
+    fun checkTeamTrialsMenu(): Boolean {
+        // Race -> Team Trials
+        // initial landing page for team trials
+        return (
+            //checkTeamTrialsBanner() &&
+            imageUtils.findImage("team_trials_team_race", tries = 1, region = imageUtils.regionBottomHalf).first != null
+        )
+    }
+
+    fun gotoTeamRaceMenu(): Boolean {
+        printToLog("\n[INFO] Navigating: Team Trials -> Team Race")
+        if (!checkTeamTrialsMenu()) {
+            printToLog("\n[INFO] Navigation failed. Not in team trials menu.")
+            return false
+        }
+
+        return findAndTapImage("team_trials_team_race", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun checkTeamTrialsSelectOpponentMenu(): Boolean {
+        // Race -> Team Trials -> Team Race
+        return (
+            //checkTeamTrialsBanner() &&
+            imageUtils.findImage("team_trials_select_opponent", tries = 1, region = imageUtils.regionTopHalf).first != null
+        )
+    }
+
+    fun clickTeamTrialsOpponent(): Boolean {
+        printToLog("\n[INFO] Selecting team trials opponent")
+        if (!checkTeamTrialsSelectOpponentMenu()) {
+            printToLog("\n[INFO] Selection failed. Not in select opponent menu.")
+            return false
+        }
+
+        // Tap slightly below the image
+        val tempLocation: Point? = imageUtils.findImage("team_trials_select_opponent", tries = 1, region = imageUtils.regionTopHalf).first
+		return if (tempLocation != null) {
+			Log.d(tag, "Found and going to tap: team_trials_select_opponent")
+			tap(
+                tempLocation.x,
+                tempLocation.y + imageUtils.relHeight(100),
+                "team_trials_select_opponent",
+                taps = 1
+            )
+			true
+		} else {
+			false
+		}
+    }
+
+    fun checkTeamTrialsLineup(): Boolean {
+        // Race -> Team Trials -> Team Race -> <select opponent>
+        return (
+            //checkTeamTrialsBanner() &&
+            imageUtils.findImage("team_trials_race_horseshoe", tries = 1).first != null
+        )
+    }
+
+    fun checkItemsSelectedDialog(): Boolean {
+        // Race -> Team Trials -> Team Race -> <select opponent> -> Next
+        return imageUtils.findImage("items_selected", tries = 1, region = imageUtils.regionTopHalf).first != null
+    }
+
+    fun clickItemsSelectedDialogRaceButton(): Boolean {
+        printToLog("\n[INFO] Clicking Items Selected dialog 'Race!' button.")
+        if (!checkItemsSelectedDialog()) {
+            printToLog("\n[INFO] clickItemsSelectedDialogRaceButton:: Items Selected dialog not found.")
+            return false
+        }
+
+        return findAndTapImage("item_select_race", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun checkTeamTrialsRacesMenu(): Boolean {
+        // Race -> Team Trials -> Team Race ->
+        // <select opponent> -> Next -> Race!
+        return (
+            //checkTeamTrialsBanner() &&
+            imageUtils.findImage("team_trials_see_results", tries = 1, region = imageUtils.regionBottomHalf).first != null
+        )
+    }
+
+    fun clickTeamTrialsRacesMenuSeeResults(): Boolean {
+        if (!checkTeamTrialsRacesMenu()) {
+            printToLog("\n[INFO] clickTeamTrialsRacesMenuSeeResults:: Not in Team Trial Races menu.")
+            return false
+        }
+
+        return findAndTapImage("team_trials_see_results", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun checkTeamTrialsRaceResult(): Boolean {
+        if (imageUtils.findImage("team_trials_win", tries = 1, region = imageUtils.regionMiddle).first != null) {
+            return true
+        }
+        if (imageUtils.findImage("team_trials_draw", tries = 1, region = imageUtils.regionMiddle).first != null) {
+            return true
+        }
+        if (imageUtils.findImage("team_trials_lose", tries = 1, region = imageUtils.regionMiddle).first != null) {
+            return true
+        }
+
+        return false
+    }
+
+    fun checkTeamTrialsResultsExtraRewards(): Boolean {
+        return (
+            //checkTeamTrialsBanner() &&
+            imageUtils.findImage("race_again", region = imageUtils.regionBottomHalf, tries = 1).first == null &&
+            imageUtils.findImage("team_trials_next", tries = 1, region = imageUtils.regionBottomHalf).first != null
+        )
+    }
+
+    fun checkTeamTrialsResults(): Boolean {
+        return (
+            //checkTeamTrialsBanner() &&
+            imageUtils.findImage("race_again", tries = 1, region = imageUtils.regionBottomHalf).first != null
+        )
+    }
+
+    // ====================
+    //     DAILY RACES
+    // ====================
+
+    fun checkDailyRacesBanner(): Boolean {
+        return imageUtils.findImage("daily_races_banner", tries = 1, region = imageUtils.regionTopHalf).first != null
+    }
+
+    fun checkDailyRacesMenu(): Boolean {
+        return (
+            //checkDailyRacesBanner() &&
+            imageUtils.findImage("daily_races_logo", tries = 1, region = imageUtils.regionTopHalf).first != null
+        )
+    }
+
+    fun gotoDailyRacesRaceMenu(name: String = "moonlight_sho"): Boolean {
+        if (findAndTapImage("daily_races_${name}_logo", tries = 1)) {
+            return true
+        }
+
+        printToLog("\n[INFO] Could not find logo for daily race: ${name}")
+        return false
+    }
+
+    fun gotoDailyRacesRace(difficulty: String = "hard"): Boolean {
+        if (findAndTapImage("race_${difficulty}_active", tries = 1)) {
+            return true
+        }
+
+        printToLog("\n[INFO] Could not find daily race for difficulty: ${difficulty}")
+        return false
+    }
+
+    // ====================
+    //     RACE EVENTS
+    // ====================
+
+    fun checkRaceEventsMenu(): Boolean {
+        return imageUtils.findImage("race_events", tries = 1, region = imageUtils.regionMiddle).first != null
+    }
+
+    fun gotoLegendRaceMenu(): Boolean {
+        printToLog("\n[INFO] Navigating: Race -> Race Events -> Legend Race")
+        if (!checkRaceEventsMenu()) {
+            printToLog("\n[INFO] Navigation failed. Not in race events menu.")
+            return false
+        }
+
+        return findAndTapImage("race_events_legend_race", tries = 1)
+    }
+
+    // ====================
+    //     LEGEND RACE
+    // ====================
+
+    fun checkLegendRaceBanner(): Boolean {
+        return imageUtils.findImage("legend_race_banner", tries = 1, region = imageUtils.regionTopHalf).first != null
+    }
+
+    fun checkLegendRaceMenu(): Boolean {
+        return (
+            //checkLegendRaceBanner() &&
+            imageUtils.findImage("legend_race_special_missions", tries = 1, region = imageUtils.regionMiddle).first != null
+        )
+    }
+
+    fun collectLegendRaceSpecialMissionRewards(): Boolean {
+        if (!checkLegendRaceMenu()) {
+            printToLog("\n[INFO] collectLegendRaceSpecialMissionRewards:: Not in legend race menu.")
+            return false
+        }
+
+        if (!findAndTapImage("legend_race_special_missions", tries = 1)) {
+            printToLog("\n[INFO] collectLegendRaceSpecialMissionRewards:: Failed to click special missions button.")
+            return false
+        }
+
+        wait(0.5)
+
+        if (!clickCollectAllButton()) {
+            printToLog("\n[INFO] collectLegendRaceSpecialMissionRewards:: Failed to find Collect All button.")
+            return false
+        }
+
+        wait(0.5)
+
+
+        if (!clickCloseButton()) {
+            printToLog("\n[INFO] collectLegendRaceSpecialMissionRewards:: Failed to find Close button.")
+            return false
+        }
+
+        wait(0.5)
+
+        if (!clickCloseButton()) {
+            printToLog("\n[INFO] collectLegendRaceSpecialMissionRewards:: Failed to find Close button.")
+            return false
+        }
+
+        return true
+    }
+
+    fun checkLegendRaceRace(difficulty: String = "hard"): Boolean {
+        return imageUtils.findImage("race_${difficulty}_active", tries = 1).first != null
+    }
+
+    fun gotoLegendRaceRace(difficulty: String = "hard"): Boolean {
+        if (findAndTapImage("race_${difficulty}_active", tries = 1)) {
+            return true
+        }
+
+        printToLog("\n[INFO] Could not find daily race for difficulty: ${difficulty}")
+        return false
+    }
+
+
+    // ====================
+    //      OTHER
+    // ====================
+
+    fun collectSpecialMissionRewards(): Boolean {
+        if (!checkHomeMenu()) {
+            printToLog("\n[INFO] collectSpecialMissionRewards:: Not in home menu.")
+            return false
+        }
+
+        if (!findAndTapImage("home_special_missions", tries = 1)) {
+            printToLog("\n[INFO] collectSpecialMissionRewards:: Failed to click special missions button.")
+            return false
+        }
+
+        wait(0.5)
+
+        if (!clickCollectAllButton()) {
+            printToLog("\n[INFO] collectSpecialMissionRewards:: Failed to find Collect All button.")
+            return false
+        }
+
+        wait(0.5)
+
+
+        if (!clickCloseButton()) {
+            printToLog("\n[INFO] collectSpecialMissionRewards:: Failed to find Close button.")
+            return false
+        }
+
+        wait(0.5)
+
+        if (!gotoHomeMenu()) {
+            printToLog("\n[INFO] collectSpecialMissionRewards:: Failed to go to home menu.")
+            return false
+        }
+
+        return true
+    }
+
+    fun clickCollectAllButton(): Boolean {
+        return findAndTapImage("collect_all", tries = 30)
+    }
+
+    fun checkNextButton(): Boolean {
+        return imageUtils.findImage("next", tries = 1).first != null
+    }
+
+    fun clickNextButton(): Boolean {
+        return findAndTapImage("next", tries = 30)
+    }
+
+    fun clickCloseButton(): Boolean {
+        return findAndTapImage("close", tries = 30)
+    }
+
+    fun checkRestoreDialog(): Boolean {
+        return imageUtils.findImage("not_enough_rp", tries = 1, region = imageUtils.regionMiddle).first != null
+    }
+
+    fun cancelRestoreDialog(): Boolean {
+        return findAndTapImage("no", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun checkDailySaleDialog(): Boolean {
+        return imageUtils.findImage("a_daily_sale_has_begun", tries = 1, region = imageUtils.regionMiddle).first != null
+    }
+
+    fun cancelDailySaleDialog(): Boolean {
+        return findAndTapImage("cancel", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun checkRunnerSelectMenu(): Boolean {
+        return imageUtils.findImage("runner_select_banner", tries = 1, region = imageUtils.regionTopHalf).first != null
+    }
+
+    fun clickRunnerSelectConfirm(): Boolean {
+        if (!checkRunnerSelectMenu()) {
+            printToLog("\n[INFO] clickRunnerSelectConfirm:: Not in Runner Select menu.")
+            return false
+        }
+
+        return findAndTapImage("confirm", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun checkRaceItemsSelectedDialog(): Boolean {
+        return imageUtils.findImage("items_selected", tries = 1, region = imageUtils.regionTopHalf).first != null
+    }
+
+    fun cancelRaceItemsSelectedDialog(): Boolean {
+        return findAndTapImage("cancel", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun confirmRaceItemsSelectedDialog(): Boolean {
+        return findAndTapImage("item_select_race", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun checkDailyRaceTicketDialog(): Boolean {
+        return imageUtils.findImage("not_enough_daily_race_ticket", tries = 1, region = imageUtils.regionMiddle).first != null
+    }
+
+    fun cancelDailyRaceTicketDialog(): Boolean {
+        return findAndTapImage("cancel", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun checkRaceDetailsDialog(): Boolean {
+        return imageUtils.findImage("race_details_dialog_title", tries = 1, region = imageUtils.regionTopHalf).first != null
+    }
+
+    fun clickRaceDetailsDialogRace(): Boolean {
+        return findAndTapImage("race_details_dialog_race", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun checkDailyRacesResults(): Boolean {
+        // NOT WORKING. Maybe entry reward?
+        return imageUtils.findImage("entry_reward", tries = 1, region = imageUtils.regionTopHalf).first != null
+    }
+
+    fun clickDailyRacesRaceAgain(): Boolean {
+        return findAndTapImage("race_again", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+
+    fun clickDailyRacesNext(): Boolean {
+        return findAndTapImage("team_trials_next", tries = 1, region = imageUtils.regionBottomHalf)
+    }
+    
+
+    fun checkTeamTrialsSelectOpponent(): Boolean {
+        return (
+            //checkTeamTrialsBanner() &&
+            imageUtils.findImage("team_trials_select_opponent", tries = 1, region = imageUtils.regionMiddle).first != null
+        )
+    }
+
+    fun checkTeamTrialsRaceLineup(): Boolean {
+        return (
+            //checkTeamTrialsBanner() &&
+            imageUtils.findImage("team_trials_race_horseshoe", tries = 1, region = imageUtils.regionMiddle).first != null &&
+            checkNextButton()
+        )
+    }
+
+    fun clickTeamTrialsRaceAgain(): Boolean {
+        if (checkTeamTrialsResults()) {
+            return findAndTapImage("race_again", tries = 1, region = imageUtils.regionBottomHalf)
+        }
+
+        return false
+    }
+
+    fun checkTeamTrialsNext(): Boolean {
+        return imageUtils.findImage("team_trials_next", tries = 1).first != null
+    }
+
+    fun clickTeamTrialsNext(): Boolean {
+        return findAndTapImage("team_trials_next", tries = 1, region = imageUtils.regionBottomHalf)
+    }
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2078,7 +2595,6 @@ class Game(val myContext: Context) {
 			waitForLoading()
 
 			// Select the preferred race strategy if it is not already selected.
-			printToLog("[DEBUG] SECOND")
 			if (strategySelected == false) {
 				if (strategyImageName != "default") {
 					findAndTapImage("race_change_strategy", tries = 10, region = imageUtils.regionBottomHalf)
@@ -2250,7 +2766,6 @@ class Game(val myContext: Context) {
 			wait(2.0)
 
 			// Select the preferred race strategy if it is not already selected.
-			printToLog("[DEBUG] THIRD")
 			if (strategySelected == false) {
 				if (strategyImageName != "default") {
 					findAndTapImage("race_change_strategy", tries = 10, region = imageUtils.regionBottomHalf)
@@ -2277,14 +2792,10 @@ class Game(val myContext: Context) {
 		return false
 	}
 
-	/**
-	 * The entry point for handling standalone races if the user started the bot on the Racing screen.
-	 */
-	fun handleStandaloneRace() {
-		printToLog("\n[RACE] Starting Standalone Racing process...")
+    fun handleStandaloneRaceNonCampaign(): Boolean {
+        printToLog("\n[RACE] Starting Standalone Racing process...")
 
 		// Select the preferred race strategy if it is not already selected.
-		printToLog("[DEBUG] FIRST")
 		if (strategySelected == false) {
 			if (strategyImageName != "default") {
 				findAndTapImage("race_change_strategy", tries = 10, region = imageUtils.regionBottomHalf)
@@ -2301,6 +2812,15 @@ class Game(val myContext: Context) {
 		} else {
 			manualRace()
 		}
+
+        return resultCheck
+    }
+
+	/**
+	 * The entry point for handling standalone races if the user started the bot on the Racing screen.
+	 */
+	fun handleStandaloneRace() {
+		val resultCheck: Boolean = handleStandaloneRaceNonCampaign()
 
 		finishRace(resultCheck)
 
@@ -2737,7 +3257,7 @@ class Game(val myContext: Context) {
 	 *
 	 * @return True if all automation goals have been met. False otherwise.
 	 */
-	fun start(): Boolean {
+	fun start(name: String? = null): Boolean {
 		// Print current app settings at the start of the run.
 		SettingsPrinter.printCurrentSettings(myContext) { message ->
 			printToLog(message)
@@ -2781,6 +3301,10 @@ class Game(val myContext: Context) {
 			startComprehensiveTrainingFailureOCRTest()
 		}
 		// Otherwise, proceed with regular bot operations.
+		else if (name == "Daily Tasks") {
+			val dailyTasks = DailyTasks(this)
+			dailyTasks.start()
+		}
 		else if (campaign == "Ao Haru") {
 			val aoHaruCampaign = AoHaru(this)
 			aoHaruCampaign.start()
