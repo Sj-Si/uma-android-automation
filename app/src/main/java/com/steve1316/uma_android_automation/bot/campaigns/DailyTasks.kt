@@ -61,10 +61,7 @@ class DailyTasks(val game: Game) {
         // Navigate from title screen to home screen.
         game.clickTitleScreen()
         while (!game.checkMenuBar()) {
-            if (!game.closeDialog() && !game.clickSkipButton()) {
-                // keep tapping to progress
-                game.tap(100.0, 100.0, "ok", taps = 3)
-            }
+            game.progressAndIgnorePopups()
         }
     }
 
@@ -147,7 +144,7 @@ class DailyTasks(val game: Game) {
             }
 
             // Now that the result appeared, tap a few times to progress.
-            game.tap(350.0, 450.0, "ok", taps = 3)
+            game.progressAndIgnorePopups()
 
             i++
             game.printToLog("\n[INFO] handleTeamTrialsLoop:: Team Trials race loop count: ${i}")
@@ -161,7 +158,7 @@ class DailyTasks(val game: Game) {
         // This appears regardless of whether there are extra rewards.
         while (!game.checkTeamTrialsNext()) {
             // Tap to speed up intermediate results
-            game.tap(350.0, 450.0, "ok", taps = 3)
+            game.progressAndIgnorePopups()
         }
 
         if (game.checkTeamTrialsResultsExtraRewards()) {
@@ -180,7 +177,7 @@ class DailyTasks(val game: Game) {
         }
 
         while (game.imageUtils.findImage("race_again", tries = 1).first == null) {
-            game.tap(350.0, 450.0, "ok", taps = 3)
+            game.progressAndIgnorePopups()
             game.wait(0.1)
         }
 
@@ -324,7 +321,7 @@ class DailyTasks(val game: Game) {
 
         // Keep tapping until we can click the Race Again button.
         while (!game.clickDailyRacesRaceAgain()) {
-            game.tap(350.0, 450.0, "ok", taps = 3)
+            game.progressAndIgnorePopups()
         }
 
         // If the ticket dialog pops up, we are done. Return to home.
@@ -337,7 +334,7 @@ class DailyTasks(val game: Game) {
             game.wait(0.5)
 
             while (!game.clickDailyRacesNext()) {
-                game.tap(350.0, 450.0, "ok", taps = 3)
+                game.progressAndIgnorePopups()
             }
 
             game.wait(0.5)
@@ -499,7 +496,7 @@ class DailyTasks(val game: Game) {
 
         while (!game.clickNextButton()) {
             // Keep clicking until it shows up.
-            game.tap(350.0, 450.0, "ok", taps = 3)
+            game.progressAndIgnorePopups()
         }
 
         game.wait(0.5)

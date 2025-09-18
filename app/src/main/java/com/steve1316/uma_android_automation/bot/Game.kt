@@ -414,6 +414,13 @@ class Game(val myContext: Context) {
     //    GENERAL MENUS
     // ====================
 
+    fun progressAndIgnorePopups() {
+        if (!closeDialog() && !clickSkipButton()) {
+            // keep tapping to progress
+            tap(100.0, 100.0, "ok", taps = 3)
+        }
+    }
+
     fun checkTitleScreen(): Boolean {
         return imageUtils.findImage("title_screen_logo", tries = 1, region = imageUtils.regionBottomHalf).first != null
     }
