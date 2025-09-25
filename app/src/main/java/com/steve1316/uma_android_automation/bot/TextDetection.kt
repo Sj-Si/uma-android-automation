@@ -35,14 +35,14 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 	 * Fix incorrect characters determined by OCR by replacing them with their Japanese equivalents.
 	 */
 	private fun fixIncorrectCharacters() {
-		game.printToLog("\n[TEXT-DETECTION] Now attempting to fix incorrect characters in: $result", tag = tag)
+		MessageLog.log("\n[TEXT-DETECTION] Now attempting to fix incorrect characters in: $result", tag = tag)
 		
 		if (result.last() == '/') {
 			result = result.replace("/", "！")
 		}
 		
 		result = result.replace("(", "（").replace(")", "）")
-		game.printToLog("[TEXT-DETECTION] Finished attempting to fix incorrect characters: $result", tag = tag)
+		MessageLog.log("[TEXT-DETECTION] Finished attempting to fix incorrect characters: $result", tag = tag)
 	}
 	
 	/**
@@ -50,9 +50,9 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 	 */
 	private fun findMostSimilarString() {
 		if (!hideComparisonResults) {
-			game.printToLog("\n[TEXT-DETECTION] Now starting process to find most similar string to: $result\n", tag = tag)
+			MessageLog.log("\n[TEXT-DETECTION] Now starting process to find most similar string to: $result\n", tag = tag)
 		} else {
-			game.printToLog("\n[TEXT-DETECTION] Now starting process to find most similar string to: $result", tag = tag)
+			MessageLog.log("\n[TEXT-DETECTION] Now starting process to find most similar string to: $result", tag = tag)
 		}
 		
 		// Remove any detected whitespaces.
@@ -67,7 +67,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 				CharacterData.characters[characterKey]?.forEach { (eventName, eventOptions) ->
 					val score = service.score(result, eventName)
 					if (!hideComparisonResults) {
-						game.printToLog("[CHARA] $characterKey \"${result}\" vs. \"${eventName}\" confidence: $score", tag = tag)
+						MessageLog.log("[CHARA] $characterKey \"${result}\" vs. \"${eventName}\" confidence: $score", tag = tag)
 					}
 					
 					if (score >= confidence) {
@@ -83,7 +83,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 			CharacterData.characters[character]?.forEach { (eventName, eventOptions) ->
 				val score = service.score(result, eventName)
 				if (!hideComparisonResults) {
-					game.printToLog("[CHARA] $character \"${result}\" vs. \"${eventName}\" confidence: $score", tag = tag)
+					MessageLog.log("[CHARA] $character \"${result}\" vs. \"${eventName}\" confidence: $score", tag = tag)
 				}
 				
 				if (score >= confidence) {
@@ -99,7 +99,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 		CharacterData.characters["Shared"]?.forEach { (eventName, eventOptions) ->
 			val score = service.score(result, eventName)
 			if (!hideComparisonResults) {
-				game.printToLog("[CHARA-SHARED] \"${result}\" vs. \"${eventName}\" confidence: $score", tag = tag)
+				MessageLog.log("[CHARA-SHARED] \"${result}\" vs. \"${eventName}\" confidence: $score", tag = tag)
 			}
 			
 			if (score >= confidence) {
@@ -116,7 +116,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 				SupportData.supports[supportCardName]?.forEach { (eventName, eventOptions) ->
 					val score = service.score(result, eventName)
 					if (!hideComparisonResults) {
-						game.printToLog("[SUPPORT] $supportCardName \"${result}\" vs. \"${eventName}\" confidence: $score", tag = tag)
+						MessageLog.log("[SUPPORT] $supportCardName \"${result}\" vs. \"${eventName}\" confidence: $score", tag = tag)
 					}
 					
 					if (score >= confidence) {
@@ -133,7 +133,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 				support.forEach { (eventName, eventOptions) ->
 					val score = service.score(result, eventName)
 					if (!hideComparisonResults) {
-						game.printToLog("[SUPPORT] $supportName \"${result}\" vs. \"${eventName}\" confidence: $score", tag = tag)
+						MessageLog.log("[SUPPORT] $supportName \"${result}\" vs. \"${eventName}\" confidence: $score", tag = tag)
 					}
 					
 					if (score >= confidence) {
@@ -148,11 +148,11 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 		}
 		
 		if (!hideComparisonResults) {
-			game.printToLog("\n[TEXT-DETECTION] Finished process to find similar string.", tag = tag)
+			MessageLog.log("\n[TEXT-DETECTION] Finished process to find similar string.", tag = tag)
 		} else {
-			game.printToLog("[TEXT-DETECTION] Finished process to find similar string.", tag = tag)
+			MessageLog.log("[TEXT-DETECTION] Finished process to find similar string.", tag = tag)
 		}
-		game.printToLog("[TEXT-DETECTION] Event data fetched for \"${eventTitle}\".")
+		MessageLog.log("[TEXT-DETECTION] Event data fetched for \"${eventTitle}\".")
 	}
 
 	/**
@@ -173,7 +173,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 	 */
 	fun determineDateFromString(dateString: String): Game.Date {
 		if (dateString == "") {
-			game.printToLog("[ERROR] Received date string from OCR was empty. Defaulting to \"Senior Year Early Jan\" at turn number 49.", tag = tag)
+			MessageLog.log("[ERROR] Received date string from OCR was empty. Defaulting to \"Senior Year Early Jan\" at turn number 49.", tag = tag)
 			return Game.Date(3, "Early", 1, 49)
 		} else if (dateString.lowercase().contains("debut")) {
 			// Special handling for the Pre-Debut phase.
@@ -212,7 +212,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 		// Split the input string by whitespace.
 		val parts = dateString.trim().split(" ")
 		if (parts.size < 3) {
-			game.printToLog("[TEXT-DETECTION] Invalid date string format: $dateString", tag = tag)
+			MessageLog.log("[TEXT-DETECTION] Invalid date string format: $dateString", tag = tag)
 			return Game.Date(3, "Early", 1, 49)
 		}
  
@@ -238,7 +238,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 				}
 			}
 			year = bestYear
-			game.printToLog("[TEXT-DETECTION] Year not found in mapping, using best match: $yearPart -> $year", tag = tag)
+			MessageLog.log("[TEXT-DETECTION] Year not found in mapping, using best match: $yearPart -> $year", tag = tag)
 		}
 
 		// Find the best match for month using Jaro Winkler if not found in mapping.
@@ -256,7 +256,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 				}
 			}
 			month = bestMonth
-			game.printToLog("[TEXT-DETECTION] Month not found in mapping, using best match: $monthPart -> $month", tag = tag)
+			MessageLog.log("[TEXT-DETECTION] Month not found in mapping, using best match: $monthPart -> $month", tag = tag)
 		}
 
 		// Calculate the turn number.
@@ -301,23 +301,23 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 				when (category) {
 					"character" -> {
 						if (!hideComparisonResults) {
-							game.printToLog("\n[RESULT] Character $character Event Name = $eventTitle with confidence = $confidence", tag = tag)
+							MessageLog.log("\n[RESULT] Character $character Event Name = $eventTitle with confidence = $confidence", tag = tag)
 						}
 					}
 					"character-shared" -> {
 						if (!hideComparisonResults) {
-							game.printToLog("\n[RESULT] Character Shared Event Name = $eventTitle with confidence = $confidence", tag = tag)
+							MessageLog.log("\n[RESULT] Character Shared Event Name = $eventTitle with confidence = $confidence", tag = tag)
 						}
 					}
 					"support" -> {
 						if (!hideComparisonResults) {
-							game.printToLog("\n[RESULT] Support $supportCardTitle Event Name = $eventTitle with confidence = $confidence", tag = tag)
+							MessageLog.log("\n[RESULT] Support $supportCardTitle Event Name = $eventTitle with confidence = $confidence", tag = tag)
 						}
 					}
 				}
 				
 				if (enableAutomaticRetry && !hideComparisonResults) {
-					game.printToLog("\n[RESULT] Threshold incremented by $increment", tag = tag)
+					MessageLog.log("\n[RESULT] Threshold incremented by $increment", tag = tag)
 				}
 				
 				if (confidence < minimumConfidence && enableAutomaticRetry) {

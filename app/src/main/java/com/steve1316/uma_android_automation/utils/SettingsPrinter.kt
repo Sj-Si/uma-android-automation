@@ -14,13 +14,14 @@ object SettingsPrinter {
 	 * Print all current SharedPreferences settings for debugging purposes.
 	 * 
 	 * @param context The application context
-	 * @param printToLog Function to handle logging
+	 * @param MessageLog.log Function to handle logging
 	 */
-	fun printCurrentSettings(context: Context, printToLog: ((String) -> Unit)? = null): String {
+	fun printCurrentSettings(context: Context, MessageLog.log: ((String) -> Unit)? = null): String {
 		val sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 		
 		// Main Settings
 		val campaign: String = sharedPreferences.getString("campaign", "")!!
+        val strategy: String = sharedPreferences.getString("strategy", "")!!
 		val enableFarmingFans = sharedPreferences.getBoolean("enableFarmingFans", false)
 		val daysToRunExtraRaces: Int = sharedPreferences.getInt("daysToRunExtraRaces", 4)
 		val enableSkillPointCheck: Boolean = sharedPreferences.getBoolean("enableSkillPointCheck", false)
@@ -30,6 +31,7 @@ object SettingsPrinter {
 		val enableStopOnMandatoryRace: Boolean = sharedPreferences.getBoolean("enableStopOnMandatoryRace", false)
 		val enableForceRacing: Boolean = sharedPreferences.getBoolean("enableForceRacing", false)
 		val enablePrioritizeEnergyOptions: Boolean = sharedPreferences.getBoolean("enablePrioritizeEnergyOptions", false)
+        val enableSkipCraneGame: Boolean = sharedPreferences.getBoolean("enableSkipCraneGame", false)
 		
 		// Training Settings
 		val trainingBlacklist: Set<String> = sharedPreferences.getStringSet("trainingBlacklist", setOf<String>()) as Set<String>
@@ -96,6 +98,12 @@ object SettingsPrinter {
 		} else {
 			"⚠️ Please select one in the Select Campaign option"
 		}
+
+        val strategyString: String = if (strategy != "") {
+            "🎯 $strategy"
+        } else {
+            "⚠️ Please select one in the Select Race Strategy option"
+        }
 		
 		val characterString: String = if (selectAllCharacters) {
 			"👥 All Characters Selected"
@@ -145,6 +153,8 @@ object SettingsPrinter {
 		val settingsString = buildString {
 			appendLine("Campaign Selected: $campaignString")
 			appendLine()
+            appendLine("Race Strategy Selected: $strategyString")
+            appendLine()
 			appendLine("---------- Training Event Options ----------")
 			appendLine("Character Selected: $characterString")
 			appendLine("Support(s) Selected: $supportCardListString")
@@ -178,6 +188,7 @@ object SettingsPrinter {
 			appendLine("Skill Point Check: ${if (enableSkillPointCheck) "✅ Stop on $skillPointCheck Skill Points or more" else "❌"}")
 			appendLine("Popup Check: ${if (enablePopupCheck) "✅" else "❌"}")
 			appendLine("Prioritize Energy Options: ${if (enablePrioritizeEnergyOptions) "✅" else "❌"}")
+            appendLine("Skip Crane Game: ${if (enableSkipCraneGame) "✅" else "❌"}")
 			appendLine()
 			appendLine("---------- Debug Options ----------")
 			appendLine("Debug Mode: ${if (debugMode) "✅" else "❌"}")
@@ -192,16 +203,16 @@ object SettingsPrinter {
 		////////////////////////////////////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////////////////////////////////////
 		
-		// Use the provided printToLog function if available. Otherwise return the string.
-		if (printToLog != null) {
-			printToLog("\n[SETTINGS] Current Bot Configuration:")
-			printToLog("=====================================")
+		// Use the provided MessageLog.log function if available. Otherwise return the string.
+		if (MessageLog.log != null) {
+			MessageLog.log("\n[SETTINGS] Current Bot Configuration:")
+			MessageLog.log("=====================================")
 			settingsString.split("\n").forEach { line ->
 				if (line.isNotEmpty()) {
-					printToLog(line)
+					MessageLog.log(line)
 				}
 			}
-			printToLog("=====================================\n")
+			MessageLog.log("=====================================\n")
 		}
 
 		return settingsString

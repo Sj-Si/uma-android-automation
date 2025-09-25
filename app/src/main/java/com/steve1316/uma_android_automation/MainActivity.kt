@@ -18,6 +18,7 @@ import com.google.android.material.navigation.NavigationView
 import org.opencv.android.OpenCVLoader
 import java.util.Locale
 
+val START_TIME_MS: Long = System.currentTimeMillis()
 
 class MainActivity : AppCompatActivity() {
 	private lateinit var appBarConfiguration: AppBarConfiguration

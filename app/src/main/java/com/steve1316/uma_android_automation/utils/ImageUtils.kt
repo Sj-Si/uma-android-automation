@@ -49,6 +49,7 @@ class ImageUtils(context: Context, private val game: Game) {
 	// SharedPreferences
 	private var sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 	private val campaign: String = sharedPreferences.getString("campaign", "")!!
+    private val strategy: String = sharedPreferences.getString("strategy", "")!!
 	private var confidence: Double = sharedPreferences.getInt("confidence", 80).toDouble() / 100.0
 	private var customScale: Double = sharedPreferences.getInt("customScale", 100).toDouble() / 100.0
 	private val debugMode: Boolean = sharedPreferences.getBoolean("debugMode", false)
@@ -119,7 +120,7 @@ class ImageUtils(context: Context, private val game: Game) {
 
 		// Start up Tesseract.
 		tessBaseAPI.init(myContext.getExternalFilesDir(null)?.absolutePath + "/tesseract/", "eng")
-		game.printToLog("[INFO] Training file loaded.\n", tag = tag)
+		MessageLog.log("[INFO] Training file loaded.\n", tag = tag)
 	}
 
 	data class RaceDetails (
@@ -163,7 +164,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			// First, try the default values of 1.0 for scale and 0.8 for confidence.
 			val (success, _) = match(sourceBitmap, templateBitmap!!, key, useSingleScale = true, customConfidence = defaultConfidence, testScale = 1.0)
 			if (success) {
-				game.printToLog("[TEST] Initial test for $key succeeded at the default values.", tag = tag)
+				MessageLog.log("[TEST] Initial test for $key succeeded at the default values.", tag = tag)
 				results[key]?.add(ScaleConfidenceResult(1.0, defaultConfidence))
 				continue // If it works, skip to the next template.
 			}
@@ -182,7 +183,7 @@ class ImageUtils(context: Context, private val game: Game) {
 					val formattedConfidence = testConfidenceDecimalFormat.format(confidence).toDouble()
 					val (testSuccess, _) = match(sourceBitmap, templateBitmap, key, useSingleScale = true, customConfidence = formattedConfidence, testScale = testScale)
 					if (testSuccess) {
-						game.printToLog("[TEST] Test for $key succeeded at scale $testScale and confidence $formattedConfidence.", tag = tag)
+						MessageLog.log("[TEST] Test for $key succeeded at scale $testScale and confidence $formattedConfidence.", tag = tag)
 						results[key]?.add(ScaleConfidenceResult(testScale, formattedConfidence))
 					}
 					confidence += 0.1
@@ -223,7 +224,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		}
 
 		val setConfidence: Double = if (templateName == "training_rainbow") {
-			game.printToLog("[INFO] For detection of rainbow training, confidence will be forcibly set to 0.9 to avoid false positives.", tag = tag)
+			MessageLog.log("[INFO] For detection of rainbow training, confidence will be forcibly set to 0.9 to avoid false positives.", tag = tag)
 			0.9
 		} else if (customConfidence == 0.0) {
 			confidence
@@ -313,20 +314,20 @@ class ImageUtils(context: Context, private val game: Game) {
 				matchLocation = mmr.minLoc
 				matchCheck = true
 				if (debugMode) {
-					game.printToLog("[DEBUG] Match found for \"$templateName\" with $minVal <= ${1.0 - setConfidence} at Point $matchLocation using scale: $newScale.", tag = tag)
+					MessageLog.log("[DEBUG] Match found for \"$templateName\" with $minVal <= ${1.0 - setConfidence} at Point $matchLocation using scale: $newScale.", tag = tag)
 				}
 			} else if ((matchMethod != Imgproc.TM_SQDIFF && matchMethod != Imgproc.TM_SQDIFF_NORMED) && mmr.maxVal >= setConfidence) {
 				matchLocation = mmr.maxLoc
 				matchCheck = true
 				if (debugMode) {
-					game.printToLog("[DEBUG] Match found for \"$templateName\" with $maxVal >= $setConfidence at Point $matchLocation using scale: $newScale.", tag = tag)
+					MessageLog.log("[DEBUG] Match found for \"$templateName\" with $maxVal >= $setConfidence at Point $matchLocation using scale: $newScale.", tag = tag)
 				}
 			} else {
 				if (debugMode) {
 					if ((matchMethod != Imgproc.TM_SQDIFF && matchMethod != Imgproc.TM_SQDIFF_NORMED)) {
-						game.printToLog("[DEBUG] Match not found for \"$templateName\" with $maxVal not >= $setConfidence at Point ${mmr.maxLoc} using scale $newScale.", tag = tag)
+						MessageLog.log("[DEBUG] Match not found for \"$templateName\" with $maxVal not >= $setConfidence at Point ${mmr.maxLoc} using scale $newScale.", tag = tag)
 					} else {
-						game.printToLog("[DEBUG] Match not found for \"$templateName\" with $minVal not <= ${1.0 - setConfidence} at Point ${mmr.minLoc} using scale $newScale.", tag = tag)
+						MessageLog.log("[DEBUG] Match not found for \"$templateName\" with $minVal not <= ${1.0 - setConfidence} at Point ${mmr.minLoc} using scale $newScale.", tag = tag)
 					}
 				}
 			}
@@ -534,7 +535,7 @@ class ImageUtils(context: Context, private val game: Game) {
 				Imgproc.rectangle(sourceMat, tempMatchLocation, Point(tempMatchLocation.x + clampedTemplateMat.cols(), tempMatchLocation.y + clampedTemplateMat.rows()), Scalar(0.0, 0.0, 0.0), 20)
 
 				if (debugMode) {
-					game.printToLog("[DEBUG] Match All found with $minVal <= ${1.0 - setConfidence} at Point $matchLocation with scale: $newScale.", tag = tag)
+					MessageLog.log("[DEBUG] Match All found with $minVal <= ${1.0 - setConfidence} at Point $matchLocation with scale: $newScale.", tag = tag)
 					Imgcodecs.imwrite("$matchFilePath/matchAll.png", sourceMat)
 				}
 
@@ -559,7 +560,7 @@ class ImageUtils(context: Context, private val game: Game) {
 				Imgproc.rectangle(sourceMat, tempMatchLocation, Point(tempMatchLocation.x + clampedTemplateMat.cols(), tempMatchLocation.y + clampedTemplateMat.rows()), Scalar(0.0, 0.0, 0.0), 20)
 
 				if (debugMode) {
-					game.printToLog("[DEBUG] Match All found with $maxVal >= $setConfidence at Point $matchLocation with scale: $newScale.", tag = tag)
+					MessageLog.log("[DEBUG] Match All found with $maxVal >= $setConfidence at Point $matchLocation with scale: $newScale.", tag = tag)
 					Imgcodecs.imwrite("$matchFilePath/matchAll.png", sourceMat)
 				}
 
@@ -672,7 +673,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			Pair(sourceBitmap, templateBitmap)
 		} else {
 			if (debugMode) {
-				game.printToLog("[ERROR] The template Bitmap is null.", tag = tag, isError = true)
+				MessageLog.log("[ERROR] The template Bitmap is null.", tag = tag, isError = true)
 			}
 
 			Pair(sourceBitmap, templateBitmap)
@@ -714,13 +715,13 @@ class ImageUtils(context: Context, private val game: Game) {
 
 		// Check if any dimensions were clamped and log a warning.
 		if (x != clampedX || y != clampedY || width != clampedWidth || height != clampedHeight) {
-			game.printToLog("[WARNING] Clamped bounds for $context: original(x=$x, y=$y, width=$width, height=$height) -> clamped(x=$clampedX, y=$clampedY, width=$clampedWidth, height=$clampedHeight), sourceBitmap=${sourceBitmap.width}x${sourceBitmap.height}", tag = tag)
+			MessageLog.log("[WARNING] Clamped bounds for $context: original(x=$x, y=$y, width=$width, height=$height) -> clamped(x=$clampedX, y=$clampedY, width=$clampedWidth, height=$clampedHeight), sourceBitmap=${sourceBitmap.width}x${sourceBitmap.height}", tag = tag)
 		}
 
 		// Final validation to ensure the clamped dimensions are still valid.
 		if (clampedX < 0 || clampedY < 0 || clampedWidth <= 0 || clampedHeight <= 0 ||
 			clampedX + clampedWidth > sourceBitmap.width || clampedY + clampedHeight > sourceBitmap.height) {
-			game.printToLog("[ERROR] Invalid bounds for $context after clamping: x=$clampedX, y=$clampedY, width=$clampedWidth, height=$clampedHeight, sourceBitmap=${sourceBitmap.width}x${sourceBitmap.height}", tag = tag, isError = true)
+			MessageLog.log("[ERROR] Invalid bounds for $context after clamping: x=$clampedX, y=$clampedY, width=$clampedWidth, height=$clampedHeight, sourceBitmap=${sourceBitmap.width}x${sourceBitmap.height}", tag = tag, isError = true)
 			return null
 		}
 
@@ -740,7 +741,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		var numberOfTries = tries
 
 		if (debugMode) {
-			game.printToLog("\n[DEBUG] Starting process to find the ${templateName.uppercase()} button image...", tag = tag)
+			MessageLog.log("\n[DEBUG] Starting process to find the ${templateName.uppercase()} button image...", tag = tag)
 		}
 
 		var (sourceBitmap, templateBitmap) = getBitmaps(templateName)
@@ -752,7 +753,7 @@ class ImageUtils(context: Context, private val game: Game) {
 					numberOfTries -= 1
 					if (numberOfTries <= 0) {
 						if (debugMode && !suppressError) {
-							game.printToLog("[WARNING] Failed to find the ${templateName.uppercase()} button.", tag = tag)
+							MessageLog.log("[WARNING] Failed to find the ${templateName.uppercase()} button.", tag = tag)
 						}
 
 						break
@@ -762,7 +763,7 @@ class ImageUtils(context: Context, private val game: Game) {
 					game.wait(0.1)
 					sourceBitmap = getSourceBitmap()
 				} else {
-					game.printToLog("[SUCCESS] Found the ${templateName.uppercase()} at $location.", tag = tag)
+					MessageLog.log("[SUCCESS] Found the ${templateName.uppercase()} at $location.", tag = tag)
 					return Pair(location, sourceBitmap)
 				}
 			}
@@ -784,7 +785,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		var numberOfTries = tries
 
 		if (debugMode) {
-			game.printToLog("\n[DEBUG] Starting process to find the ${templateName.uppercase()} header image...", tag = tag)
+			MessageLog.log("\n[DEBUG] Starting process to find the ${templateName.uppercase()} header image...", tag = tag)
 		}
 
 		var (sourceBitmap, templateBitmap) = getBitmaps(templateName + "_header")
@@ -801,7 +802,7 @@ class ImageUtils(context: Context, private val game: Game) {
 					game.wait(0.1)
 					sourceBitmap = getSourceBitmap()
 				} else {
-					game.printToLog("[SUCCESS] Current location confirmed to be at ${templateName.uppercase()}.", tag = tag)
+					MessageLog.log("[SUCCESS] Current location confirmed to be at ${templateName.uppercase()}.", tag = tag)
 					return true
 				}
 			} else {
@@ -810,7 +811,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		}
 
 		if (debugMode && !suppressError) {
-			game.printToLog("[WARNING] Failed to confirm the bot location at ${templateName.uppercase()}.", tag = tag)
+			MessageLog.log("[WARNING] Failed to confirm the bot location at ${templateName.uppercase()}.", tag = tag)
 		}
 
 		return false
@@ -834,7 +835,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			matchLocations.sortBy { it.y }
 
 			if (debugMode) {
-				game.printToLog("[DEBUG] Found match locations for $templateName: $matchLocations.", tag = tag)
+				MessageLog.log("[DEBUG] Found match locations for $templateName: $matchLocations.", tag = tag)
 			} else {
 				Log.d(tag, "[DEBUG] Found match locations for $templateName: $matchLocations.")
 			}
@@ -867,7 +868,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			matchLocations.sortBy { it.y }
 
 			if (debugMode) {
-				game.printToLog("[DEBUG] Found match locations for $templateName: $matchLocations.", tag = tag)
+				MessageLog.log("[DEBUG] Found match locations for $templateName: $matchLocations.", tag = tag)
 			} else {
 				Log.d(tag, "[DEBUG] Found match locations for $templateName: $matchLocations.")
 			}
@@ -892,7 +893,7 @@ class ImageUtils(context: Context, private val game: Game) {
 
 		// Check if coordinates are within bounds.
 		if (x < 0 || y < 0 || x >= sourceBitmap.width || y >= sourceBitmap.height) {
-			if (debugMode) game.printToLog("[WARNING] Coordinates ($x, $y) are out of bounds for bitmap size ${sourceBitmap.width}x${sourceBitmap.height}", tag = tag)
+			if (debugMode) MessageLog.log("[WARNING] Coordinates ($x, $y) are out of bounds for bitmap size ${sourceBitmap.width}x${sourceBitmap.height}", tag = tag)
 			return false
 		}
 
@@ -910,7 +911,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		val blueMatch = kotlin.math.abs(actualBlue - rgb[2]) <= tolerance
 
 		if (debugMode) {
-			game.printToLog("[DEBUG] Color check at ($x, $y): Expected RGB(${rgb[0]}, ${rgb[1]}, ${rgb[2]}), Actual RGB($actualRed, $actualGreen, $actualBlue), Match: ${redMatch && greenMatch && blueMatch}", tag = tag)
+			MessageLog.log("[DEBUG] Color check at ($x, $y): Expected RGB(${rgb[0]}, ${rgb[1]}, ${rgb[2]}), Actual RGB($actualRed, $actualGreen, $actualBlue), Match: ${redMatch && greenMatch && blueMatch}", tag = tag)
 		}
 
 		return redMatch && greenMatch && blueMatch
@@ -932,7 +933,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		val (_, energyTemplateBitmap) = getBitmaps("energy")
 		val (_, matchLocation) = match(sourceBitmap, energyTemplateBitmap!!, "energy")
 		if (matchLocation == null) {
-			game.printToLog("[WARNING] Could not proceed with OCR text detection due to not being able to find the energy template on the source image.")
+			MessageLog.log("[WARNING] Could not proceed with OCR text detection due to not being able to find the energy template on the source image.")
 			return "empty!"
 		}
 
@@ -949,7 +950,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			createSafeBitmap(sourceBitmap, newX, newY, relWidth(645), relHeight(65), "findText phone crop")
 		}
 		if (croppedBitmap == null) {
-			game.printToLog("[ERROR] Failed to create cropped bitmap for text detection", tag = tag, isError = true)
+			MessageLog.log("[ERROR] Failed to create cropped bitmap for text detection", tag = tag, isError = true)
 			return "empty!"
 		}
 
@@ -993,9 +994,9 @@ class ImageUtils(context: Context, private val game: Game) {
 		try {
 			// Finally, detect text on the cropped region.
 			result = tessBaseAPI.utF8Text
-			game.printToLog("[INFO] Detected text with Tesseract: $result", tag = tag)
+			MessageLog.log("[INFO] Detected text with Tesseract: $result", tag = tag)
 		} catch (e: Exception) {
-			game.printToLog("[ERROR] Cannot perform OCR: ${e.stackTraceToString()}", tag = tag, isError = true)
+			MessageLog.log("[ERROR] Cannot perform OCR: ${e.stackTraceToString()}", tag = tag, isError = true)
 		}
 
 		tessBaseAPI.clear()
@@ -1034,7 +1035,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			createSafeBitmap(sourceBitmap!!, relX(trainingSelectionLocation.x, -45), relY(trainingSelectionLocation.y, 15), relWidth(100), relHeight(37), "findTrainingFailureChance phone")
 		}
 		if (croppedBitmap == null) {
-			game.printToLog("[ERROR] Failed to create cropped bitmap for training failure chance detection.", tag = tag, isError = true)
+			MessageLog.log("[ERROR] Failed to create cropped bitmap for training failure chance detection.", tag = tag, isError = true)
 			return -1
 		}
 
@@ -1063,7 +1064,7 @@ class ImageUtils(context: Context, private val game: Game) {
 						try {
 							// The game shows failure rate directly
 							result = block.text.replace("%", "").trim().toInt()
-							game.printToLog("[INFO] Detected Training failure chance with Google ML Kit: ${result}%", tag = tag)
+							MessageLog.log("[INFO] Detected Training failure chance with Google ML Kit: ${result}%", tag = tag)
 						} catch (_: NumberFormatException) {
 						}
 					}
@@ -1071,7 +1072,7 @@ class ImageUtils(context: Context, private val game: Game) {
 				latch.countDown()
 			}
 			.addOnFailureListener {
-				game.printToLog("[ERROR] Failed to do text detection via Google's ML Kit. Falling back to Tesseract.", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Failed to do text detection via Google's ML Kit. Falling back to Tesseract.", tag = tag, isError = true)
 				mlkitFailed = true
 				latch.countDown()
 			}
@@ -1080,7 +1081,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		try {
 			latch.await(5, TimeUnit.SECONDS)
 		} catch (_: InterruptedException) {
-			game.printToLog("[ERROR] Google ML Kit operation timed out", tag = tag, isError = true)
+			MessageLog.log("[ERROR] Google ML Kit operation timed out", tag = tag, isError = true)
 		}
 
 		// Fallback to Tesseract if ML Kit failed or didn't find result.
@@ -1090,15 +1091,15 @@ class ImageUtils(context: Context, private val game: Game) {
 
 			try {
 				val detectedText = tessBaseAPI.utF8Text.replace("%", "")
-				game.printToLog("[INFO] Detected training failure chance with Tesseract: $detectedText", tag = tag)
+				MessageLog.log("[INFO] Detected training failure chance with Tesseract: $detectedText", tag = tag)
 				val cleanedResult = detectedText.replace(Regex("[^0-9]"), "")
 				// The game shows failure rate directly
 				result = cleanedResult.toInt()
 			} catch (_: NumberFormatException) {
-				game.printToLog("[ERROR] Could not convert \"${tessBaseAPI.utF8Text.replace("%", "")}\" to integer.", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Could not convert \"${tessBaseAPI.utF8Text.replace("%", "")}\" to integer.", tag = tag, isError = true)
 				result = -1
 			} catch (e: Exception) {
-				game.printToLog("[ERROR] Cannot perform OCR using Tesseract: ${e.stackTraceToString()}", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Cannot perform OCR using Tesseract: ${e.stackTraceToString()}", tag = tag, isError = true)
 				result = -1
 			}
 
@@ -1106,7 +1107,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		}
 
 		if (debugMode) {
-			game.printToLog("[DEBUG] Failure chance detected to be at $result%.")
+			MessageLog.log("[DEBUG] Failure chance detected to be at $result%.")
 		} else {
 			Log.d(tag, "Failure chance detected to be at $result%.")
 		}
@@ -1141,7 +1142,7 @@ class ImageUtils(context: Context, private val game: Game) {
 				}
 			}
 			if (croppedBitmap == null) {
-				game.printToLog("[ERROR] Failed to create cropped bitmap for day detection.", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Failed to create cropped bitmap for day detection.", tag = tag, isError = true)
 				return -1
 			}
 
@@ -1173,7 +1174,7 @@ class ImageUtils(context: Context, private val game: Game) {
 					if (text.textBlocks.isNotEmpty()) {
 						for (block in text.textBlocks) {
 							try {
-								game.printToLog("[INFO] Detected Day Number for Extra Race with Google ML Kit: ${block.text}", tag = tag)
+								MessageLog.log("[INFO] Detected Day Number for Extra Race with Google ML Kit: ${block.text}", tag = tag)
 								result = block.text.toInt()
 							} catch (_: NumberFormatException) {
 							}
@@ -1182,7 +1183,7 @@ class ImageUtils(context: Context, private val game: Game) {
 					latch.countDown()
 				}
 				.addOnFailureListener {
-					game.printToLog("[ERROR] Failed to do text detection via Google's ML Kit. Falling back to Tesseract.", tag = tag, isError = true)
+					MessageLog.log("[ERROR] Failed to do text detection via Google's ML Kit. Falling back to Tesseract.", tag = tag, isError = true)
 					mlkitFailed = true
 					latch.countDown()
 				}
@@ -1191,7 +1192,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			try {
 				latch.await(5, TimeUnit.SECONDS)
 			} catch (_: InterruptedException) {
-				game.printToLog("[ERROR] Google ML Kit operation timed out", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Google ML Kit operation timed out", tag = tag, isError = true)
 			}
 
 			// Fallback to Tesseract if ML Kit failed or didn't find result.
@@ -1201,14 +1202,14 @@ class ImageUtils(context: Context, private val game: Game) {
 
 				try {
 					val detectedText = tessBaseAPI.utF8Text.replace("%", "")
-					game.printToLog("[INFO] Detected day for extra racing with Tesseract: $detectedText", tag = tag)
+					MessageLog.log("[INFO] Detected day for extra racing with Tesseract: $detectedText", tag = tag)
 					val cleanedResult = detectedText.replace(Regex("[^0-9]"), "")
 					result = cleanedResult.toInt()
 				} catch (_: NumberFormatException) {
-					game.printToLog("[ERROR] Could not convert \"${tessBaseAPI.utF8Text.replace("%", "")}\" to integer.", tag = tag, isError = true)
+					MessageLog.log("[ERROR] Could not convert \"${tessBaseAPI.utF8Text.replace("%", "")}\" to integer.", tag = tag, isError = true)
 					result = -1
 				} catch (e: Exception) {
-					game.printToLog("[ERROR] Cannot perform OCR using Tesseract: ${e.stackTraceToString()}", tag = tag, isError = true)
+					MessageLog.log("[ERROR] Cannot perform OCR using Tesseract: ${e.stackTraceToString()}", tag = tag, isError = true)
 					result = -1
 				}
 
@@ -1239,7 +1240,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			createSafeBitmap(sourceBitmap, relX(extraRaceLocation.x, -173), relY(extraRaceLocation.y, -106), relWidth(163), relHeight(96), "determineExtraRaceFans prediction phone")
 		}
 		if (croppedBitmap == null) {
-			game.printToLog("[ERROR] Failed to create cropped bitmap for extra race prediction detection.", tag = tag, isError = true)
+			MessageLog.log("[ERROR] Failed to create cropped bitmap for extra race prediction detection.", tag = tag, isError = true)
 			return RaceDetails(-1, false)
 		}
 
@@ -1251,8 +1252,8 @@ class ImageUtils(context: Context, private val game: Game) {
 		val (predictionCheck, _) = match(croppedBitmap, doubleStarPredictionBitmap, "race_extra_double_prediction")
 
 		return if (forceRacing || predictionCheck) {
-			if (debugMode && !forceRacing) game.printToLog("[DEBUG] This race has double predictions. Now checking how many fans this race gives.", tag = tag)
-			else if (debugMode) game.printToLog("[DEBUG] Check for double predictions was skipped due to the force racing flag being enabled. Now checking how many fans this race gives.", tag = tag)
+			if (debugMode && !forceRacing) MessageLog.log("[DEBUG] This race has double predictions. Now checking how many fans this race gives.", tag = tag)
+			else if (debugMode) MessageLog.log("[DEBUG] Check for double predictions was skipped due to the force racing flag being enabled. Now checking how many fans this race gives.", tag = tag)
 
 			// Crop the source screenshot to show only the fans.
 			val croppedBitmap2 = if (isTablet) {
@@ -1261,7 +1262,7 @@ class ImageUtils(context: Context, private val game: Game) {
 				createSafeBitmap(sourceBitmap, relX(extraRaceLocation.x, -625), relY(extraRaceLocation.y, -75), relWidth(250), relHeight(35), "determineExtraRaceFans fans phone")
 			}
 			if (croppedBitmap2 == null) {
-				game.printToLog("[ERROR] Failed to create cropped bitmap for extra race fans detection.", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Failed to create cropped bitmap for extra race fans detection.", tag = tag, isError = true)
 				return RaceDetails(-1, predictionCheck)
 			}
 
@@ -1292,7 +1293,7 @@ class ImageUtils(context: Context, private val game: Game) {
 				// Finally, detect text on the cropped region.
 				result = tessBaseAPI.utF8Text
 			} catch (e: Exception) {
-				game.printToLog("[ERROR] Cannot perform OCR with Tesseract: ${e.stackTraceToString()}", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Cannot perform OCR with Tesseract: ${e.stackTraceToString()}", tag = tag, isError = true)
 			}
 
 			tessBaseAPI.clear()
@@ -1300,7 +1301,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			bwImage.release()
 
 			// Format the string to be converted to an integer.
-			game.printToLog("[INFO] Detected number of fans from Tesseract before formatting: $result", tag = tag)
+			MessageLog.log("[INFO] Detected number of fans from Tesseract before formatting: $result", tag = tag)
 			result = result
 				.replace(",", "")
 				.replace(".", "")
@@ -1341,7 +1342,7 @@ class ImageUtils(context: Context, private val game: Game) {
 				createSafeBitmap(sourceBitmap, relX(skillPointLocation.x, -70), relY(skillPointLocation.y, 28), relWidth(135), relHeight(70), "determineSkillPoints phone")
 			}
 			if (croppedBitmap == null) {
-				game.printToLog("[ERROR] Failed to create cropped bitmap for skill points detection.", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Failed to create cropped bitmap for skill points detection.", tag = tag, isError = true)
 				return -1
 			}
 
@@ -1371,14 +1372,14 @@ class ImageUtils(context: Context, private val game: Game) {
 				.addOnSuccessListener { text ->
 					if (text.textBlocks.isNotEmpty()) {
 						for (block in text.textBlocks) {
-							game.printToLog("[INFO] Detected the number of skill points with Google ML Kit: ${block.text}", tag = tag)
+							MessageLog.log("[INFO] Detected the number of skill points with Google ML Kit: ${block.text}", tag = tag)
 							result = block.text
 						}
 					}
 					latch.countDown()
 				}
 				.addOnFailureListener {
-					game.printToLog("[ERROR] Failed to do text detection via Google's ML Kit. Falling back to Tesseract.", tag = tag, isError = true)
+					MessageLog.log("[ERROR] Failed to do text detection via Google's ML Kit. Falling back to Tesseract.", tag = tag, isError = true)
 					mlkitFailed = true
 					latch.countDown()
 				}
@@ -1387,7 +1388,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			try {
 				latch.await(5, TimeUnit.SECONDS)
 			} catch (_: InterruptedException) {
-				game.printToLog("[ERROR] Google ML Kit operation timed out", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Google ML Kit operation timed out", tag = tag, isError = true)
 			}
 
 			if (mlkitFailed || result == "") {
@@ -1400,7 +1401,7 @@ class ImageUtils(context: Context, private val game: Game) {
 					// Finally, detect text on the cropped region.
 					result = tessBaseAPI.utF8Text
 				} catch (e: Exception) {
-					game.printToLog("[ERROR] Cannot perform OCR with Tesseract: ${e.stackTraceToString()}", tag = tag, isError = true)
+					MessageLog.log("[ERROR] Cannot perform OCR with Tesseract: ${e.stackTraceToString()}", tag = tag, isError = true)
 				}
 
 				tessBaseAPI.clear()
@@ -1409,7 +1410,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			cvImage.release()
 			bwImage.release()
 
-			game.printToLog("[INFO] Detected number of skill points before formatting: $result", tag = tag)
+			MessageLog.log("[INFO] Detected number of skill points before formatting: $result", tag = tag)
 			try {
 				Log.d(tag, "Converting $result to integer for skill points")
 				val cleanedResult = result.replace(Regex("[^0-9]"), "")
@@ -1418,7 +1419,7 @@ class ImageUtils(context: Context, private val game: Game) {
 				-1
 			}
 		} else {
-			game.printToLog("[ERROR] Could not start the process of detecting skill points.", tag = tag, isError = true)
+			MessageLog.log("[ERROR] Could not start the process of detecting skill points.", tag = tag, isError = true)
 			-1
 		}
 	}
@@ -1483,7 +1484,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		try {
 			latch.await(10, TimeUnit.SECONDS)
 		} catch (_: InterruptedException) {
-			game.printToLog("[ERROR] Parallel findAll operations timed out.", tag = tag, isError = true)
+			MessageLog.log("[ERROR] Parallel findAll operations timed out.", tag = tag, isError = true)
 		}
 
 		// Combine all results.
@@ -1512,18 +1513,18 @@ class ImageUtils(context: Context, private val game: Game) {
 		val results = arrayListOf<BarFillResult>()
 
 		for ((index, statBlock) in allStatBlocks.withIndex()) {
-			if (debugMode) game.printToLog("[DEBUG] Processing stat block #${index + 1} at position: (${statBlock.x}, ${statBlock.y})", tag = tag)
+			if (debugMode) MessageLog.log("[DEBUG] Processing stat block #${index + 1} at position: (${statBlock.x}, ${statBlock.y})", tag = tag)
 
 			val croppedBitmap = createSafeBitmap(sourceBitmap, relX(statBlock.x, -9), relY(statBlock.y, 107), 111, 13, "analyzeRelationshipBars stat block ${index + 1}")
 			if (croppedBitmap == null) {
-				game.printToLog("[ERROR] Failed to create cropped bitmap for stat block #${index + 1}.", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Failed to create cropped bitmap for stat block #${index + 1}.", tag = tag, isError = true)
 				continue
 			}
 
 			val (isMaxed, _) = match(croppedBitmap, maxedTemplateBitmap!!, "stat_maxed")
 			if (isMaxed) {
 				// Skip if the relationship bar is already maxed.
-				if (debugMode) game.printToLog("[DEBUG] Relationship bar #${index + 1} is full.", tag = tag)
+				if (debugMode) MessageLog.log("[DEBUG] Relationship bar #${index + 1} is full.", tag = tag)
 				results.add(BarFillResult(100.0, 5, "orange"))
 				continue
 			}
@@ -1575,7 +1576,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			hsvMat.release()
 			barMat.release()
 
-			if (debugMode) game.printToLog("[DEBUG] Relationship bar #${index + 1} is $fillPercent% filled with $filledSegments filled segments and the dominant color is $dominantColor", tag = tag)
+			if (debugMode) MessageLog.log("[DEBUG] Relationship bar #${index + 1} is $fillPercent% filled with $filledSegments filled segments and the dominant color is $dominantColor", tag = tag)
 			results.add(BarFillResult(fillPercent, filledSegments, dominantColor))
 		}
 
@@ -1595,7 +1596,7 @@ class ImageUtils(context: Context, private val game: Game) {
 	fun determinePreferredDistance(): String {
 		val (distanceLocation, sourceBitmap) = findImage("stat_distance", tries = 1, region = regionMiddle)
 		if (distanceLocation == null) {
-			game.printToLog("[ERROR] Could not determine the preferred distance. Setting to Medium by default.", tag = tag, isError = true)
+			MessageLog.log("[ERROR] Could not determine the preferred distance. Setting to Medium by default.", tag = tag, isError = true)
 			return "Medium"
 		}
 
@@ -1611,7 +1612,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			val distance = distances[i]
 			val croppedBitmap = createSafeBitmap(sourceBitmap, relX(distanceLocation.x, 108 + (i * 190)), relY(distanceLocation.y, -25), 176, 52, "determinePreferredDistance distance $distance")
 			if (croppedBitmap == null) {
-				game.printToLog("[ERROR] Failed to create cropped bitmap for distance $distance.", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Failed to create cropped bitmap for distance $distance.", tag = tag, isError = true)
 				continue
 			}
 
@@ -1634,7 +1635,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		}
 
 		return bestAptitudeDistance.ifEmpty {
-			game.printToLog("[WARNING] Could not determine the preferred distance with at least B aptitude. Setting to Medium by default.", tag = tag, isError = true)
+			MessageLog.log("[WARNING] Could not determine the preferred distance with at least B aptitude. Setting to Medium by default.", tag = tag, isError = true)
 			"Medium"
 		}
 	}
@@ -1657,12 +1658,12 @@ class ImageUtils(context: Context, private val game: Game) {
 					"Guts" -> createSafeBitmap(sourceBitmap, relX(skillPointsLocation.x, -862 + 170*3), relY(skillPointsLocation.y, 25), relWidth(98), relHeight(42), "determineStatValues Guts stat")
 					"Wit" -> createSafeBitmap(sourceBitmap, relX(skillPointsLocation.x, -862 + 170*4), relY(skillPointsLocation.y, 25), relWidth(98), relHeight(42), "determineStatValues Wit stat")
 					else -> {
-						game.printToLog("[ERROR] determineStatValue() received an incorrect stat name of $statName.", tag = tag, isError = true)
+						MessageLog.log("[ERROR] determineStatValue() received an incorrect stat name of $statName.", tag = tag, isError = true)
 						return@forEach
 					}
 				}
 				if (croppedBitmap == null) {
-					game.printToLog("[ERROR] Failed to create cropped bitmap for reading $statName stat value.", tag = tag, isError = true)
+					MessageLog.log("[ERROR] Failed to create cropped bitmap for reading $statName stat value.", tag = tag, isError = true)
 					statValueMapping[statName] = -1
 					return@forEach
 				}
@@ -1685,15 +1686,15 @@ class ImageUtils(context: Context, private val game: Game) {
 					// Finally, detect text on the cropped region.
 					result = tessBaseAPI.utF8Text
 				} catch (e: Exception) {
-					game.printToLog("[ERROR] Cannot perform OCR with Tesseract: ${e.stackTraceToString()}", tag = tag, isError = true)
+					MessageLog.log("[ERROR] Cannot perform OCR with Tesseract: ${e.stackTraceToString()}", tag = tag, isError = true)
 				}
 
 				tessBaseAPI.clear()
 				cvImage.release()
 
-				game.printToLog("[INFO] Detected number of stats for $statName from Tesseract before formatting: $result", tag = tag)
+				MessageLog.log("[INFO] Detected number of stats for $statName from Tesseract before formatting: $result", tag = tag)
 				if (result.lowercase().contains("max") || result.lowercase().contains("ax")) {
-					game.printToLog("[INFO] $statName seems to be maxed out. Setting it to 1200.", tag = tag)
+					MessageLog.log("[INFO] $statName seems to be maxed out. Setting it to 1200.", tag = tag)
 					statValueMapping[statName] = 1200
 				} else {
 					try {
@@ -1706,7 +1707,7 @@ class ImageUtils(context: Context, private val game: Game) {
 				}
 			}
 		} else {
-			game.printToLog("[ERROR] Could not start the process of detecting stat values.", tag = tag, isError = true)
+			MessageLog.log("[ERROR] Could not start the process of detecting stat values.", tag = tag, isError = true)
 		}
 
 		return statValueMapping
@@ -1723,7 +1724,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		if (energyLocation != null) {
 			val croppedBitmap = createSafeBitmap(sourceBitmap, relX(energyLocation.x, -268), relY(energyLocation.y, -180), relWidth(308), relHeight(35), "determineDayNumber")
 			if (croppedBitmap == null) {
-				game.printToLog("[ERROR] Failed to create cropped bitmap for day number detection.", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Failed to create cropped bitmap for day number detection.", tag = tag, isError = true)
 				return ""
 			}
 
@@ -1746,14 +1747,14 @@ class ImageUtils(context: Context, private val game: Game) {
 				.addOnSuccessListener { text ->
 					if (text.textBlocks.isNotEmpty()) {
 						for (block in text.textBlocks) {
-							game.printToLog("[INFO] Detected the date with Google ML Kit: ${block.text}", tag = tag)
+							MessageLog.log("[INFO] Detected the date with Google ML Kit: ${block.text}", tag = tag)
 							result = block.text
 						}
 					}
 					latch.countDown()
 				}
 				.addOnFailureListener {
-					game.printToLog("[ERROR] Failed to do text detection via Google's ML Kit. Falling back to Tesseract.", tag = tag, isError = true)
+					MessageLog.log("[ERROR] Failed to do text detection via Google's ML Kit. Falling back to Tesseract.", tag = tag, isError = true)
 					mlkitFailed = true
 					latch.countDown()
 				}
@@ -1762,7 +1763,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			try {
 				latch.await(5, TimeUnit.SECONDS)
 			} catch (_: InterruptedException) {
-				game.printToLog("[ERROR] Google ML Kit operation timed out", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Google ML Kit operation timed out", tag = tag, isError = true)
 			}
 
 			// Fallback to Tesseract if ML Kit failed or didn't find result.
@@ -1772,9 +1773,9 @@ class ImageUtils(context: Context, private val game: Game) {
 
 				try {
 					result = tessBaseAPI.utF8Text
-					game.printToLog("[INFO] Detected date with Tesseract: $result", tag = tag)
+					MessageLog.log("[INFO] Detected date with Tesseract: $result", tag = tag)
 				} catch (e: Exception) {
-					game.printToLog("[ERROR] Cannot perform OCR using Tesseract: ${e.stackTraceToString()}", tag = tag, isError = true)
+					MessageLog.log("[ERROR] Cannot perform OCR using Tesseract: ${e.stackTraceToString()}", tag = tag, isError = true)
 					result = ""
 				}
 
@@ -1782,12 +1783,12 @@ class ImageUtils(context: Context, private val game: Game) {
 			}
 
 			if (debugMode) {
-				game.printToLog("[DEBUG] Date string detected to be at \"$result\".")
+				MessageLog.log("[DEBUG] Date string detected to be at \"$result\".")
 			} else {
 				Log.d(tag, "Date string detected to be at \"$result\".")
 			}
 		} else {
-			game.printToLog("[ERROR] Could not start the process of detecting the date string.", tag = tag, isError = true)
+			MessageLog.log("[ERROR] Could not start the process of detecting the date string.", tag = tag, isError = true)
 		}
 
 		return result
@@ -1807,12 +1808,12 @@ class ImageUtils(context: Context, private val game: Game) {
 
 			// If the folder was not able to be created for some reason, log the error and stop the MediaProjection Service.
 			if (!successfullyCreated) {
-				game.printToLog("[ERROR] Failed to create the /files/tesseract/tessdata/ folder.", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Failed to create the /files/tesseract/tessdata/ folder.", tag = tag, isError = true)
 			} else {
-				game.printToLog("[INFO] Successfully created /files/tesseract/tessdata/ folder.", tag = tag)
+				MessageLog.log("[INFO] Successfully created /files/tesseract/tessdata/ folder.", tag = tag)
 			}
 		} else {
-			game.printToLog("[INFO] /files/tesseract/tessdata/ folder already exists.", tag = tag)
+			MessageLog.log("[INFO] /files/tesseract/tessdata/ folder already exists.", tag = tag)
 		}
 
 		// If the traineddata is not in the application folder, copy it there from assets.
@@ -1820,7 +1821,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			val trainedDataPath = File(tempDirectory, "$lang.traineddata")
 			if (!trainedDataPath.exists()) {
 				try {
-					game.printToLog("[INFO] Starting Tesseract initialization.", tag = tag)
+					MessageLog.log("[INFO] Starting Tesseract initialization.", tag = tag)
 					val input = myContext.assets.open("$lang.traineddata")
 
 					val output = FileOutputStream("$tempDirectory/$lang.traineddata")
@@ -1834,9 +1835,9 @@ class ImageUtils(context: Context, private val game: Game) {
 					input.close()
 					output.flush()
 					output.close()
-					game.printToLog("[INFO] Finished Tesseract initialization.", tag = tag)
+					MessageLog.log("[INFO] Finished Tesseract initialization.", tag = tag)
 				} catch (e: IOException) {
-					game.printToLog("[ERROR] IO EXCEPTION: ${e.stackTraceToString()}", tag = tag, isError = true)
+					MessageLog.log("[ERROR] IO EXCEPTION: ${e.stackTraceToString()}", tag = tag, isError = true)
 				}
 			}
 		}
@@ -1904,7 +1905,7 @@ class ImageUtils(context: Context, private val game: Game) {
 
 						val croppedBitmap = createSafeBitmap(sourceBitmap!!, relX(skillPointsLocation.x, -934 + xOffset), relY(skillPointsLocation.y, -103), relWidth(150), relHeight(82), "determineStatGainFromTraining $statName")
 						if (croppedBitmap == null) {
-							game.printToLog("[ERROR] Failed to create cropped bitmap for $statName stat gain detection.", tag = tag, isError = true)
+							MessageLog.log("[ERROR] Failed to create cropped bitmap for $statName stat gain detection.", tag = tag, isError = true)
 							threadSafeResults[i] = 0
 							statLatch.countDown()
 							return@Thread
@@ -1929,14 +1930,14 @@ class ImageUtils(context: Context, private val game: Game) {
 							if (templateBitmap != null) {
 								matchResults = processStatGainTemplateWithTransparency(templateName, templateBitmap, workingMat, matchResults)
 							} else {
-								game.printToLog("[ERROR] Could not load template \"$templateName\".", tag = tag, isError = true)
+								MessageLog.log("[ERROR] Could not load template \"$templateName\".", tag = tag, isError = true)
 							}
 						}
 
 						// Analyze results and construct the final integer value for this region.
 						val finalValue = constructIntegerFromMatches(matchResults)
 						threadSafeResults[i] = finalValue
-						game.printToLog("[INFO] $statName region final constructed value: $finalValue.", tag = tag)
+						MessageLog.log("[INFO] $statName region final constructed value: $finalValue.", tag = tag)
 
 						// Draw final visualization with all matches for this region.
 						if (debugMode) {
@@ -1971,7 +1972,7 @@ class ImageUtils(context: Context, private val game: Game) {
 						sourceGray.release()
 						workingMat.release()
 					} catch (e: Exception) {
-						game.printToLog("[ERROR] Error processing stat ${statNames[i]}: ${e.stackTraceToString()}", tag = tag, isError = true)
+						MessageLog.log("[ERROR] Error processing stat ${statNames[i]}: ${e.stackTraceToString()}", tag = tag, isError = true)
 						threadSafeResults[i] = 0
 					} finally {
 						statLatch.countDown()
@@ -1983,12 +1984,12 @@ class ImageUtils(context: Context, private val game: Game) {
 			try {
 				statLatch.await(30, TimeUnit.SECONDS)
 			} catch (_: InterruptedException) {
-				game.printToLog("[ERROR] Stat processing timed out", tag = tag, isError = true)
+				MessageLog.log("[ERROR] Stat processing timed out", tag = tag, isError = true)
 			}
 
-			game.printToLog("[INFO] All 5 stat regions processed. Results: ${threadSafeResults.contentToString()}", tag = tag)
+			MessageLog.log("[INFO] All 5 stat regions processed. Results: ${threadSafeResults.contentToString()}", tag = tag)
 		} else {
-			game.printToLog("[ERROR] Could not find the skill points location to start determining stat gains.", tag = tag, isError = true)
+			MessageLog.log("[ERROR] Could not find the skill points location to start determining stat gains.", tag = tag, isError = true)
 		}
 
 		return threadSafeResults
@@ -2214,17 +2215,17 @@ class ImageUtils(context: Context, private val game: Game) {
 		}
 
 		if (allMatches.isEmpty()) {
-			if (debugMode) game.printToLog("[WARNING] No matches found to construct integer value.", tag = tag)
+			if (debugMode) MessageLog.log("[WARNING] No matches found to construct integer value.", tag = tag)
 			return 0
 		}
 
 		// Sort matches by x-coordinate (left to right).
 		allMatches.sortBy { it.second.x }
-		if (debugMode) game.printToLog("[DEBUG] Sorted matches: ${allMatches.map { "${it.first}@(${it.second.x}, ${it.second.y})" }}", tag = tag)
+		if (debugMode) MessageLog.log("[DEBUG] Sorted matches: ${allMatches.map { "${it.first}@(${it.second.x}, ${it.second.y})" }}", tag = tag)
 
 		// Construct the string representation and then validate the format: start with + and contain only digits after.
 		val constructedString = allMatches.joinToString("") { it.first }
-		game.printToLog("[INFO] Constructed string: \"$constructedString\".", tag = tag)
+		MessageLog.log("[INFO] Constructed string: \"$constructedString\".", tag = tag)
 
 		// Extract the numeric part and convert to integer.
 		return try {
@@ -2235,10 +2236,10 @@ class ImageUtils(context: Context, private val game: Game) {
 			}
 
 			val result = numericPart.toInt()
-			if (debugMode) game.printToLog("[DEBUG] Successfully constructed integer value: $result from \"$constructedString\".", tag = tag)
+			if (debugMode) MessageLog.log("[DEBUG] Successfully constructed integer value: $result from \"$constructedString\".", tag = tag)
 			result
 		} catch (e: NumberFormatException) {
-			game.printToLog("[ERROR] Could not convert \"$constructedString\" to integer: ${e.stackTraceToString()}", tag = tag, isError = true)
+			MessageLog.log("[ERROR] Could not convert \"$constructedString\" to integer: ${e.stackTraceToString()}", tag = tag, isError = true)
 			0
 		}
 	}
