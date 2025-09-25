@@ -3,13 +3,13 @@ package com.steve1316.uma_android_automation.ui.settings
 import android.app.AlertDialog
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.core.content.edit
 import androidx.preference.*
 import androidx.navigation.fragment.findNavController
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.R
+import com.steve1316.uma_android_automation.utils.MessageLog
 
 class TrainingFragment : PreferenceFragmentCompat() {
 	private val logTag: String = "[${MainActivity.loggerTag}]TrainingFragment"
@@ -62,7 +62,7 @@ class TrainingFragment : PreferenceFragmentCompat() {
 		// Update the summaries of the Preference components.
 		updateSummaries()
 		
-		Log.d(logTag, "Training Preferences created successfully.")
+		MessageLog.d("Training Preferences created successfully.", tag=logTag)
 	}
 	
 	/**
@@ -281,10 +281,10 @@ class TrainingFragment : PreferenceFragmentCompat() {
 			// Set the selectable items for this AlertDialog.
 			builder.setMultiChoiceItems(items, checkedItems) { _, position, isChecked ->
 				if (isChecked) {
-					Log.d(logTag, "Adding $position")
+					MessageLog.d("Adding $position", tag=logTag)
 					userSelectedOptions.add(position)
 				} else {
-					Log.d(logTag, "Removing $position")
+					MessageLog.d("Removing $position", tag=logTag)
 					userSelectedOptions.remove(position)
 				}
 			}

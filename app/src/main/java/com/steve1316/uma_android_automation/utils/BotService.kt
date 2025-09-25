@@ -9,7 +9,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -21,6 +20,7 @@ import android.widget.Toast
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.R
 import com.steve1316.uma_android_automation.bot.Game
+import com.steve1316.uma_android_automation.utils.MessageLog
 import kotlin.concurrent.thread
 import kotlin.math.roundToInt
 
@@ -31,7 +31,7 @@ import kotlin.math.roundToInt
  * https://www.tutorialspoint.com/in-android-how-to-register-a-custom-intent-filter-to-a-broadcast-receiver
  */
 class BotService : Service() {
-	private val tag: String = "[${MainActivity.loggerTag}]BotService"
+	private val TAG: String = "[${MainActivity.loggerTag}]BotService"
 	private var appName: String = ""
 	private lateinit var myContext: Context
 	private lateinit var overlayView: View
@@ -116,7 +116,7 @@ class BotService : Service() {
 					if (elapsedTime < 100L) {
 						// Update both the Notification and the overlay button to reflect the current bot status.
 						if (!isRunning) {
-							Log.d(tag, "Bot Service for $appName is now running.")
+							MessageLog.i("Bot Service for $appName is now running.", tag=TAG)
 							Toast.makeText(myContext, "Bot Service for $appName is now running.", Toast.LENGTH_SHORT).show()
 							isRunning = true
 							NotificationUtils.updateNotification(myContext, isRunning)
@@ -145,7 +145,7 @@ class BotService : Service() {
 										NotificationUtils.updateNotification(myContext, false, "Bot was manually stopped.")
 									} else {
 										NotificationUtils.updateNotification(myContext, false, "Encountered an Exception: $e.\nTap me to see more details.")
-                                        game?.MessageLog.log("$appName encountered an Exception: ${e.stackTraceToString()}", tag = tag, isError = true)
+                                        MessageLog.e("$appName encountered an Exception: ${e.stackTraceToString()}", tag=TAG)
 									}
 								} finally {
 									performCleanUp()
@@ -284,10 +284,9 @@ class BotService : Service() {
 	 * Perform cleanup upon app completion or encountering an Exception.
 	 */
 	private fun performCleanUp() {
-		// Save the message log.
+		MessageLog.d("Bot Service for $appName is now stopped.", tag=TAG)
+        // Save the message log.
 		MessageLog.saveLogToFile(myContext)
-		
-		Log.d(tag, "Bot Service for $appName is now stopped.")
 		isRunning = false
 
 		// Reset the overlay button's image and animation on a separate UI thread.

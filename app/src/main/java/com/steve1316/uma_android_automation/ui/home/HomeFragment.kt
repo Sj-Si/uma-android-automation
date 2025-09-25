@@ -8,7 +8,6 @@ import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -219,7 +218,7 @@ class HomeFragment : Fragment() {
 		firstBoot = false
 		
 		// Now update the Message Log inside the ScrollView with the latest logging messages from the bot.
-		Log.d(logTag, "Now updating the Message Log TextView...")
+		MessageLog.d("Now updating the Message Log TextView...", tag=logTag)
 		val messageLogTextView = homeFragmentView.findViewById<TextView>(R.id.message_log)
 		messageLogTextView.text = ""
 
@@ -270,7 +269,7 @@ class HomeFragment : Fragment() {
 	 */
 	private fun checkForOverlayPermission(): Boolean {
 		if (!Settings.canDrawOverlays(requireContext())) {
-			Log.d(logTag, "Application is missing overlay permission.")
+			MessageLog.e("Application is missing overlay permission.", tag=logTag)
 			
 			AlertDialog.Builder(requireContext()).apply {
 				setTitle(R.string.overlay_disabled)
@@ -286,7 +285,7 @@ class HomeFragment : Fragment() {
 			return false
 		}
 		
-		Log.d(logTag, "Application has permission to draw overlay.")
+		MessageLog.d("Application has permission to draw overlay.", tag=logTag)
 		return true
 	}
 	
@@ -305,7 +304,7 @@ class HomeFragment : Fragment() {
 			val enabled = prefString.contains(myContext.packageName.toString() + "/" + MyAccessibilityService::class.java.name)
 			
 			if (enabled) {
-				Log.d(logTag, "This application's Accessibility Service is currently turned on.")
+				MessageLog.d("This application's Accessibility Service is currently turned on.", tag=logTag)
 				return true
 			}
 		}

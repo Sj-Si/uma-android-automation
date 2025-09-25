@@ -3,11 +3,11 @@ package com.steve1316.uma_android_automation.ui.settings
 import android.app.AlertDialog
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.util.Log
 import androidx.core.content.edit
 import androidx.preference.*
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.R
+import com.steve1316.uma_android_automation.utils.MessageLog
 
 class TrainingStatTargetFragment : PreferenceFragmentCompat() {
 	private val logTag: String = "[${MainActivity.loggerTag}]TrainingStatTargetFragment"
@@ -86,7 +86,7 @@ class TrainingStatTargetFragment : PreferenceFragmentCompat() {
 		// Setup preset buttons
 		setupPresetButtons()
 		
-		Log.d(logTag, "Training Stat Target Preferences created successfully for $distanceType.")
+		MessageLog.d("Training Stat Target Preferences created successfully for $distanceType.", tag=logTag)
 	}
 	
 	/**
@@ -204,7 +204,7 @@ class TrainingStatTargetFragment : PreferenceFragmentCompat() {
 					apply()
 				}
 				
-				Log.d(logTag, "Applied $presetName preset for $distanceType")
+				MessageLog.d("Applied $presetName preset for $distanceType", tag=logTag)
 			}
 			.setNegativeButton("Cancel", null)
 			.show()

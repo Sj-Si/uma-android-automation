@@ -9,11 +9,11 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Path
 import android.os.Build
-import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.widget.Toast
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.R
+import com.steve1316.uma_android_automation.utils.MessageLog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 
@@ -22,7 +22,7 @@ import kotlinx.coroutines.runBlocking
  */
 class MyAccessibilityService : AccessibilityService() {
 	private var appName: String = ""
-	private val tag: String = "[${MainActivity.loggerTag}]MyAccessibilityService"
+	private val TAG: String = "[${MainActivity.loggerTag}]MyAccessibilityService"
 	private lateinit var myContext: Context
 
 	// Define the baseline screen dimensions that the template images were made from for tap location randomization.
@@ -55,7 +55,7 @@ class MyAccessibilityService : AccessibilityService() {
 		myContext = this
 		appName = myContext.getString(R.string.app_name)
 		
-		Log.d(tag, "Accessibility Service for $appName is now running.")
+		MessageLog.d("Accessibility Service for $appName is now running.", tag=TAG)
 		Toast.makeText(myContext, "Accessibility Service for $appName now running.", Toast.LENGTH_SHORT).show()
 	}
 	
@@ -66,7 +66,7 @@ class MyAccessibilityService : AccessibilityService() {
 	override fun onDestroy() {
 		super.onDestroy()
 		
-		Log.d(tag, "Accessibility Service for $appName is now stopped.")
+		MessageLog.d("Accessibility Service for $appName is now stopped.", tag=TAG)
 		Toast.makeText(myContext, "Accessibility Service for $appName is now stopped.", Toast.LENGTH_SHORT).show()
 	}
 	
@@ -247,14 +247,14 @@ class MyAccessibilityService : AccessibilityService() {
 		}
 		
 		if (!dispatchResult) {
-			Log.e(tag, "Failed to dispatch scroll gesture.")
+			MessageLog.e("Failed to dispatch scroll gesture.", tag=TAG)
 		} else {
 			val direction: String = if (scrollDown) {
 				"down"
 			} else {
 				"up"
 			}
-			Log.d(tag, "Scrolling $direction.")
+			MessageLog.d("Scrolling $direction.", tag=TAG)
 		}
 		
 		return dispatchResult

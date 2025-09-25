@@ -2,7 +2,6 @@ package com.steve1316.uma_android_automation.ui.settings
 
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.util.Log
 import androidx.core.content.edit
 import androidx.preference.CheckBoxPreference
 import androidx.preference.PreferenceFragmentCompat
@@ -10,6 +9,7 @@ import androidx.preference.PreferenceManager
 import androidx.preference.SeekBarPreference
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.R
+import com.steve1316.uma_android_automation.utils.MessageLog
 
 class OCRFragment : PreferenceFragmentCompat() {
 	private val logTag: String = "[${MainActivity.loggerTag}]OCRFragment"
@@ -38,7 +38,7 @@ class OCRFragment : PreferenceFragmentCompat() {
 		enableAutomaticRetryPreference.isChecked = enableAutomaticRetry
 		ocrConfidencePreference.value = ocrConfidence
 		
-		Log.d(logTag, "OCR Preferences created successfully.")
+		MessageLog.d("OCR Preferences created successfully.", tag=logTag)
 	}
 	
 	// This listener is triggered whenever the user changes a Preference setting in the Settings Page.

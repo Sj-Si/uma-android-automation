@@ -13,6 +13,13 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 import java.util.concurrent.TimeUnit
 
+enum class LogLevel {
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR,
+}
+
 /**
  * Returns a formatted string of the elapsed time since the bot started as HH:MM:SS format.
  *
@@ -165,31 +172,50 @@ class MessageLog {
 		 *
 		 * @param message Message to be saved.
 		 * @param tag Distinguishes between messages for where they came from. Defaults to Game's TAG.
-		 * @param isError Flag to determine whether to display log message in console as debug or error.
+         * @param level The log level of the message. String added to beginning of message in brackets.
 		 * @param isOption Flag to determine whether to append a newline right after the time in the string.
+         * @param newline When true, message drops to a new line (newline char added to front of message.)
 		 */
-		fun log(message: String, tag: String = TAG, isError: Boolean = false, isOption: Boolean = false) {
-			if (!isError) {
-				Log.d(tag, message)
-			} else {
-				Log.e(tag, message)
-			}
+		fun log(message: String, tag: String = TAG, level: LogLevel = LogLevel.DEBUG, isOption: Boolean = false, newline: Boolean = true) {
+            when (level) {
+                LogLevel.DEBUG -> Log.d(tag, message)
+                LogLevel.INFO -> Log.i(tag, message)
+                LogLevel.WARN -> Log.w(tag, message)
+                LogLevel.ERROR -> Log.e(tag, message)
+                else -> Log.d(tag, message)
+            }
 
-			// Remove the newline prefix if needed and place it where it should be.
-			if (message.startsWith("\n")) {
-				val newMessage = message.removePrefix("\n")
-				if (isOption) {
-					addMessage("\n" + printElapsedTime() + "\n" + newMessage)
-				} else {
-					addMessage("\n" + printElapsedTime() + " " + newMessage)
-				}
-			} else {
-				if (isOption) {
-					addMessage(printElapsedTime() + "\n" + message)
-				} else {
-					addMessage(printElapsedTime() + " " + message)
-				}
-			}
+            var msg = message.removePrefix("\n")
+            msg = "$[{level}] ${tag} msg"
+
+            if (isOption) {
+                msg = "${printElapsedTime()}\n${msg}"
+            } else {
+                msg = "${printElapsedTime()} ${msg}"
+            }
+
+            if (newline) {
+                msg = "\n${msg}"
+            }
+
+            addMessage(msg)
 		}
+
+        // Wrappers arouns the log() function.
+        fun d(message: String, tag: String = TAG, isOption: Boolean = false, newline: Boolean = true) {
+            log(message, tag, LogLevel.DEBUG, isOption, newline)
+        }
+
+        fun i(message: String, tag: String = TAG, isOption: Boolean = false, newline: Boolean = true) {
+            log(message, tag, LogLevel.INFO, isOption, newline)
+        }
+
+        fun w(message: String, tag: String = TAG, isOption: Boolean = false, newline: Boolean = true) {
+            log(message, tag, LogLevel.WARN, isOption, newline)
+        }
+
+        fun e(message: String, tag: String = TAG, isOption: Boolean = false, newline: Boolean = true) {
+            log(message, tag, LogLevel.ERROR, isOption, newline)
+        }
 	}
 }

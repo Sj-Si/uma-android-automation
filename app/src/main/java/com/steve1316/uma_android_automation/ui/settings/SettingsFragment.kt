@@ -2,12 +2,12 @@ package com.steve1316.uma_android_automation.ui.settings
 
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.util.Log
 import androidx.core.content.edit
 import androidx.navigation.fragment.findNavController
 import androidx.preference.*
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.R
+import com.steve1316.uma_android_automation.utils.MessageLog
 
 class SettingsFragment : PreferenceFragmentCompat() {
 	private val logTag: String = "[${MainActivity.loggerTag}]SettingsFragment"
@@ -289,6 +289,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
 			true
 		}
 		
-		Log.d(logTag, "Main Preferences created successfully.")
+		MessageLog.d("Main Preferences created successfully.", tag=logTag)
 	}
 }
