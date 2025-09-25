@@ -145,7 +145,7 @@ class BotService : Service() {
 										NotificationUtils.updateNotification(myContext, false, "Bot was manually stopped.")
 									} else {
 										NotificationUtils.updateNotification(myContext, false, "Encountered an Exception: $e.\nTap me to see more details.")
-                                        game?.printToLog("$appName encountered an Exception: ${e.stackTraceToString()}", tag = tag, isError = true)
+                                        game?.MessageLog.log("$appName encountered an Exception: ${e.stackTraceToString()}", tag = tag, isError = true)
 									}
 								} finally {
 									performCleanUp()

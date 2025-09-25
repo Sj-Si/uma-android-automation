@@ -1,14 +1,55 @@
 package com.steve1316.uma_android_automation.utils
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.util.Log
 import com.steve1316.uma_android_automation.MainActivity
+import com.steve1316.uma_android_automation.START_TIME_MS
 import java.io.File
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
+import java.util.concurrent.TimeUnit
+
+/**
+ * Returns a formatted string of the elapsed time since the bot started as HH:MM:SS format.
+ *
+ * Source is from https://stackoverflow.com/questions/9027317/how-to-convert-milliseconds-to-hhmmss-format/9027379
+ *
+ * @return String of HH:MM:SS format of the elapsed time.
+ */
+@SuppressLint("DefaultLocale")
+fun printElapsedTime(): String {
+	val elapsedMillis: Long = System.currentTimeMillis() - START_TIME_MS
+
+	return String.format(
+		"%02d:%02d:%02d",
+		TimeUnit.MILLISECONDS.toHours(elapsedMillis),
+		TimeUnit.MILLISECONDS.toMinutes(elapsedMillis) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(elapsedMillis)),
+		TimeUnit.MILLISECONDS.toSeconds(elapsedMillis) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(elapsedMillis))
+	)
+}
+
+/**
+ * Returns a formatted string of the current system time as HH:MM:SS format.
+ *
+ * Source is from https://stackoverflow.com/questions/9027317/how-to-convert-milliseconds-to-hhmmss-format/9027379
+ *
+ * @return String of HH:MM:SS formatted time.
+ */
+@SuppressLint("DefaultLocale")
+fun printSystemTime(): String {
+	val timeMs: Long = System.currentTimeMillis()
+
+	return String.format(
+		"%02d:%02d:%02d",
+		TimeUnit.MILLISECONDS.toHours(timeMs),
+		TimeUnit.MILLISECONDS.toMinutes(timeMs) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(timeMs)),
+		TimeUnit.MILLISECONDS.toSeconds(timeMs) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(timeMs))
+	)
+}
 
 /**
  * This class is in charge of holding the Message Log to which all logging messages from the bot goes to and also saves it all into a file when the bot has finished.
@@ -115,6 +156,38 @@ class MessageLog {
 			if (files != null && files.size > 50) {
 				files.forEach { file ->
 					file.delete()
+				}
+			}
+		}
+
+		/**
+		 * Print the specified message to debug console and then saves the message to the log.
+		 *
+		 * @param message Message to be saved.
+		 * @param tag Distinguishes between messages for where they came from. Defaults to Game's TAG.
+		 * @param isError Flag to determine whether to display log message in console as debug or error.
+		 * @param isOption Flag to determine whether to append a newline right after the time in the string.
+		 */
+		fun log(message: String, tag: String = TAG, isError: Boolean = false, isOption: Boolean = false) {
+			if (!isError) {
+				Log.d(tag, message)
+			} else {
+				Log.e(tag, message)
+			}
+
+			// Remove the newline prefix if needed and place it where it should be.
+			if (message.startsWith("\n")) {
+				val newMessage = message.removePrefix("\n")
+				if (isOption) {
+					addMessage("\n" + printElapsedTime() + "\n" + newMessage)
+				} else {
+					addMessage("\n" + printElapsedTime() + " " + newMessage)
+				}
+			} else {
+				if (isOption) {
+					addMessage(printElapsedTime() + "\n" + message)
+				} else {
+					addMessage(printElapsedTime() + " " + message)
 				}
 			}
 		}

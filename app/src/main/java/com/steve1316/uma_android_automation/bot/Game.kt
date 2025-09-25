@@ -25,7 +25,7 @@ import kotlin.intArrayOf
  * Main driver for bot activity and navigation.
  */
 class Game(val myContext: Context) {
-	private val tag: String = "[${MainActivity.loggerTag}]Game"
+	private val TAG: String = "[${MainActivity.loggerTag}]Game"
 	var notificationMessage: String = ""
 	private val decimalFormat = DecimalFormat("#.##")
 	val imageUtils: ImageUtils = ImageUtils(myContext, this)
@@ -111,6 +111,11 @@ class Game(val myContext: Context) {
 	private var currentDate: Date = Date(1, "Early", 1, 1)
 	private var inheritancesDone = 0
 	private val startTime: Long = System.currentTimeMillis()
+
+    // Simple wrapper around MessageLog.log to add this class's tag.
+    private fun printToLog(message: String, tag: String = TAG, isError: Boolean = false, isOption: Boolean = false) {
+        MessageLog.log(message=message, tag=tag, isError=isError, isOption=isOption)
+    }
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
@@ -203,57 +208,6 @@ class Game(val myContext: Context) {
 	}
 
 	/**
-	 * Returns a formatted string of the elapsed time since the bot started as HH:MM:SS format.
-	 *
-	 * Source is from https://stackoverflow.com/questions/9027317/how-to-convert-milliseconds-to-hhmmss-format/9027379
-	 *
-	 * @return String of HH:MM:SS format of the elapsed time.
-	 */
-	@SuppressLint("DefaultLocale")
-	private fun printTime(): String {
-		val elapsedMillis: Long = System.currentTimeMillis() - startTime
-
-		return String.format(
-			"%02d:%02d:%02d",
-			TimeUnit.MILLISECONDS.toHours(elapsedMillis),
-			TimeUnit.MILLISECONDS.toMinutes(elapsedMillis) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(elapsedMillis)),
-			TimeUnit.MILLISECONDS.toSeconds(elapsedMillis) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(elapsedMillis))
-		)
-	}
-
-	/**
-	 * Print the specified message to debug console and then saves the message to the log.
-	 *
-	 * @param message Message to be saved.
-	 * @param tag Distinguishes between messages for where they came from. Defaults to Game's TAG.
-	 * @param isError Flag to determine whether to display log message in console as debug or error.
-	 * @param isOption Flag to determine whether to append a newline right after the time in the string.
-	 */
-	fun printToLog(message: String, tag: String = this.tag, isError: Boolean = false, isOption: Boolean = false) {
-		if (!isError) {
-			Log.d(tag, message)
-		} else {
-			Log.e(tag, message)
-		}
-
-		// Remove the newline prefix if needed and place it where it should be.
-		if (message.startsWith("\n")) {
-			val newMessage = message.removePrefix("\n")
-			if (isOption) {
-				MessageLog.addMessage("\n" + printTime() + "\n" + newMessage)
-			} else {
-				MessageLog.addMessage("\n" + printTime() + " " + newMessage)
-			}
-		} else {
-			if (isOption) {
-				MessageLog.addMessage(printTime() + "\n" + message)
-			} else {
-				MessageLog.addMessage(printTime() + " " + message)
-			}
-		}
-	}
-
-	/**
 	 * Wait the specified seconds to account for ping or loading.
 	 * It also checks for interruption every 100ms to allow faster interruption and checks if the game is still in the middle of loading.
 	 *
@@ -312,7 +266,7 @@ class Game(val myContext: Context) {
 		val tempLocation: Point? = imageUtils.findImage(imageName, tries = tries, region = region, suppressError = suppressError).first
 
 		return if (tempLocation != null) {
-			Log.d(tag, "Found and going to tap: $imageName")
+			Log.d(TAG, "Found and going to tap: $imageName")
 			tap(tempLocation.x, tempLocation.y, imageName, taps = taps)
 			true
 		} else {
@@ -345,7 +299,7 @@ class Game(val myContext: Context) {
 	 */
 	fun startTemplateMatchingTest() {
 		printToLog("\n[TEST] Now beginning basic template match test on the Home screen.")
-		printToLog("[TEST] Template match confidence setting will be overridden for the test.\n")
+		printToLog("\n[TEST] Template match confidence setting will be overridden for the test.\n")
 		val results = imageUtils.startTemplateMatchingTest()
 		printToLog("\n[TEST] Basic template match test complete.")
 
@@ -1375,12 +1329,12 @@ class Game(val myContext: Context) {
 						else -> 0.5          // Surplus (diminishing returns)
 					}
 
-					Log.d(tag, "[DEBUG] Priority Weight: $priorityWeight, Deficit: $deficit, Deficit Multiplier: $deficitMultiplier")
+					Log.d(TAG, "[DEBUG] Priority Weight: $priorityWeight, Deficit: $deficit, Deficit Multiplier: $deficitMultiplier")
 
 					// Calculate efficiency based on remaining gap between the current stat and the target.
 					var efficiency = if (deficit > 0) {
 						// Stat is below target, apply deficit multiplier
-						Log.d(tag, "[DEBUG] Giving bonus for remaining efficiency.")
+						Log.d(TAG, "[DEBUG] Giving bonus for remaining efficiency.")
 						val gapRatio = deficit.toDouble() / targetStat
 						val targetBonus = when {
 							gapRatio > 0.1 -> 1.5
@@ -1390,12 +1344,12 @@ class Game(val myContext: Context) {
 						targetBonus + (statGain.toDouble() / deficit).coerceAtMost(1.0)
 					} else {
 						// Stat is above target, give a diminishing bonus based on how much over.
-						Log.d(tag, "[DEBUG] Stat is above target so giving diminishing bonus.")
+						Log.d(TAG, "[DEBUG] Stat is above target so giving diminishing bonus.")
 						val overageRatio = (statGain.toDouble() / (-deficit + statGain))
 						1.0 + overageRatio * 0.5 // Reduced bonus for over-target training
 					}
 
-					Log.d(tag, "[DEBUG] Efficiency: $efficiency")
+					Log.d(TAG, "[DEBUG] Efficiency: $efficiency")
 
 					// Apply Spark stat target focus when enabled.
 					if (focusOnSparkStatTarget) {
@@ -1414,7 +1368,7 @@ class Game(val myContext: Context) {
 					// Apply deficit multiplier to the scoring
 					score += statGain * 2
 					score += (statGain * 2) * (efficiency * priorityWeight * deficitMultiplier)
-					Log.d(tag, "[DEBUG] Score: $score")
+					Log.d(TAG, "[DEBUG] Score: $score")
 				}
 			}
 
@@ -2790,7 +2744,7 @@ class Game(val myContext: Context) {
 		}
 
 		val endTime: Long = System.currentTimeMillis()
-		Log.d(tag, "Total Runtime: ${endTime - startTime}ms")
+		Log.d(TAG, "Total Runtime: ${endTime - startTime}ms")
 
 		return true
 	}
