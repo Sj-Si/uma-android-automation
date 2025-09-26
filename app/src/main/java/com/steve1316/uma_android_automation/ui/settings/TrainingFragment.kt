@@ -12,7 +12,7 @@ import com.steve1316.uma_android_automation.R
 import com.steve1316.uma_android_automation.utils.MessageLog
 
 class TrainingFragment : PreferenceFragmentCompat() {
-	private val TAG: String = "[${MainActivity.loggerTag}]TrainingFragment"
+	private val TAG: String = "TrainingFragment"
 	
 	private lateinit var sharedPreferences: SharedPreferences
 	

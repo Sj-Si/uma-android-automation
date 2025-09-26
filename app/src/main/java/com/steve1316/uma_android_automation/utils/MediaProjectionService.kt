@@ -43,7 +43,7 @@ class MediaProjectionService : Service() {
 	private lateinit var myContext: Context
 	
 	companion object {
-		private const val TAG: String = "[${MainActivity.loggerTag}]MediaProjectionService"
+		private const val TAG: String = "MediaProjectionService"
 		
 		private var mediaProjection: MediaProjection? = null
 		private var orientationChangeCallback: OrientationEventListener? = null
@@ -249,7 +249,7 @@ class MediaProjectionService : Service() {
 	 * Custom Callback for when the user rotates their device from horizontal to vertical and vice-versa.
 	 */
 	private inner class OrientationChangeCallback(context: Context) : OrientationEventListener(context) {
-		private val tagOrientationChangeCallback: String = "[${MainActivity.loggerTag}]OrientationChangeCallback"
+		private val tagOrientationChangeCallback: String = "OrientationChangeCallback"
 		
 		override fun onOrientationChanged(orientation: Int) {
 			val newRotation: Int = (getSystemService(WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
@@ -277,7 +277,7 @@ class MediaProjectionService : Service() {
 	 * Custom Callback for when it is necessary to stop the MediaProjection.
 	 */
 	private inner class MediaProjectionStopCallback : MediaProjection.Callback() {
-		private val tagMediaProjectionStopCallback = "[${MainActivity.loggerTag}]MediaProjectionStopCallback"
+		private val tagMediaProjectionStopCallback = "MediaProjectionStopCallback"
 		
 		override fun onStop() {
 			threadHandler.post {

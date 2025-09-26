@@ -36,7 +36,7 @@ import kotlin.text.replace
  * Utility functions for image processing via CV like OpenCV.
  */
 class ImageUtils(context: Context, private val game: Game) {
-	private val TAG: String = "[${MainActivity.loggerTag}]ImageUtils"
+	private val TAG: String = "ImageUtils"
 	private var myContext = context
 	private val matchMethod: Int = Imgproc.TM_CCOEFF_NORMED
 	private val decimalFormat = DecimalFormat("#.###")

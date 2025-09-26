@@ -7,7 +7,7 @@ import com.steve1316.uma_android_automation.utils.MessageLog
 import org.opencv.core.Point
 
 class AoHaru(game: Game) : Campaign(game) {
-	private val TAG: String = "[${MainActivity.loggerTag}]AoHaru"
+	override val TAG: String = "AoHaru"
 	private var tutorialChances = 3
 	private var aoHaruRaceFirstTime: Boolean = true
 

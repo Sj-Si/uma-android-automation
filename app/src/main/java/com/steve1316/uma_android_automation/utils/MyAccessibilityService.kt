@@ -22,7 +22,7 @@ import kotlinx.coroutines.runBlocking
  */
 class MyAccessibilityService : AccessibilityService() {
 	private var appName: String = ""
-	private val TAG: String = "[${MainActivity.loggerTag}]MyAccessibilityService"
+	private val TAG: String = "MyAccessibilityService"
 	private lateinit var myContext: Context
 
 	// Define the baseline screen dimensions that the template images were made from for tap location randomization.

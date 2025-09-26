@@ -24,7 +24,7 @@ import kotlin.intArrayOf
  * Main driver for bot activity and navigation.
  */
 class Game(val myContext: Context) {
-	private val TAG: String = "[${MainActivity.loggerTag}]Game"
+	private val TAG: String = "Game"
 	var notificationMessage: String = ""
 	private val decimalFormat = DecimalFormat("#.##")
 	val imageUtils: ImageUtils = ImageUtils(myContext, this)
@@ -2691,7 +2691,7 @@ class Game(val myContext: Context) {
 	fun start(): Boolean {
 		// Print current app settings at the start of the run.
 		SettingsPrinter.printCurrentSettings(myContext) { message ->
-			MessageLog.i(TAG, message)
+			MessageLog.i(TAG, message, newline=false)
 		}
 
 		// Update the stat targets by distances.

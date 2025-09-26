@@ -11,7 +11,7 @@ import net.ricecode.similarity.JaroWinklerStrategy
 import net.ricecode.similarity.StringSimilarityServiceImpl
 
 class TextDetection(private val game: Game, private val imageUtils: ImageUtils) {
-	private val TAG: String = "[${MainActivity.loggerTag}]TextDetection"
+	private val TAG: String = "TextDetection"
 	
 	private var sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(game.myContext)
 	

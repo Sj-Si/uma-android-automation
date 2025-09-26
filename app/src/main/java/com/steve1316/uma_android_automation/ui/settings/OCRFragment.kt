@@ -12,7 +12,7 @@ import com.steve1316.uma_android_automation.R
 import com.steve1316.uma_android_automation.utils.MessageLog
 
 class OCRFragment : PreferenceFragmentCompat() {
-	private val TAG: String = "[${MainActivity.loggerTag}]OCRFragment"
+	private val TAG: String = "OCRFragment"
 	
 	private lateinit var sharedPreferences: SharedPreferences
 	

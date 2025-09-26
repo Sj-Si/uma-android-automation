@@ -18,12 +18,13 @@ import com.google.android.material.navigation.NavigationView
 import org.opencv.android.OpenCVLoader
 import java.util.Locale
 
+val START_TIME_MS = System.currentTimeMillis()
 
 class MainActivity : AppCompatActivity() {
 	private lateinit var appBarConfiguration: AppBarConfiguration
 	
 	companion object {
-		const val loggerTag: String = "UAA"
+		const val TAG: String = "UAA"
 	}
 	
 	override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,7 +59,7 @@ class MainActivity : AppCompatActivity() {
 		// Load OpenCV native library. This will throw a "E/OpenCV/StaticHelper: OpenCV error: Cannot load info library for OpenCV". It is safe to
 		// ignore this error. OpenCV functionality is not impacted by this error.
 		if (!OpenCVLoader.initLocal()) {
-			Log.e(loggerTag, "Unable to load OpenCV locally")
+			Log.e(TAG, "Unable to load OpenCV locally")
 		}
 	}
 	

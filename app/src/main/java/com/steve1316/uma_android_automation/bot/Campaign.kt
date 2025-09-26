@@ -9,7 +9,7 @@ import com.steve1316.uma_android_automation.utils.MessageLog
  * By default, URA Finale is handled by this base class.
  */
 open class Campaign(val game: Game) {
-	protected val TAG: String = "[${MainActivity.Companion.loggerTag}]Normal"
+	protected open val TAG: String = "Normal"
 
 	/**
 	 * Campaign-specific training event handling.

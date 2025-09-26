@@ -34,7 +34,7 @@ import androidx.core.net.toUri
 import com.steve1316.uma_android_automation.utils.SettingsPrinter
 
 class HomeFragment : Fragment() {
-	private val TAG: String = "[${MainActivity.loggerTag}]HomeFragment"
+	private val TAG: String = "HomeFragment"
 	private var firstBoot = false
 	private var firstRun = true
 	

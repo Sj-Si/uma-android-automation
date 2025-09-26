@@ -63,7 +63,7 @@ fun printSystemTime(): String {
  */
 class MessageLog {
 	companion object {
-		private const val TAG: String = "[${MainActivity.loggerTag}]MessageLog"
+		private const val TAG: String = "MessageLog"
 		var messageLog = arrayListOf<String>()
 		
 		// Add synchronization object for thread-safe access
@@ -186,7 +186,8 @@ class MessageLog {
             }
 
             var msg = message.removePrefix("\n")
-            msg = "$[{level}] ${tag} msg"
+            msg = msg.trimEnd()
+            msg = "[${level}] [${MainActivity.TAG}::${tag}] ${msg}"
 
             if (isOption) {
                 msg = "${printElapsedTime()}\n${msg}"
