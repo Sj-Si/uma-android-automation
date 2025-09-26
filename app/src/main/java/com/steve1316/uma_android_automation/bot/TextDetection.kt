@@ -10,6 +10,7 @@ import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.MessageLog
 import net.ricecode.similarity.JaroWinklerStrategy
 import net.ricecode.similarity.StringSimilarityServiceImpl
+import android.content.Context
 
 class TextDetection(private val ctx: Context) {
 	private val TAG: String = "TextDetection"

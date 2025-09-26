@@ -78,6 +78,8 @@ class BotService : Service() {
 		myContext = this
 		appName = myContext.getString(R.string.app_name)
 
+		ImageUtils.initialize(myContext)
+
 		// Initialize the animations for the floating overlay button.
 		initializeAnimations()
 

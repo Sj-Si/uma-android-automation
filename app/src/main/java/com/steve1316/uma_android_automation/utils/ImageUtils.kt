@@ -40,20 +40,16 @@ object ImageUtils {
 	private val TAG: String = "ImageUtils"
 	private lateinit var ctx: Context
 
-    fun initialize(context: Context) {
-        ctx = context
-    }
-
 	private val matchMethod: Int = Imgproc.TM_CCOEFF_NORMED
 	private val decimalFormat = DecimalFormat("#.###")
 	private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-	private val tessBaseAPI: TessBaseAPI
+	private lateinit var tessBaseAPI: TessBaseAPI
 	private val tesseractLanguages = arrayListOf("eng")
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	// SharedPreferences
-	private var sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+	private var sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(ctx)
 	private val campaign: String = sharedPreferences.getString("campaign", "")!!
     private val strategy: String = sharedPreferences.getString("strategy", "")!!
 	private var confidence: Double = sharedPreferences.getInt("confidence", 80).toDouble() / 100.0
@@ -95,31 +91,15 @@ object ImageUtils {
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 
-	companion object {
-		private var matchFilePath: String = ""
+	private var matchFilePath: String = ""
 
-		/**
-		 * Saves the file path to the saved match image file for debugging purposes.
-		 *
-		 * @param filePath File path to where to store the image containing the location of where the match was found.
-		 */
-		private fun updateMatchFilePath(filePath: String) {
-			matchFilePath = filePath
-		}
-	}
-
-	init {
-		// Set the file path to the /files/temp/ folder.
-		val matchFilePath: String = ctx.getExternalFilesDir(null)?.absolutePath + "/temp"
-		updateMatchFilePath(matchFilePath)
-
-		// Initialize Tesseract with the traineddata model.
-		initTesseract()
-		tessBaseAPI = TessBaseAPI()
-
-		// Start up Tesseract.
-		tessBaseAPI.init(ctx.getExternalFilesDir(null)?.absolutePath + "/tesseract/", "eng")
-		MessageLog.i(TAG, "Training file loaded.")
+	/**
+	 * Saves the file path to the saved match image file for debugging purposes.
+	 *
+	 * @param filePath File path to where to store the image containing the location of where the match was found.
+	 */
+	private fun updateMatchFilePath(filePath: String) {
+		matchFilePath = filePath
 	}
 
 	data class RaceDetails (
@@ -137,6 +117,22 @@ object ImageUtils {
 		val filledSegments: Int,
 		val dominantColor: String
 	)
+
+	fun initialize(context: Context) {
+		ctx = context
+
+		// Set the file path to the /files/temp/ folder.
+		val matchFilePath: String = ctx.getExternalFilesDir(null)?.absolutePath + "/temp"
+		updateMatchFilePath(matchFilePath)
+
+		// Initialize Tesseract with the traineddata model.
+		initTesseract()
+		tessBaseAPI = TessBaseAPI()
+
+		// Start up Tesseract.
+		tessBaseAPI.init(ctx.getExternalFilesDir(null)?.absolutePath + "/tesseract/", "eng")
+		MessageLog.i(TAG, "Training file loaded.")
+	}
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////

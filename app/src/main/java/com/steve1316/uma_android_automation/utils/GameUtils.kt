@@ -1,8 +1,12 @@
 package com.steve1316.uma_android_automation.utils
 
 import com.steve1316.uma_android_automation.utils.ScreenRegion
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 
 object GameUtils {
+    private var TAG: String = "GameUtils"
+
     // In-game Date info.
     data class Date(
 		val year: Int,
@@ -57,13 +61,13 @@ object GameUtils {
     *
     * @return True if the game is still loading or is awaiting for a server response. Otherwise, false.
     */
-    fun checkLoading(): Boolean {
-        MessageLog.i(TAG, "Now checking if the game is still loading...")
-        return if (imageUtils.findImage("connecting", tries = 1, region = ScreenRegion.TOP_HALF, suppressError = true).first != null) {
-            MessageLog.i(TAG, "Detected that the game is awaiting a response from the server from the \"Connecting\" text at the top of the screen. Waiting...")
+    fun checkLoading(tag: String = TAG): Boolean {
+        MessageLog.i(tag, "Now checking if the game is still loading...")
+        return if (ImageUtils.findImage("connecting", tries = 1, region = ScreenRegion.TOP_HALF, suppressError = true).first != null) {
+            MessageLog.i(tag, "Detected that the game is awaiting a response from the server from the \"Connecting\" text at the top of the screen. Waiting...")
             true
-        } else if (imageUtils.findImage("now_loading", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first != null) {
-            MessageLog.i(TAG, "Detected that the game is still loading from the \"Now Loading\" text at the bottom of the screen. Waiting...")
+        } else if (ImageUtils.findImage("now_loading", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first != null) {
+            MessageLog.i(tag, "Detected that the game is still loading from the \"Now Loading\" text at the bottom of the screen. Waiting...")
             true
         } else {
             false

@@ -13,24 +13,7 @@ object ComponentDetection {
 	 * @return True if the bot is at the Main screen. Otherwise false.
 	 */
 	fun checkMainScreen(tag: String = TAG): Boolean {
-		MessageLog.i(tag, "Checking if the bot is sitting at the Main screen.")
-		return if (ImageUtils.findImage("tazuna", tries = 1, region = ScreenRegion.TOP_HALF).first != null &&
-			ImageUtils.findImage("race_select_mandatory", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first == null) {
-			MessageLog.i(tag, "Current bot location is at Main screen.")
-
-			// Perform updates here if necessary.
-			updateDate()
-			if (preferredDistance == "") updatePreferredDistance()
-			true
-		} else if (!enablePopupCheck && ImageUtils.findImage("cancel", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null &&
-			ImageUtils.findImage("race_confirm", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null) {
-			// This popup is most likely the insufficient fans popup. Force an extra race to catch up on the required fans.
-			MessageLog.i(tag, "There is a possible insufficient fans or maiden race popup.")
-			encounteredRacingPopup = true
-			skipRacing = false
-			true
-		} else {
-			false
-		}
+        return ImageUtils.findImage("tazuna", tries = 1, region = ScreenRegion.TOP_HALF).first != null &&
+            ImageUtils.findImage("race_select_mandatory", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first == null
 	}
 }

@@ -3,6 +3,9 @@ package com.steve1316.uma_android_automation.bot
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.utils.MessageLog
 import com.steve1316.uma_android_automation.utils.ScreenRegion
+import com.steve1316.uma_android_automation.utils.ImageUtils
+import com.steve1316.uma_android_automation.utils.GameUtils
+import com.steve1316.uma_android_automation.utils.ComponentDetection
 
 /**
  * Base campaign class that contains all shared logic for campaign automation.
@@ -40,14 +43,14 @@ open class Campaign(val game: Game) {
 		while (true) {
 			////////////////////////////////////////////////
 			// Most bot operations start at the Main screen.
-			if (game.checkMainScreen()) {
+			if (ComponentDetection.checkMainScreen()) {
 				var needToRace = false
 				if (!game.encounteredRacingPopup) {
 					// Refresh the stat values in memory.
 					game.updateStatValueMapping()
 
 					// If the required skill points has been reached, stop the bot.
-					if (game.enableSkillPointCheck && game.imageUtils.determineSkillPoints() >= game.skillPointsRequired) {
+					if (game.enableSkillPointCheck && ImageUtils.determineSkillPoints() >= game.skillPointsRequired) {
 						MessageLog.i(TAG, "[END] Bot has acquired the set amount of skill points. Exiting now...")
 						game.notificationMessage = "Bot has acquired the set amount of skill points."
 						break
