@@ -14,9 +14,9 @@ object SettingsPrinter {
 	 * Print all current SharedPreferences settings for debugging purposes.
 	 * 
 	 * @param context The application context
-	 * @param MessageLog.log Function to handle logging
+	 * @param logCallback Function to handle logging
 	 */
-	fun printCurrentSettings(context: Context, MessageLog.log: ((String) -> Unit)? = null): String {
+	fun printCurrentSettings(context: Context, logCallback: ((String) -> Unit)? = null): String {
 		val sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 		
 		// Main Settings
@@ -203,16 +203,16 @@ object SettingsPrinter {
 		////////////////////////////////////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////////////////////////////////////
 		
-		// Use the provided MessageLog.log function if available. Otherwise return the string.
-		if (MessageLog.log != null) {
-			MessageLog.log("\n[SETTINGS] Current Bot Configuration:")
-			MessageLog.log("=====================================")
+		// Use the provided logCallback function if available. Otherwise return the string.
+		if (logCallback != null) {
+			logCallback("\n[SETTINGS] Current Bot Configuration:")
+			logCallback("=====================================")
 			settingsString.split("\n").forEach { line ->
 				if (line.isNotEmpty()) {
-					MessageLog.log(line)
+					logCallback(line)
 				}
 			}
-			MessageLog.log("=====================================\n")
+			logCallback("=====================================\n")
 		}
 
 		return settingsString
