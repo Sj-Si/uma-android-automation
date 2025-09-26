@@ -893,7 +893,9 @@ class ImageUtils(context: Context, private val game: Game) {
 
 		// Check if coordinates are within bounds.
 		if (x < 0 || y < 0 || x >= sourceBitmap.width || y >= sourceBitmap.height) {
-			if (debugMode) MessageLog.w(TAG, "Coordinates ($x, $y) are out of bounds for bitmap size ${sourceBitmap.width}x${sourceBitmap.height}")
+			if (debugMode) {
+                MessageLog.w(TAG, "Coordinates ($x, $y) are out of bounds for bitmap size ${sourceBitmap.width}x${sourceBitmap.height}")
+            }
 			return false
 		}
 
@@ -1252,8 +1254,12 @@ class ImageUtils(context: Context, private val game: Game) {
 		val (predictionCheck, _) = match(croppedBitmap, doubleStarPredictionBitmap, "race_extra_double_prediction")
 
 		return if (forceRacing || predictionCheck) {
-			if (debugMode && !forceRacing) MessageLog.d(TAG, "This race has double predictions. Now checking how many fans this race gives.")
-			else if (debugMode) MessageLog.d(TAG, "Check for double predictions was skipped due to the force racing flag being enabled. Now checking how many fans this race gives.")
+			if (debugMode && !forceRacing) {
+                MessageLog.d(TAG, "This race has double predictions. Now checking how many fans this race gives.")
+            }
+			else if (debugMode) {
+                MessageLog.d(TAG, "Check for double predictions was skipped due to the force racing flag being enabled. Now checking how many fans this race gives.")
+            }
 
 			// Crop the source screenshot to show only the fans.
 			val croppedBitmap2 = if (isTablet) {
@@ -1513,7 +1519,9 @@ class ImageUtils(context: Context, private val game: Game) {
 		val results = arrayListOf<BarFillResult>()
 
 		for ((index, statBlock) in allStatBlocks.withIndex()) {
-			if (debugMode) MessageLog.d(TAG, "Processing stat block #${index + 1} at position: (${statBlock.x}, ${statBlock.y})")
+			if (debugMode) {
+                MessageLog.d(TAG, "Processing stat block #${index + 1} at position: (${statBlock.x}, ${statBlock.y})")
+            }
 
 			val croppedBitmap = createSafeBitmap(sourceBitmap, relX(statBlock.x, -9), relY(statBlock.y, 107), 111, 13, "analyzeRelationshipBars stat block ${index + 1}")
 			if (croppedBitmap == null) {
@@ -1524,7 +1532,9 @@ class ImageUtils(context: Context, private val game: Game) {
 			val (isMaxed, _) = match(croppedBitmap, maxedTemplateBitmap!!, "stat_maxed")
 			if (isMaxed) {
 				// Skip if the relationship bar is already maxed.
-				if (debugMode) MessageLog.d(TAG, "Relationship bar #${index + 1} is full.")
+				if (debugMode) {
+                    MessageLog.d(TAG, "Relationship bar #${index + 1} is full.")
+                }
 				results.add(BarFillResult(100.0, 5, "orange"))
 				continue
 			}
@@ -1576,7 +1586,11 @@ class ImageUtils(context: Context, private val game: Game) {
 			hsvMat.release()
 			barMat.release()
 
-			if (debugMode) MessageLog.d(TAG, "Relationship bar #${index + 1} is $fillPercent% filled with $filledSegments filled segments and the dominant color is $dominantColor")
+			if (debugMode) {
+                val msgString = "Relationship bar #${index + 1} is $fillPercent% filled with " +
+                    "$filledSegments filled segments and the dominant color is $dominantColor"
+                MessageLog.d(TAG, msgString)
+            }
 			results.add(BarFillResult(fillPercent, filledSegments, dominantColor))
 		}
 
@@ -2215,13 +2229,17 @@ class ImageUtils(context: Context, private val game: Game) {
 		}
 
 		if (allMatches.isEmpty()) {
-			if (debugMode) MessageLog.w(TAG, "No matches found to construct integer value.")
+			if (debugMode) {
+                MessageLog.w(TAG, "No matches found to construct integer value.")
+            }
 			return 0
 		}
 
 		// Sort matches by x-coordinate (left to right).
 		allMatches.sortBy { it.second.x }
-		if (debugMode) MessageLog.d(TAG, "Sorted matches: ${allMatches.map { "${it.first}@(${it.second.x}, ${it.second.y})" }}")
+		if (debugMode) {
+            MessageLog.d(TAG, "Sorted matches: ${allMatches.map { "${it.first}@(${it.second.x}, ${it.second.y})" }}")
+        }
 
 		// Construct the string representation and then validate the format: start with + and contain only digits after.
 		val constructedString = allMatches.joinToString("") { it.first }
@@ -2236,7 +2254,9 @@ class ImageUtils(context: Context, private val game: Game) {
 			}
 
 			val result = numericPart.toInt()
-			if (debugMode) MessageLog.d(TAG, "Successfully constructed integer value: $result from \"$constructedString\".")
+			if (debugMode) {
+                MessageLog.d(TAG, "Successfully constructed integer value: $result from \"$constructedString\".")
+            }
 			result
 		} catch (e: NumberFormatException) {
 			MessageLog.e(TAG, "Could not convert \"$constructedString\" to integer: ${e.stackTraceToString()}")

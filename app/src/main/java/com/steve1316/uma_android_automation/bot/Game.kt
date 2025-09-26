@@ -1140,7 +1140,11 @@ class Game(val myContext: Context) {
 				if (trainingsWithRatios.isNotEmpty()) {
 					MessageLog.i(TAG, "[TRAINING] Best risk-reward ratios:")
 					trainingsWithRatios.take(3).forEach { (training, ratio) ->
-						MessageLog.i(TAG, "  - ${training.name}: ${ratio.toInt()} (${training.failureChance}% risk, ${training.statGains.sum()} stats, ${training.relationshipBars.size} friends)")
+                        val msgString = "  - ${training.name}: ${ratio.toInt()} " +
+                            "(${training.failureChance}% risk, " +
+                            "${training.statGains.sum()} stats, " +
+                            "${training.relationshipBars.size} friends)"
+						MessageLog.i(TAG, msgString)
 					}
 				}
 

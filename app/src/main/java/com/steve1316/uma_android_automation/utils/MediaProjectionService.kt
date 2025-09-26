@@ -185,20 +185,20 @@ class MediaProjectionService : Service() {
 				
 				// If the folder was not able to be created for some reason, log the error and stop the MediaProjection Service.
 				if (!successfullyCreated) {
-					MessageLog.e("Failed to create the /files/temp/ folder.", tag=TAG)
+					MessageLog.e(TAG, "Failed to create the /files/temp/ folder.")
 					stopSelf()
 				} else {
-					MessageLog.d("Successfully created /files/temp/ folder.", tag=TAG)
+					MessageLog.d(TAG, "Successfully created /files/temp/ folder.")
 				}
 			} else {
-				MessageLog.d("/files/temp/ folder already exists.", tag=TAG)
+				MessageLog.d(TAG, "/files/temp/ folder already exists.")
 			}
 		}
 		
 		// Now, start a new Thread to handle processing new screenshots.
 		object : Thread() {
 			override fun run() {
-				MessageLog.d("Thread running for MediaProjection service.", tag=TAG)
+				MessageLog.d(TAG, "Thread running for MediaProjection service.")
 				threadHandler = Handler(Looper.getMainLooper())
 				Looper.prepare()
 				Looper.loop()
@@ -234,11 +234,11 @@ class MediaProjectionService : Service() {
 			}
 		} else if (isStopCommand(intent)) {
 			// Perform cleanup on the MediaProjection service and then stop itself.
-			MessageLog.d("Received STOP Intent for MediaProjection. Stopping MediaProjection service.", tag=TAG)
+			MessageLog.d(TAG, "Received STOP Intent for MediaProjection. Stopping MediaProjection service.")
 			stopMediaProjection()
 			stopSelf()
 		} else {
-			MessageLog.e("Encountered unexpected Intent. Shutting down service.", tag=TAG)
+			MessageLog.e(TAG, "Encountered unexpected Intent. Shutting down service.")
 			stopSelf()
 		}
 		
@@ -254,7 +254,7 @@ class MediaProjectionService : Service() {
 		override fun onOrientationChanged(orientation: Int) {
 			val newRotation: Int = (getSystemService(WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
 			if (newRotation != oldRotation) {
-				MessageLog.d("Device was rotated. Reconstructing the Virtual Display now...", tag=tagOrientationChangeCallback)
+				MessageLog.d(tagOrientationChangeCallback, "Device was rotated. Reconstructing the Virtual Display now...")
 				oldRotation = newRotation
 				try {
 					// Perform cleanup.
@@ -263,7 +263,7 @@ class MediaProjectionService : Service() {
 					// Now re-create the VirtualDisplay based on the new width and height of the rotated screen.
 					createVirtualDisplay()
 				} catch (_: Exception) {
-					MessageLog.e("Failed to perform cleanup and recreating the VirtualDisplay after device rotation.", tag=tagOrientationChangeCallback)
+					MessageLog.e(tagOrientationChangeCallback, "Failed to perform cleanup and recreating the VirtualDisplay after device rotation.")
 					Toast.makeText(
 						myContext, "Failed to perform cleanup and recreating the VirtualDisplay after device rotation.",
 						Toast.LENGTH_SHORT
@@ -299,7 +299,7 @@ class MediaProjectionService : Service() {
 				// Now set the MediaProjection object to null to eliminate the "Invalid media projection" error.
 				mediaProjection = null
 				
-				MessageLog.d("MediaProjection Service for $appName has stopped.", tag=tagMediaProjectionStopCallback)
+				MessageLog.d(tagMediaProjectionStopCallback, "MediaProjection Service for $appName has stopped.")
 				Toast.makeText(myContext, "MediaProjection Service for $appName has stopped.", Toast.LENGTH_SHORT).show()
 			}
 		}
@@ -335,7 +335,7 @@ class MediaProjectionService : Service() {
 		// Attach the MediaProjectionStopCallback to the MediaProjection object.
 		mediaProjection?.registerCallback(MediaProjectionStopCallback(), threadHandler)
 		
-		MessageLog.d("MediaProjection Service for $appName is now running.", tag=TAG)
+		MessageLog.d(TAG, "MediaProjection Service for $appName is now running.")
 		Toast.makeText(myContext, "MediaProjection Service for $appName is now running.", Toast.LENGTH_SHORT).show()
 	}
 	
@@ -361,7 +361,7 @@ class MediaProjectionService : Service() {
 		displayHeight = metrics.heightPixels
 		displayDPI = metrics.densityDpi
 		
-		MessageLog.d("Screen Width: $displayWidth, Screen Height: $displayHeight, Screen DPI: $displayDPI", tag=TAG)
+		MessageLog.d(TAG, "Screen Width: $displayWidth, Screen Height: $displayHeight, Screen DPI: $displayDPI")
 		
 		// Start the ImageReader.
 		imageReader = ImageReader.newInstance(displayWidth, displayHeight, PixelFormat.RGBA_8888, 2)

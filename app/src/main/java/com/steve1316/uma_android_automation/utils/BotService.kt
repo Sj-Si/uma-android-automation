@@ -116,7 +116,7 @@ class BotService : Service() {
 					if (elapsedTime < 100L) {
 						// Update both the Notification and the overlay button to reflect the current bot status.
 						if (!isRunning) {
-							MessageLog.i("Bot Service for $appName is now running.", tag=TAG)
+							MessageLog.i(TAG, "Bot Service for $appName is now running.")
 							Toast.makeText(myContext, "Bot Service for $appName is now running.", Toast.LENGTH_SHORT).show()
 							isRunning = true
 							NotificationUtils.updateNotification(myContext, isRunning)
@@ -145,7 +145,7 @@ class BotService : Service() {
 										NotificationUtils.updateNotification(myContext, false, "Bot was manually stopped.")
 									} else {
 										NotificationUtils.updateNotification(myContext, false, "Encountered an Exception: $e.\nTap me to see more details.")
-                                        MessageLog.e("$appName encountered an Exception: ${e.stackTraceToString()}", tag=TAG)
+                                        MessageLog.e(TAG, "$appName encountered an Exception: ${e.stackTraceToString()}")
 									}
 								} finally {
 									performCleanUp()
@@ -284,7 +284,7 @@ class BotService : Service() {
 	 * Perform cleanup upon app completion or encountering an Exception.
 	 */
 	private fun performCleanUp() {
-		MessageLog.d("Bot Service for $appName is now stopped.", tag=TAG)
+		MessageLog.d(TAG, "Bot Service for $appName is now stopped.")
         // Save the message log.
 		MessageLog.saveLogToFile(myContext)
 		isRunning = false

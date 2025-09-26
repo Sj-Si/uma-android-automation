@@ -10,7 +10,7 @@ import com.steve1316.uma_android_automation.R
 import com.steve1316.uma_android_automation.utils.MessageLog
 
 class TrainingEventFragment : PreferenceFragmentCompat() {
-	private val logTag: String = "[${MainActivity.loggerTag}]TrainingEventFragment"
+	private val TAG: String = "[${MainActivity.loggerTag}]TrainingEventFragment"
 	
 	private lateinit var sharedPreferences: SharedPreferences
 	
@@ -129,7 +129,7 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 		selectAllCharactersCheckBox.isChecked = selectAllCharacters
 		selectAllSupportCardsCheckBox.isChecked = selectAllSupportCards
 		
-		MessageLog.d("Training Event Preferences created successfully.", tag=logTag)
+		MessageLog.d(TAG, "Training Event Preferences created successfully.")
 	}
 	
 	/**

@@ -12,7 +12,7 @@ import com.steve1316.uma_android_automation.R
 import com.steve1316.uma_android_automation.utils.MessageLog
 
 class OCRFragment : PreferenceFragmentCompat() {
-	private val logTag: String = "[${MainActivity.loggerTag}]OCRFragment"
+	private val TAG: String = "[${MainActivity.loggerTag}]OCRFragment"
 	
 	private lateinit var sharedPreferences: SharedPreferences
 	
@@ -38,7 +38,7 @@ class OCRFragment : PreferenceFragmentCompat() {
 		enableAutomaticRetryPreference.isChecked = enableAutomaticRetry
 		ocrConfidencePreference.value = ocrConfidence
 		
-		MessageLog.d("OCR Preferences created successfully.", tag=logTag)
+		MessageLog.d(TAG, "OCR Preferences created successfully.")
 	}
 	
 	// This listener is triggered whenever the user changes a Preference setting in the Settings Page.

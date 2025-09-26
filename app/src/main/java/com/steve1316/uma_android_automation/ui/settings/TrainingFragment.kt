@@ -12,7 +12,7 @@ import com.steve1316.uma_android_automation.R
 import com.steve1316.uma_android_automation.utils.MessageLog
 
 class TrainingFragment : PreferenceFragmentCompat() {
-	private val logTag: String = "[${MainActivity.loggerTag}]TrainingFragment"
+	private val TAG: String = "[${MainActivity.loggerTag}]TrainingFragment"
 	
 	private lateinit var sharedPreferences: SharedPreferences
 	
@@ -62,7 +62,7 @@ class TrainingFragment : PreferenceFragmentCompat() {
 		// Update the summaries of the Preference components.
 		updateSummaries()
 		
-		MessageLog.d("Training Preferences created successfully.", tag=logTag)
+		MessageLog.d(TAG, "Training Preferences created successfully.")
 	}
 	
 	/**
@@ -281,10 +281,10 @@ class TrainingFragment : PreferenceFragmentCompat() {
 			// Set the selectable items for this AlertDialog.
 			builder.setMultiChoiceItems(items, checkedItems) { _, position, isChecked ->
 				if (isChecked) {
-					MessageLog.d("Adding $position", tag=logTag)
+					MessageLog.d(TAG, "Adding $position")
 					userSelectedOptions.add(position)
 				} else {
-					MessageLog.d("Removing $position", tag=logTag)
+					MessageLog.d(TAG, "Removing $position")
 					userSelectedOptions.remove(position)
 				}
 			}

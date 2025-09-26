@@ -34,7 +34,7 @@ import androidx.core.net.toUri
 import com.steve1316.uma_android_automation.utils.SettingsPrinter
 
 class HomeFragment : Fragment() {
-	private val logTag: String = "[${MainActivity.loggerTag}]HomeFragment"
+	private val TAG: String = "[${MainActivity.loggerTag}]HomeFragment"
 	private var firstBoot = false
 	private var firstRun = true
 	
@@ -218,7 +218,7 @@ class HomeFragment : Fragment() {
 		firstBoot = false
 		
 		// Now update the Message Log inside the ScrollView with the latest logging messages from the bot.
-		MessageLog.d("Now updating the Message Log TextView...", tag=logTag)
+		MessageLog.d(TAG, "Now updating the Message Log TextView...")
 		val messageLogTextView = homeFragmentView.findViewById<TextView>(R.id.message_log)
 		messageLogTextView.text = ""
 
@@ -269,7 +269,7 @@ class HomeFragment : Fragment() {
 	 */
 	private fun checkForOverlayPermission(): Boolean {
 		if (!Settings.canDrawOverlays(requireContext())) {
-			MessageLog.e("Application is missing overlay permission.", tag=logTag)
+			MessageLog.e(TAG, "Application is missing overlay permission.")
 			
 			AlertDialog.Builder(requireContext()).apply {
 				setTitle(R.string.overlay_disabled)
@@ -285,7 +285,7 @@ class HomeFragment : Fragment() {
 			return false
 		}
 		
-		MessageLog.d("Application has permission to draw overlay.", tag=logTag)
+		MessageLog.d(TAG, "Application has permission to draw overlay.")
 		return true
 	}
 	
@@ -304,7 +304,7 @@ class HomeFragment : Fragment() {
 			val enabled = prefString.contains(myContext.packageName.toString() + "/" + MyAccessibilityService::class.java.name)
 			
 			if (enabled) {
-				MessageLog.d("This application's Accessibility Service is currently turned on.", tag=logTag)
+				MessageLog.d(TAG, "This application's Accessibility Service is currently turned on.")
 				return true
 			}
 		}

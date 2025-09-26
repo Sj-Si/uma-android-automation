@@ -55,7 +55,7 @@ class MyAccessibilityService : AccessibilityService() {
 		myContext = this
 		appName = myContext.getString(R.string.app_name)
 		
-		MessageLog.d("Accessibility Service for $appName is now running.", tag=TAG)
+		MessageLog.d(TAG, "Accessibility Service for $appName is now running.")
 		Toast.makeText(myContext, "Accessibility Service for $appName now running.", Toast.LENGTH_SHORT).show()
 	}
 	
@@ -66,7 +66,7 @@ class MyAccessibilityService : AccessibilityService() {
 	override fun onDestroy() {
 		super.onDestroy()
 		
-		MessageLog.d("Accessibility Service for $appName is now stopped.", tag=TAG)
+		MessageLog.d(TAG, "Accessibility Service for $appName is now stopped.")
 		Toast.makeText(myContext, "Accessibility Service for $appName is now stopped.", Toast.LENGTH_SHORT).show()
 	}
 	
@@ -247,14 +247,14 @@ class MyAccessibilityService : AccessibilityService() {
 		}
 		
 		if (!dispatchResult) {
-			MessageLog.e("Failed to dispatch scroll gesture.", tag=TAG)
+			MessageLog.e(TAG, "Failed to dispatch scroll gesture.")
 		} else {
 			val direction: String = if (scrollDown) {
 				"down"
 			} else {
 				"up"
 			}
-			MessageLog.d("Scrolling $direction.", tag=TAG)
+			MessageLog.d(TAG, "Scrolling $direction.")
 		}
 		
 		return dispatchResult

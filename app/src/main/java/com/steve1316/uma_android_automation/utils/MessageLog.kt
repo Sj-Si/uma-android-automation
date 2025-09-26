@@ -176,7 +176,7 @@ class MessageLog {
 		 * @param isOption Flag to determine whether to append a newline right after the time in the string.
          * @param newline When true, message drops to a new line (newline char added to front of message.)
 		 */
-		fun log(message: String, tag: String = TAG, level: LogLevel = LogLevel.DEBUG, isOption: Boolean = false, newline: Boolean = true) {
+		fun log(tag: String = TAG, message: String, level: LogLevel = LogLevel.DEBUG, isOption: Boolean = false, newline: Boolean = true) {
             when (level) {
                 LogLevel.DEBUG -> Log.d(tag, message)
                 LogLevel.INFO -> Log.i(tag, message)
@@ -202,20 +202,20 @@ class MessageLog {
 		}
 
         // Wrappers arouns the log() function.
-        fun d(message: String, tag: String = TAG, isOption: Boolean = false, newline: Boolean = true) {
-            log(message, tag, LogLevel.DEBUG, isOption, newline)
+        fun d(tag: String = TAG, message: String, isOption: Boolean = false, newline: Boolean = true) {
+            log(tag, message, LogLevel.DEBUG, isOption, newline)
         }
 
-        fun i(message: String, tag: String = TAG, isOption: Boolean = false, newline: Boolean = true) {
-            log(message, tag, LogLevel.INFO, isOption, newline)
+        fun i(tag: String = TAG, message: String, isOption: Boolean = false, newline: Boolean = true) {
+            log(tag, message, LogLevel.INFO, isOption, newline)
         }
 
-        fun w(message: String, tag: String = TAG, isOption: Boolean = false, newline: Boolean = true) {
-            log(message, tag, LogLevel.WARN, isOption, newline)
+        fun w(tag: String = TAG, message: String, isOption: Boolean = false, newline: Boolean = true) {
+            log(tag, message, LogLevel.WARN, isOption, newline)
         }
 
-        fun e(message: String, tag: String = TAG, isOption: Boolean = false, newline: Boolean = true) {
-            log(message, tag, LogLevel.ERROR, isOption, newline)
+        fun e(tag: String = TAG, message: String, isOption: Boolean = false, newline: Boolean = true) {
+            log(tag, message, LogLevel.ERROR, isOption, newline)
         }
 	}
 }
