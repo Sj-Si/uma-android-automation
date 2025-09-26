@@ -24,6 +24,9 @@ import com.steve1316.uma_android_automation.utils.MessageLog
 import kotlin.concurrent.thread
 import kotlin.math.roundToInt
 
+import com.steve1316.uma_android_automation.utils.Settings
+import com.steve1316.uma_android_automation.utils.ImageUtils
+
 /**
  * This Service will allow starting and stopping the automation workflow on a Thread based on the chosen preference settings.
  *
@@ -77,6 +80,9 @@ class BotService : Service() {
 		
 		myContext = this
 		appName = myContext.getString(R.string.app_name)
+
+		Settings.initialize(myContext)
+		ImageUtils.initialize(myContext)
 
 		// Initialize the animations for the floating overlay button.
 		initializeAnimations()

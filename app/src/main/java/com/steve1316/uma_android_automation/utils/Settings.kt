@@ -1,5 +1,9 @@
 package com.steve1316.uma_android_automation.utils
 
+import android.content.Context
+import android.content.SharedPreferences
+import androidx.preference.PreferenceManager
+
 val DEFAULT_STAT_TARGETS_SPRINT = intArrayOf(1200, 400, 900, 400, 600)
 val DEFAULT_STAT_TARGETS_MILE = intArrayOf(1100, 500, 800, 500, 600)
 val DEFAULT_STAT_TARGETS_MEDIUM = intArrayOf(1000, 700, 700, 500, 600)
@@ -7,17 +11,18 @@ val DEFAULT_STAT_TARGETS_LONG = intArrayOf(800, 1000, 600, 600, 600)
 
 object Settings {
     private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var config: PreferencesMain
 
     data class TrainingStatTargets(
         private val preferences: SharedPreferences,
         private val prefix: String,
         private val defaults: IntArray,
     ) {
-        lateinit val speed: Int
-        lateinit val stamina: Int
-        lateinit val power: Int
-        lateinit val guts: Int
-        lateinit val wit: Int
+        var speed: Int
+        var stamina: Int
+        var power: Int
+        var guts: Int
+        var wit: Int
 
         init {
             speed = preferences.getInt("${prefix}_speedStatTarget", defaults[0])
@@ -29,37 +34,37 @@ object Settings {
     }
 
     data class PreferencesTraining(private val preferences: SharedPreferences) {
-        lateinit var trainingBlacklist: List<String>
-        lateinit var statPriority: List<String>
-        lateinit var bEnableTrainMaxedStat: Boolean
-        lateinit var maxFailChance: Int
-        lateinit var bFocusOnSparkStatTarget: Boolean
+        var trainingBlacklist: List<String>
+        var statPriority: List<String>
+        var bEnableTrainMaxedStat: Boolean
+        var maxFailChance: Int
+        var bFocusOnSparkStatTarget: Boolean
         
         // Training stat targets by distance
-        lateinit var statTargetSprint: TrainingStatTargets
-        lateinit var statTargetMile: TrainingStatTargets
-        lateinit var statTargetMedium: TrainingStatTargets
-        lateinit var statTargetLong: TrainingStatTargets
+        var statTargetSprint: TrainingStatTargets
+        var statTargetMile: TrainingStatTargets
+        var statTargetMedium: TrainingStatTargets
+        var statTargetLong: TrainingStatTargets
 
         init {
             trainingBlacklist = preferences.getStringSet("trainingBlacklist", setOf())!!.toList()
-            statPriority = preferences.getString("Speed|Stamina|Power|Guts|Wit")!!.split("|")
+            statPriority = preferences.getString("Speed|Stamina|Power|Guts|Wit", "")!!.split("|")
             bEnableTrainMaxedStat = preferences.getBoolean("bEnableTrainMaxedStat", false)
             maxFailChance = preferences.getInt("maxFailChance", 15)
             bFocusOnSparkStatTarget = preferences.getBoolean("bFocusOnSparkStatTarget", false)
 
-            statTargetSprint = TrainingStatTargets(preferences, DEFAULT_STAT_TARGETS_SPRINT)
-            statTargetMile = TrainingStatTargets(preferences, DEFAULT_STAT_TARGETS_MILE)
-            statTargetMedium = TrainingStatTargets(preferences, DEFAULT_STAT_TARGETS_MEDIUM)
-            statTargetLong = TrainingStatTargets(preferences, DEFAULT_STAT_TARGETS_LONG)
+            statTargetSprint = TrainingStatTargets(preferences, "trainingSprintStatTarget", DEFAULT_STAT_TARGETS_SPRINT)
+            statTargetMile = TrainingStatTargets(preferences, "trainingMileStatTarget", DEFAULT_STAT_TARGETS_MILE)
+            statTargetMedium = TrainingStatTargets(preferences, "trainingMediumStatTarget", DEFAULT_STAT_TARGETS_MEDIUM)
+            statTargetLong = TrainingStatTargets(preferences, "trainingLongStatTarget", DEFAULT_STAT_TARGETS_LONG)
         }
     }
 
     data class PreferencesTrainingEvent(private val preferences: SharedPreferences) {
-        lateinit var bSelectAllCharacters: Boolean
-        lateinit var selectedCharacter: String
-        lateinit var bSelectAllSupportCards: Boolean
-        lateinit var selectedSupportCards: List<String>
+        var bSelectAllCharacters: Boolean
+        var selectedCharacter: String
+        var bSelectAllSupportCards: Boolean
+        var selectedSupportCards: List<String>
 
         init {
             bSelectAllCharacters = preferences.getBoolean("bSelectAllCharacters", true)
@@ -70,9 +75,9 @@ object Settings {
     }
 
     data class PreferencesOCR(private val preferences: SharedPreferences) {
-        lateinit var threshold: Double
-        lateinit var bEnableAutomaticRetry: Boolean
-        lateinit var confidence: Double
+        var threshold: Double
+        var bEnableAutomaticRetry: Boolean
+        var confidence: Double
 
         init {
             threshold = preferences.getInt("threshold", 230).toDouble()
@@ -84,48 +89,47 @@ object Settings {
 
     // Main Settings page
     data class PreferencesMain(private val preferences: SharedPreferences) {
-        lateinit var campaign: String,
-        lateinit var strategy: String,
+        var campaign: String
+        var strategy: String
         // Sub-categories
-        lateinit var trainingOptions: PreferencesTraining,
-        lateinit var trainingEventOptions: PreferencesTrainingEvent,
-        lateinit var ocrOptions: PreferencesOCR,
+        var trainingOptions: PreferencesTraining
+        var trainingEventOptions: PreferencesTrainingEvent
+        var ocrOptions: PreferencesOCR
         // RACING
-        lateinit var bEnableFarmingFans: Boolean,
-        lateinit var daysToRunExtraRaces: Int,
-        lateinit var bDisableRaceRetries: Boolean,
-        lateinit var bEnableStopOnMandatoryRace: Boolean,
-        lateinit var bEnableForceRacing: Boolean,
+        var bEnableFarmingFans: Boolean
+        var daysToRunExtraRaces: Int
+        var bDisableRaceRetries: Boolean
+        var bEnableStopOnMandatoryRace: Boolean
+        var bEnableForceRacing: Boolean
         // MISC
-        lateinit var bEnableSkillPointCheck: Boolean,
-        lateinit var skillPointCheckThreshold: Int,
-        lateinit var bEnablePopupCheck: Boolean,
-        lateinit var bEnablePrioritizeEnergy: Boolean,
-        lateinit var bEnableSkipCraneGame: Boolean,
+        var bEnableSkillPointCheck: Boolean
+        var skillPointCheckThreshold: Int
+        var bEnablePopupCheck: Boolean
+        var bEnablePrioritizeEnergy: Boolean
+        var bEnableSkipCraneGame: Boolean
         // DEBUG
-        lateinit var bEnableDebugMode: Boolean,
-        lateinit var ocrConfidence: Int,
-        lateinit var customScale: Int,
-        lateinit var bRunTemplateMatchingTest: Boolean,
-        lateinit var bRunSingleTrainingFailureOcrTest: Boolean,
-        lateinit var bRunComprehensiveTrainingFailureOcrTest: Boolean,
-        lateinit var bHideComparisonResults: Boolean,
+        var bEnableDebugMode: Boolean
+        var ocrConfidence: Int
+        var customScale: Int
+        var bRunTemplateMatchingTest: Boolean
+        var bRunSingleTrainingFailureOcrTest: Boolean
+        var bRunComprehensiveTrainingFailureOcrTest: Boolean
+        var bHideComparisonResults: Boolean
 
-        var strategyImageName: String = strategy
-            set(value) {
-                field = when (strategy) {
-                    "Front Runner" -> "strategy_front"
-                    "Pace Chaser" -> "strategy_pace"
-                    "Late Surger" -> "strategy_late"
-                    "End Closer" -> "strategy_end"
-                    else -> "default"
-                }
-            }
+        var strategyImageName: String
 
         init {
             // Options
             campaign = preferences.getString("campaign", "")!!
             strategy = preferences.getString("strategy", "")!!
+
+            strategyImageName = when (strategy) {
+                "Front Runner" -> "strategy_front"
+                "Pace Chaser" -> "strategy_pace"
+                "Late Surger" -> "strategy_late"
+                "End Closer" -> "strategy_end"
+                else -> "default"
+            }
             
             // sub-menus
             trainingOptions = PreferencesTraining(preferences)
@@ -158,7 +162,7 @@ object Settings {
     }
 
     fun initialize(ctx: Context) {
-        pref = PreferenceManager.getDefaultSharedPreferences(ctx)
-        config = PreferencesMain(pref)
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(ctx)
+        config = PreferencesMain(sharedPreferences)
     }
 }

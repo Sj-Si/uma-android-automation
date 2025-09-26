@@ -22,9 +22,6 @@ val START_TIME_MS = System.currentTimeMillis()
 
 class MainActivity : AppCompatActivity() {
 	private lateinit var appBarConfiguration: AppBarConfiguration
-
-    // Todo: Maybe move into BotService::onCreate()
-    ImageUtils.initialize(this)
 	
 	companion object {
 		const val TAG: String = "UAA"
