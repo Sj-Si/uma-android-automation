@@ -8,7 +8,8 @@ import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.campaigns.AoHaru
 import com.steve1316.uma_android_automation.utils.BotService
 import com.steve1316.uma_android_automation.utils.ImageUtils
-import com.steve1316.uma_android_automation.utils.MediaProjectionService
+import com.steve1316.uma_android_automation.utils.ScreenRegion
+import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.MessageLog
 import com.steve1316.uma_android_automation.utils.MyAccessibilityService
 import com.steve1316.uma_android_automation.utils.SettingsPrinter
@@ -23,18 +24,17 @@ import kotlin.intArrayOf
 /**
  * Main driver for bot activity and navigation.
  */
-class Game(val myContext: Context) {
+class Game(val ctx: Context) {
 	private val TAG: String = "Game"
 	var notificationMessage: String = ""
 	private val decimalFormat = DecimalFormat("#.##")
-	val imageUtils: ImageUtils = ImageUtils(myContext, this)
 	val gestureUtils: MyAccessibilityService = MyAccessibilityService.getInstance()
-	private val textDetection: TextDetection = TextDetection(this, imageUtils)
+	private val textDetection: TextDetection = TextDetection(this)
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	// SharedPreferences
-	private var sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(myContext)
+	private var sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(ctx)
 	private val campaign: String = sharedPreferences.getString("campaign", "")!!
 	private val strategy: String = sharedPreferences.getString("strategy", "")!!
 	private val strategyImageName: String = when (strategy) {
@@ -107,7 +107,7 @@ class Game(val myContext: Context) {
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	// Misc
-	private var currentDate: Date = Date(1, "Early", 1, 1)
+	private var currentDate = GameUtils.Date(1, "Early", 1, 1)
 	private var inheritancesDone = 0
 	private val startTime: Long = System.currentTimeMillis()
 
@@ -143,12 +143,7 @@ class Game(val myContext: Context) {
 		}
 	}
 
-	data class Date(
-		val year: Int,
-		val phase: String,
-		val month: Int,
-		val turnNumber: Int
-	)
+	
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
@@ -201,46 +196,7 @@ class Game(val myContext: Context) {
 			intArrayOf(longSpeedTarget, longStaminaTarget, longPowerTarget, longGutsTarget, longWitTarget)
 	}
 
-	/**
-	 * Wait the specified seconds to account for ping or loading.
-	 * It also checks for interruption every 100ms to allow faster interruption and checks if the game is still in the middle of loading.
-	 *
-	 * @param seconds Number of seconds to pause execution.
-	 * @param skipWaitingForLoading If true, then it will skip the loading check. Defaults to false.
-	 */
-	fun wait(seconds: Double, skipWaitingForLoading: Boolean = false) {
-		val totalMillis = (seconds * 1000).toLong()
-		// Check for interruption every 100ms.
-		val checkInterval = 100L
-
-		var remainingMillis = totalMillis
-		while (remainingMillis > 0) {
-			if (!BotService.isRunning) {
-				throw InterruptedException()
-			}
-
-			val sleepTime = minOf(checkInterval, remainingMillis)
-			runBlocking {
-				delay(sleepTime)
-			}
-			remainingMillis -= sleepTime
-		}
-
-		if (!skipWaitingForLoading) {
-			// Check if the game is still loading as well.
-			waitForLoading()
-		}
-	}
-
-	/**
-	 * Wait for the game to finish loading.
-	 */
-	fun waitForLoading() {
-		while (checkLoading()) {
-			// Avoid an infinite loop by setting the flag to true.
-			wait(0.5, skipWaitingForLoading = true)
-		}
-	}
+	
 
 	/**
 	 * Find and tap the specified image.
@@ -283,8 +239,8 @@ class Game(val myContext: Context) {
 
 		if (!ignoreWaiting) {
 			// Now check if the game is waiting for a server response from the tap and wait if necessary.
-			wait(0.20)
-			waitForLoading()
+			GameUtils.wait(0.20)
+			GameUtils.waitForLoading()
 		}
 	}
 
@@ -375,16 +331,16 @@ class Game(val myContext: Context) {
 	 */
 	fun checkMainScreen(): Boolean {
 		MessageLog.i(TAG, "Checking if the bot is sitting at the Main screen.")
-		return if (imageUtils.findImage("tazuna", tries = 1, region = imageUtils.regionTopHalf).first != null &&
-			imageUtils.findImage("race_select_mandatory", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true).first == null) {
+		return if (imageUtils.findImage("tazuna", tries = 1, region = ScreenRegion.TOP_HALF).first != null &&
+			imageUtils.findImage("race_select_mandatory", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first == null) {
 			MessageLog.i(TAG, "Current bot location is at Main screen.")
 
 			// Perform updates here if necessary.
 			updateDate()
 			if (preferredDistance == "") updatePreferredDistance()
 			true
-		} else if (!enablePopupCheck && imageUtils.findImage("cancel", tries = 1, region = imageUtils.regionBottomHalf).first != null &&
-			imageUtils.findImage("race_confirm", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
+		} else if (!enablePopupCheck && imageUtils.findImage("cancel", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null &&
+			imageUtils.findImage("race_confirm", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null) {
 			// This popup is most likely the insufficient fans popup. Force an extra race to catch up on the required fans.
 			MessageLog.i(TAG, "There is a possible insufficient fans or maiden race popup.")
 			encounteredRacingPopup = true
@@ -402,7 +358,7 @@ class Game(val myContext: Context) {
 	 */
 	fun checkTrainingEventScreen(): Boolean {
 		MessageLog.i(TAG, "Checking if the bot is sitting on the Training Event screen.")
-		return if (imageUtils.findImage("training_event_active", tries = 1, region = imageUtils.regionMiddle).first != null) {
+		return if (imageUtils.findImage("training_event_active", tries = 1, region = ScreenRegion.MIDDLE).first != null) {
 			MessageLog.i(TAG, "Current bot location is at Training Event screen.")
 			true
 		} else {
@@ -417,16 +373,16 @@ class Game(val myContext: Context) {
 	 */
 	fun checkMandatoryRacePrepScreen(): Boolean {
 		MessageLog.i(TAG, "Checking if the bot is sitting on the Race Preparation screen.")
-		return if (imageUtils.findImage("race_select_mandatory", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
+		return if (imageUtils.findImage("race_select_mandatory", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null) {
 			MessageLog.i(TAG, "Current bot location is at the preparation screen with a mandatory race ready to be completed.")
 			true
-		} else if (imageUtils.findImage("race_select_mandatory_goal", tries = 1, region = imageUtils.regionMiddle).first != null) {
+		} else if (imageUtils.findImage("race_select_mandatory_goal", tries = 1, region = ScreenRegion.MIDDLE).first != null) {
 			// Most likely the user started the bot here so a delay will need to be placed to allow the start banner of the Service to disappear.
-			wait(2.0)
+			GameUtils.wait(2.0)
 			MessageLog.i(TAG, "Current bot location is at the Race Selection screen with a mandatory race needing to be selected.")
 			// Walk back to the preparation screen.
-			findAndTapImage("back", tries = 1, region = imageUtils.regionBottomHalf)
-			wait(1.0)
+			findAndTapImage("back", tries = 1, region = ScreenRegion.BOTTOM_HALF)
+			GameUtils.wait(1.0)
 			true
 		} else {
 			false
@@ -440,7 +396,7 @@ class Game(val myContext: Context) {
 	 */
 	fun checkRacingScreen(): Boolean {
 		MessageLog.i(TAG, "Checking if the bot is sitting on the Racing screen.")
-		return if (imageUtils.findImage("race_change_strategy", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
+		return if (imageUtils.findImage("race_change_strategy", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null) {
 			MessageLog.i(TAG, "Current bot location is at the Racing screen waiting to be skipped or done manually.")
 			true
 		} else {
@@ -461,9 +417,9 @@ class Game(val myContext: Context) {
 		if (enableForceRacing) return true
 
 		return enableFarmingFans && dayNumber % daysToRunExtraRaces == 0 && !raceRepeatWarningCheck &&
-				imageUtils.findImage("race_select_extra_locked_uma_finals", tries = 1, region = imageUtils.regionBottomHalf).first == null &&
-				imageUtils.findImage("race_select_extra_locked", tries = 1, region = imageUtils.regionBottomHalf).first == null &&
-				imageUtils.findImage("recover_energy_summer", tries = 1, region = imageUtils.regionBottomHalf).first == null
+				imageUtils.findImage("race_select_extra_locked_uma_finals", tries = 1, region = ScreenRegion.BOTTOM_HALF).first == null &&
+				imageUtils.findImage("race_select_extra_locked", tries = 1, region = ScreenRegion.BOTTOM_HALF).first == null &&
+				imageUtils.findImage("recover_energy_summer", tries = 1, region = ScreenRegion.BOTTOM_HALF).first == null
 	}
 
 	/**
@@ -472,7 +428,7 @@ class Game(val myContext: Context) {
 	 * @return True if the bot is at the Ending screen. Otherwise false.
 	 */
 	fun checkEndScreen(): Boolean {
-		return if (imageUtils.findImage("complete_career", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
+		return if (imageUtils.findImage("complete_career", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null) {
 			MessageLog.i(TAG, "[END] Bot has reached the End screen.")
 			true
 		} else {
@@ -486,16 +442,16 @@ class Game(val myContext: Context) {
 	 * @return True if the bot has a injury. Otherwise false.
 	 */
 	fun checkInjury(): Boolean {
-		val recoverInjuryLocation = imageUtils.findImage("recover_injury", tries = 1, region = imageUtils.regionBottomHalf).first
+		val recoverInjuryLocation = imageUtils.findImage("recover_injury", tries = 1, region = ScreenRegion.BOTTOM_HALF).first
 		return if (recoverInjuryLocation != null && imageUtils.checkColorAtCoordinates(
 				recoverInjuryLocation.x.toInt(),
 				recoverInjuryLocation.y.toInt() + 15,
 				intArrayOf(151, 105, 243),
 				10
 			)) {
-			if (findAndTapImage("recover_injury", tries = 1, region = imageUtils.regionBottomHalf)) {
-				wait(0.3)
-				if (imageUtils.confirmLocation("recover_injury", tries = 1, region = imageUtils.regionMiddle)) {
+			if (findAndTapImage("recover_injury", tries = 1, region = ScreenRegion.BOTTOM_HALF)) {
+				GameUtils.wait(0.3)
+				if (imageUtils.confirmLocation("recover_injury", tries = 1, region = ScreenRegion.MIDDLE)) {
 					MessageLog.i(TAG, "Injury detected and attempted to heal.")
 					true
 				} else {
@@ -511,23 +467,7 @@ class Game(val myContext: Context) {
 		}
 	}
 
-	/**
-	 * Checks if the bot is at a "Now Loading..." screen or if the game is awaiting for a server response. This may cause significant delays in normal bot processes.
-	 *
-	 * @return True if the game is still loading or is awaiting for a server response. Otherwise, false.
-	 */
-	fun checkLoading(): Boolean {
-		MessageLog.i(TAG, "Now checking if the game is still loading...")
-		return if (imageUtils.findImage("connecting", tries = 1, region = imageUtils.regionTopHalf, suppressError = true).first != null) {
-			MessageLog.i(TAG, "Detected that the game is awaiting a response from the server from the \"Connecting\" text at the top of the screen. Waiting...")
-			true
-		} else if (imageUtils.findImage("now_loading", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true).first != null) {
-			MessageLog.i(TAG, "Detected that the game is still loading from the \"Now Loading\" text at the bottom of the screen. Waiting...")
-			true
-		} else {
-			false
-		}
-	}
+	
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -540,15 +480,15 @@ class Game(val myContext: Context) {
 		MessageLog.i(TAG, "[TRAINING] Starting Training process...")
 
 		// Enter the Training screen.
-		if (findAndTapImage("training_option", region = imageUtils.regionBottomHalf)) {
+		if (findAndTapImage("training_option", region = ScreenRegion.BOTTOM_HALF)) {
 			// Acquire the percentages and stat gains for each training.
-			wait(0.5)
+			GameUtils.wait(0.5)
 			analyzeTrainings()
 
 			if (trainingMap.isEmpty()) {
 				MessageLog.i(TAG, "[TRAINING] Backing out of Training and returning on the Main screen.")
-				findAndTapImage("back", region = imageUtils.regionBottomHalf)
-				wait(1.0)
+				findAndTapImage("back", region = ScreenRegion.BOTTOM_HALF)
+				GameUtils.wait(1.0)
 
 				if (checkMainScreen()) {
 					MessageLog.i(TAG, "[TRAINING] Will recover energy due to either failure chance was high enough to do so or no failure chances were detected via OCR.")
@@ -796,16 +736,16 @@ class Game(val myContext: Context) {
 
 		// Acquire the position of the speed stat text.
 		val (speedStatTextLocation, _) = if (campaign == "Ao Haru") {
-			imageUtils.findImage("aoharu_stat_speed", tries = 1, region = imageUtils.regionBottomHalf)
+			imageUtils.findImage("aoharu_stat_speed", tries = 1, region = ScreenRegion.BOTTOM_HALF)
 		} else {
-			imageUtils.findImage("stat_speed", tries = 1, region = imageUtils.regionBottomHalf)
+			imageUtils.findImage("stat_speed", tries = 1, region = ScreenRegion.BOTTOM_HALF)
 		}
 
 		if (speedStatTextLocation != null) {
 			// Start by selecting Speed training
-			if (!imageUtils.confirmLocation("speed_training", tries = 1, region = imageUtils.regionTopHalf, suppressError = true)) {
-				findAndTapImage("training_speed", region = imageUtils.regionBottomHalf)
-				wait(0.5)
+			if (!imageUtils.confirmLocation("speed_training", tries = 1, region = ScreenRegion.TOP_HALF, suppressError = true)) {
+				findAndTapImage("training_speed", region = ScreenRegion.BOTTOM_HALF)
+				GameUtils.wait(0.5)
 			}
 
 			val initialFailureChance: Int = imageUtils.findTrainingFailureChance()
@@ -892,8 +832,8 @@ class Game(val myContext: Context) {
 					var relationshipBars: ArrayList<ImageUtils.BarFillResult> = arrayListOf()
 
 					// Get the Points and source Bitmap beforehand before starting the threads to make them safe for parallel processing.
-					val (skillPointsLocation, sourceBitmap) = imageUtils.findImage("skill_points", tries = 1, region = imageUtils.regionMiddle)
-					val (trainingSelectionLocation, _) = imageUtils.findImage("training_failure_chance", tries = 1, region = imageUtils.regionBottomHalf)
+					val (skillPointsLocation, sourceBitmap) = imageUtils.findImage("skill_points", tries = 1, region = ScreenRegion.MIDDLE)
+					val (trainingSelectionLocation, _) = imageUtils.findImage("training_failure_chance", tries = 1, region = ScreenRegion.BOTTOM_HALF)
 
 					// Thread 1: Determine stat gains.
 					Thread {
@@ -1013,7 +953,7 @@ class Game(val myContext: Context) {
 				}
 
 				// Check if we're currently IN summer training (not just approaching)
-				val isCurrentlySummer = imageUtils.findImage("recover_energy_summer", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true).first != null
+				val isCurrentlySummer = imageUtils.findImage("recover_energy_summer", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first != null
 
 				// Enhanced risk management with multiple factors
 				val adjustedFailureThreshold = when {
@@ -1444,9 +1384,9 @@ class Game(val myContext: Context) {
 
 			// Apply mood multiplier based on current mood
 			val currentMood: String = when {
-				imageUtils.findImage("mood_great", tries = 1, region = imageUtils.regionTopHalf, suppressError = true).first != null -> "Great"
-				imageUtils.findImage("mood_good", tries = 1, region = imageUtils.regionTopHalf, suppressError = true).first != null -> "Good"
-				imageUtils.findImage("mood_normal", tries = 1, region = imageUtils.regionTopHalf, suppressError = true).first != null -> "Normal"
+				imageUtils.findImage("mood_great", tries = 1, region = ScreenRegion.TOP_HALF, suppressError = true).first != null -> "Great"
+				imageUtils.findImage("mood_good", tries = 1, region = ScreenRegion.TOP_HALF, suppressError = true).first != null -> "Good"
+				imageUtils.findImage("mood_normal", tries = 1, region = ScreenRegion.TOP_HALF, suppressError = true).first != null -> "Normal"
 				else -> "Bad/Awful"
 			}
 
@@ -1559,10 +1499,10 @@ class Game(val myContext: Context) {
 			val skillHintLocations = imageUtils.findAll(
 				"stat_skill_hint",
 				region = intArrayOf(
-					MediaProjectionService.displayWidth - (MediaProjectionService.displayWidth / 3),
+					ScreenRegion.WIDTH - (ScreenRegion.WIDTH / 3),
 					0,
-					(MediaProjectionService.displayWidth / 3),
-					MediaProjectionService.displayHeight - (MediaProjectionService.displayHeight / 3)
+					(ScreenRegion.WIDTH / 3),
+					ScreenRegion.HEIGHT - (ScreenRegion.HEIGHT / 3)
 				)
 			)
 			if (skillHintLocations.isNotEmpty()) {
@@ -1584,7 +1524,7 @@ class Game(val myContext: Context) {
 			}
 
 			// Summer training special handling
-			val isSummer = imageUtils.findImage("recover_energy_summer", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true).first != null
+			val isSummer = imageUtils.findImage("recover_energy_summer", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first != null
 			if (isSummer) {
 				// During summer, we have Lv5 training facilities - maximize usage!
 				// All trainings are significantly more valuable during summer
@@ -1731,7 +1671,7 @@ class Game(val myContext: Context) {
 		if (trainingSelected != "") {
 			printTrainingMap()
 			MessageLog.i(TAG, "[TRAINING] Executing the $trainingSelected Training.")
-			findAndTapImage("training_${trainingSelected.lowercase()}", region = imageUtils.regionBottomHalf, taps = 3)
+			findAndTapImage("training_${trainingSelected.lowercase()}", region = ScreenRegion.BOTTOM_HALF, taps = 3)
 			MessageLog.i(TAG, "[TRAINING] Process to execute training completed.")
 		} else {
 			MessageLog.i(TAG, "[TRAINING] Conditions have not been met so training will not be done.")
@@ -1970,7 +1910,7 @@ class Game(val myContext: Context) {
 				trainingOptionLocations[0]
 			}
 		} else {
-			imageUtils.findImage("training_event_active", tries = 5, region = imageUtils.regionMiddle).first
+			imageUtils.findImage("training_event_active", tries = 5, region = ScreenRegion.MIDDLE).first
 		}
 
 		if (selectedLocation != null) {
@@ -1993,13 +1933,13 @@ class Game(val myContext: Context) {
 		MessageLog.i(TAG, "[RACE] Starting Racing process...")
 		if (encounteredRacingPopup) {
 			// Dismiss the insufficient fans popup here and head to the Race Selection screen.
-			findAndTapImage("race_confirm", tries = 1, region = imageUtils.regionBottomHalf)
+			findAndTapImage("race_confirm", tries = 1, region = ScreenRegion.BOTTOM_HALF)
 			encounteredRacingPopup = false
-			wait(1.0)
+			GameUtils.wait(1.0)
 		}
 
 		// If there are no races available, cancel the racing process.
-		if (imageUtils.findImage("race_none_available", tries = 1, region = imageUtils.regionMiddle, suppressError = true).first != null) {
+		if (imageUtils.findImage("race_none_available", tries = 1, region = ScreenRegion.MIDDLE, suppressError = true).first != null) {
 			MessageLog.i(TAG, "[RACE] There are no races to compete in. Canceling the racing process and doing something else.")
 			return false
 		}
@@ -2009,41 +1949,41 @@ class Game(val myContext: Context) {
 		// First, check if there is a mandatory or a extra race available. If so, head into the Race Selection screen.
 		// Note: If there is a mandatory race, the bot would be on the Home screen.
 		// Otherwise, it would have found itself at the Race Selection screen already (by way of the insufficient fans popup).
-		if (findAndTapImage("race_select_mandatory", tries = 1, region = imageUtils.regionBottomHalf)) {
+		if (findAndTapImage("race_select_mandatory", tries = 1, region = ScreenRegion.BOTTOM_HALF)) {
 			MessageLog.i(TAG, "[RACE] Starting process for handling a mandatory race.")
 
 			if (enableStopOnMandatoryRace) {
 				detectedMandatoryRaceCheck = true
 				return false
 			} else if (enableForceRacing) {
-				findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle)
-				wait(1.0)
+				findAndTapImage("ok", tries = 1, region = ScreenRegion.MIDDLE)
+				GameUtils.wait(1.0)
 			}
 
 			// There is a mandatory race. Now confirm the selection and the resultant popup and then wait for the game to load.
-			wait(2.0)
+			GameUtils.wait(2.0)
 			MessageLog.i(TAG, "[RACE] Confirming the mandatory race selection.")
-			findAndTapImage("race_confirm", tries = 3, region = imageUtils.regionBottomHalf)
-			wait(1.0)
+			findAndTapImage("race_confirm", tries = 3, region = ScreenRegion.BOTTOM_HALF)
+			GameUtils.wait(1.0)
 			MessageLog.i(TAG, "[RACE] Confirming any popup from the mandatory race selection.")
-			findAndTapImage("race_confirm", tries = 3, region = imageUtils.regionBottomHalf)
-			wait(2.0)
+			findAndTapImage("race_confirm", tries = 3, region = ScreenRegion.BOTTOM_HALF)
+			GameUtils.wait(2.0)
 
-			waitForLoading()
+			GameUtils.waitForLoading()
 
 			// Select the preferred race strategy if it is not already selected.
 			if (strategySelected == false) {
 				if (strategyImageName != "default") {
-					findAndTapImage("race_change_strategy", tries = 10, region = imageUtils.regionBottomHalf)
-					findAndTapImage(strategyImageName + "_select", tries = 10, region = imageUtils.regionBottomHalf)
-					findAndTapImage("confirm", tries = 10, region = imageUtils.regionBottomHalf)
-					wait(1.0)
+					findAndTapImage("race_change_strategy", tries = 10, region = ScreenRegion.BOTTOM_HALF)
+					findAndTapImage(strategyImageName + "_select", tries = 10, region = ScreenRegion.BOTTOM_HALF)
+					findAndTapImage("confirm", tries = 10, region = ScreenRegion.BOTTOM_HALF)
+					GameUtils.wait(1.0)
 				}
 				strategySelected = true;
 			}
 
 			// Skip the race if possible, otherwise run it manually.
-			val resultCheck: Boolean = if (imageUtils.findImage("race_skip_locked", tries = 5, region = imageUtils.regionBottomHalf).first == null) {
+			val resultCheck: Boolean = if (imageUtils.findImage("race_skip_locked", tries = 5, region = ScreenRegion.BOTTOM_HALF).first == null) {
 				skipRace()
 			} else {
 				manualRace()
@@ -2053,7 +1993,7 @@ class Game(val myContext: Context) {
 
 			MessageLog.i(TAG, "[RACE] Racing process for Mandatory Race is completed.")
 			return true
-		} else if (currentDate.phase != "Pre-Debut" && findAndTapImage("race_select_extra", tries = 1, region = imageUtils.regionBottomHalf)) {
+		} else if (currentDate.phase != "Pre-Debut" && findAndTapImage("race_select_extra", tries = 1, region = ScreenRegion.BOTTOM_HALF)) {
 			MessageLog.i(TAG, "[RACE] Starting process for handling a extra race.")
 
 			// If there is a popup warning about repeating races 3+ times, stop the process and do something else other than racing.
@@ -2061,11 +2001,11 @@ class Game(val myContext: Context) {
 				if (!enableForceRacing) {
 					raceRepeatWarningCheck = true
 					MessageLog.i(TAG, "[RACE] Closing popup warning of doing more than 3+ races and setting flag to prevent racing for now. Canceling the racing process and doing something else.")
-					findAndTapImage("cancel", region = imageUtils.regionBottomHalf)
+					findAndTapImage("cancel", region = ScreenRegion.BOTTOM_HALF)
 					return false
 				} else {
-					findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle)
-					wait(1.0)
+					findAndTapImage("ok", tries = 1, region = ScreenRegion.MIDDLE)
+					GameUtils.wait(1.0)
 				}
 			}
 
@@ -2077,12 +2017,12 @@ class Game(val myContext: Context) {
 				return false
 			}
 			gestureUtils.swipe(statusLocation.x.toFloat(), statusLocation.y.toFloat() + 300, statusLocation.x.toFloat(), statusLocation.y.toFloat() + 888)
-			wait(1.0)
+			GameUtils.wait(1.0)
 
 			// Now determine the best extra race with the following parameters: highest fans and double star prediction.
 			// First find the fans of only the extra races on the screen that match the double star prediction. Read only 3 extra races.
 			var count = 0
-			val maxCount = imageUtils.findAll("race_selection_fans", region = imageUtils.regionBottomHalf).size
+			val maxCount = imageUtils.findAll("race_selection_fans", region = ScreenRegion.BOTTOM_HALF).size
 			if (maxCount == 0) {
 				MessageLog.w(TAG, "Was unable to find any extra races to select. Canceling the racing process and doing something else.")
 				return false
@@ -2105,7 +2045,7 @@ class Game(val myContext: Context) {
 				val listOfRaces: ArrayList<ImageUtils.RaceDetails> = arrayListOf()
 				while (count < maxCount) {
 					// Save the location of the selected extra race.
-					val selectedExtraRace = imageUtils.findImage("race_extra_selection", region = imageUtils.regionBottomHalf).first
+					val selectedExtraRace = imageUtils.findImage("race_extra_selection", region = ScreenRegion.BOTTOM_HALF).first
 					if (selectedExtraRace == null) {
 						MessageLog.e(TAG, "Unable to find the location of the selected extra race. Canceling the racing process and doing something else.")
 						break
@@ -2141,7 +2081,7 @@ class Game(val myContext: Context) {
 						}
 					}
 
-					wait(0.5)
+					GameUtils.wait(0.5)
 
 					count++
 				}
@@ -2198,23 +2138,23 @@ class Game(val myContext: Context) {
 			}
 
 			// Confirm the selection and the resultant popup and then wait for the game to load.
-			findAndTapImage("race_confirm", tries = 30, region = imageUtils.regionBottomHalf)
-			findAndTapImage("race_confirm", tries = 10, region = imageUtils.regionBottomHalf)
-			wait(2.0)
+			findAndTapImage("race_confirm", tries = 30, region = ScreenRegion.BOTTOM_HALF)
+			findAndTapImage("race_confirm", tries = 10, region = ScreenRegion.BOTTOM_HALF)
+			GameUtils.wait(2.0)
 
 			// Select the preferred race strategy if it is not already selected.
 			if (strategySelected == false) {
 				if (strategyImageName != "default") {
-					findAndTapImage("race_change_strategy", tries = 10, region = imageUtils.regionBottomHalf)
-					findAndTapImage(strategyImageName + "_select", tries = 10, region = imageUtils.regionBottomHalf)
-					findAndTapImage("confirm", tries = 10, region = imageUtils.regionBottomHalf)
-					wait(1.0)
+					findAndTapImage("race_change_strategy", tries = 10, region = ScreenRegion.BOTTOM_HALF)
+					findAndTapImage(strategyImageName + "_select", tries = 10, region = ScreenRegion.BOTTOM_HALF)
+					findAndTapImage("confirm", tries = 10, region = ScreenRegion.BOTTOM_HALF)
+					GameUtils.wait(1.0)
 				}
 				strategySelected = true;
 			}
 
 			// Skip the race if possible, otherwise run it manually.
-			val resultCheck: Boolean = if (imageUtils.findImage("race_skip_locked", tries = 5, region = imageUtils.regionBottomHalf).first == null) {
+			val resultCheck: Boolean = if (imageUtils.findImage("race_skip_locked", tries = 5, region = ScreenRegion.BOTTOM_HALF).first == null) {
 				skipRace()
 			} else {
 				manualRace()
@@ -2238,16 +2178,16 @@ class Game(val myContext: Context) {
 		// Select the preferred race strategy if it is not already selected.
 		if (strategySelected == false) {
 			if (strategyImageName != "default") {
-				findAndTapImage("race_change_strategy", tries = 10, region = imageUtils.regionBottomHalf)
-				findAndTapImage(strategyImageName + "_select", tries = 10, region = imageUtils.regionBottomHalf)
-				findAndTapImage("confirm", tries = 10, region = imageUtils.regionBottomHalf)
-				wait(1.0)
+				findAndTapImage("race_change_strategy", tries = 10, region = ScreenRegion.BOTTOM_HALF)
+				findAndTapImage(strategyImageName + "_select", tries = 10, region = ScreenRegion.BOTTOM_HALF)
+				findAndTapImage("confirm", tries = 10, region = ScreenRegion.BOTTOM_HALF)
+				GameUtils.wait(1.0)
 			}
 			strategySelected = true;
 		}
 
 		// Skip the race if possible, otherwise run it manually.
-		val resultCheck: Boolean = if (imageUtils.findImage("race_skip_locked", tries = 5, region = imageUtils.regionBottomHalf).first == null) {
+		val resultCheck: Boolean = if (imageUtils.findImage("race_skip_locked", tries = 5, region = ScreenRegion.BOTTOM_HALF).first == null) {
 			skipRace()
 		} else {
 			manualRace()
@@ -2268,24 +2208,24 @@ class Game(val myContext: Context) {
 			MessageLog.i(TAG, "[RACE] Skipping race...")
 
 			// Press the skip button and then wait for your result of the race to show.
-			if (findAndTapImage("race_skip", tries = 30, region = imageUtils.regionBottomHalf)) {
+			if (findAndTapImage("race_skip", tries = 30, region = ScreenRegion.BOTTOM_HALF)) {
 				MessageLog.i(TAG, "[RACE] Race was able to be skipped.")
 			}
-			wait(2.0)
+			GameUtils.wait(2.0)
 
 			// Now tap on the screen to get past the Race Result screen.
 			tap(350.0, 450.0, "ok", taps = 3)
 
 			// Check if the race needed to be retried.
-			if (imageUtils.findImage("race_retry", tries = 5, region = imageUtils.regionBottomHalf, suppressError = true).first != null) {
+			if (imageUtils.findImage("race_retry", tries = 5, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first != null) {
 				if (disableRaceRetries) {
 					MessageLog.i(TAG, "[END] Stopping the bot due to failing a mandatory race.")
 					notificationMessage = "Stopping the bot due to failing a mandatory race."
 					throw IllegalStateException()
 				}
-				findAndTapImage("race_retry", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)
+				findAndTapImage("race_retry", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true)
 				MessageLog.i(TAG, "[RACE] The skipped race failed and needs to be run again. Attempting to retry...")
-				wait(3.0)
+				GameUtils.wait(3.0)
 				raceRetries--
 			} else {
 				return true
@@ -2305,69 +2245,69 @@ class Game(val myContext: Context) {
 			MessageLog.i(TAG, "[RACE] Skipping manual race...")
 
 			// Press the manual button.
-			if (findAndTapImage("race_manual", tries = 30, region = imageUtils.regionBottomHalf)) {
+			if (findAndTapImage("race_manual", tries = 30, region = ScreenRegion.BOTTOM_HALF)) {
 				MessageLog.i(TAG, "[RACE] Started the manual race.")
 			}
-			wait(2.0)
+			GameUtils.wait(2.0)
 
 			// Confirm the Race Playback popup if it appears.
-			if (findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle, suppressError = true)) {
+			if (findAndTapImage("ok", tries = 1, region = ScreenRegion.MIDDLE, suppressError = true)) {
 				MessageLog.i(TAG, "[RACE] Confirmed the Race Playback popup.")
-				wait(5.0)
+				GameUtils.wait(5.0)
 			}
 
-			waitForLoading()
+			GameUtils.waitForLoading()
 
 			// Now press the confirm button to get past the list of participants.
-			if (findAndTapImage("race_confirm", tries = 30, region = imageUtils.regionBottomHalf)) {
+			if (findAndTapImage("race_confirm", tries = 30, region = ScreenRegion.BOTTOM_HALF)) {
 				MessageLog.i(TAG, "[RACE] Dismissed the list of participants.")
 			}
-			waitForLoading()
-			wait(1.0)
-			waitForLoading()
-			wait(1.0)
+			GameUtils.waitForLoading()
+			GameUtils.wait(1.0)
+			GameUtils.waitForLoading()
+			GameUtils.wait(1.0)
 
 			// Skip the part where it reveals the name of the race.
-			if (findAndTapImage("race_skip_manual", tries = 30, region = imageUtils.regionBottomHalf)) {
+			if (findAndTapImage("race_skip_manual", tries = 30, region = ScreenRegion.BOTTOM_HALF)) {
 				MessageLog.i(TAG, "[RACE] Skipped the name reveal of the race.")
 			}
 			// Skip the walkthrough of the starting gate.
-			if (findAndTapImage("race_skip_manual", tries = 30, region = imageUtils.regionBottomHalf)) {
+			if (findAndTapImage("race_skip_manual", tries = 30, region = ScreenRegion.BOTTOM_HALF)) {
 				MessageLog.i(TAG, "[RACE] Skipped the walkthrough of the starting gate.")
 			}
-			wait(3.0)
+			GameUtils.wait(3.0)
 			// Skip the start of the race.
-			if (findAndTapImage("race_skip_manual", tries = 30, region = imageUtils.regionBottomHalf)) {
+			if (findAndTapImage("race_skip_manual", tries = 30, region = ScreenRegion.BOTTOM_HALF)) {
 				MessageLog.i(TAG, "[RACE] Skipped the start of the race.")
 			}
 			// Skip the lead up to the finish line.
-			if (findAndTapImage("race_skip_manual", tries = 30, region = imageUtils.regionBottomHalf)) {
+			if (findAndTapImage("race_skip_manual", tries = 30, region = ScreenRegion.BOTTOM_HALF)) {
 				MessageLog.i(TAG, "[RACE] Skipped the lead up to the finish line.")
 			}
-			wait(2.0)
+			GameUtils.wait(2.0)
 			// Skip the result screen.
-			if (findAndTapImage("race_skip_manual", tries = 30, region = imageUtils.regionBottomHalf)) {
+			if (findAndTapImage("race_skip_manual", tries = 30, region = ScreenRegion.BOTTOM_HALF)) {
 				MessageLog.i(TAG, "[RACE] Skipped the results screen.")
 			}
-			wait(2.0)
+			GameUtils.wait(2.0)
 
-			waitForLoading()
-			wait(1.0)
+			GameUtils.waitForLoading()
+			GameUtils.wait(1.0)
 
 			// Check if the race needed to be retried.
-			if (imageUtils.findImage("race_retry", tries = 5, region = imageUtils.regionBottomHalf, suppressError = true).first != null) {
+			if (imageUtils.findImage("race_retry", tries = 5, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first != null) {
 				if (disableRaceRetries) {
 					MessageLog.i(TAG, "[END] Stopping the bot due to failing a mandatory race.")
 					notificationMessage = "Stopping the bot due to failing a mandatory race."
 					throw IllegalStateException()
 				}
-				findAndTapImage("race_retry", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)
+				findAndTapImage("race_retry", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true)
 				MessageLog.i(TAG, "[RACE] Manual race failed and needs to be run again. Attempting to retry...")
-				wait(5.0)
+				GameUtils.wait(5.0)
 				raceRetries--
 			} else {
 				// Check if a Trophy was acquired.
-				if (findAndTapImage("race_accept_trophy", tries = 5, region = imageUtils.regionBottomHalf)) {
+				if (findAndTapImage("race_accept_trophy", tries = 5, region = ScreenRegion.BOTTOM_HALF)) {
 					MessageLog.i(TAG, "[RACE] Closing popup to claim trophy...")
 				}
 
@@ -2394,31 +2334,31 @@ class Game(val myContext: Context) {
 		// Bot will be at the screen where it shows the final positions of all participants.
 		// Press the confirm button and wait to see the triangle of fans.
 		MessageLog.i(TAG, "[RACE] Now attempting to confirm the final positions of all participants and number of gained fans")
-		if (findAndTapImage("next", tries = 30, region = imageUtils.regionBottomHalf)) {
-			wait(0.5)
+		if (findAndTapImage("next", tries = 30, region = ScreenRegion.BOTTOM_HALF)) {
+			GameUtils.wait(0.5)
 
 			// Now tap on the screen to get to the next screen.
 			tap(350.0, 750.0, "ok", taps = 3)
 
 			// Now press the end button to finish the race.
-			findAndTapImage("race_end", tries = 30, region = imageUtils.regionBottomHalf)
+			findAndTapImage("race_end", tries = 30, region = ScreenRegion.BOTTOM_HALF)
 
 			if (!isExtra) {
 				MessageLog.i(TAG, "[RACE] Seeing if a Training Goal popup will appear.")
 				// Wait until the popup showing the completion of a Training Goal appears and confirm it.
 				// There will be dialog before it so the delay should be longer.
-				wait(5.0)
-				if (findAndTapImage("next", tries = 10, region = imageUtils.regionBottomHalf)) {
-					wait(2.0)
+				GameUtils.wait(5.0)
+				if (findAndTapImage("next", tries = 10, region = ScreenRegion.BOTTOM_HALF)) {
+					GameUtils.wait(2.0)
 
 					// Now confirm the completion of a Training Goal popup.
 					MessageLog.i(TAG, "[RACE] There was a Training Goal popup. Confirming it now.")
-					findAndTapImage("next", tries = 10, region = imageUtils.regionBottomHalf)
+					findAndTapImage("next", tries = 10, region = ScreenRegion.BOTTOM_HALF)
 				}
-			} else if (findAndTapImage("next", tries = 10, region = imageUtils.regionBottomHalf)) {
+			} else if (findAndTapImage("next", tries = 10, region = ScreenRegion.BOTTOM_HALF)) {
 				// Same as above but without the longer delay.
-				wait(2.0)
-				findAndTapImage("race_end", tries = 10, region = imageUtils.regionBottomHalf)
+				GameUtils.wait(2.0)
+				findAndTapImage("race_end", tries = 10, region = ScreenRegion.BOTTOM_HALF)
 			}
 		} else {
 			MessageLog.e(TAG, "Cannot start the cleanup process for finishing the race. Moving on...")
@@ -2431,9 +2371,9 @@ class Game(val myContext: Context) {
 
 	fun updatePreferredDistance() {
 		MessageLog.i(TAG, "[STATS] Updating preferred distance.")
-		if (findAndTapImage("main_status", tries = 1, region = imageUtils.regionMiddle)) {
+		if (findAndTapImage("main_status", tries = 1, region = ScreenRegion.MIDDLE)) {
 			preferredDistance = imageUtils.determinePreferredDistance()
-			findAndTapImage("race_accept_trophy", tries = 1, region = imageUtils.regionBottomHalf)
+			findAndTapImage("race_accept_trophy", tries = 1, region = ScreenRegion.BOTTOM_HALF)
 			MessageLog.i(TAG, "[STATS] Preferred distance set to $preferredDistance.")
 		}
 	}
@@ -2468,7 +2408,7 @@ class Game(val myContext: Context) {
 	 */
 	fun handleInheritanceEvent(): Boolean {
 		return if (inheritancesDone < 2) {
-			if (findAndTapImage("inheritance", tries = 1, region = imageUtils.regionBottomHalf)) {
+			if (findAndTapImage("inheritance", tries = 1, region = ScreenRegion.BOTTOM_HALF)) {
 				inheritancesDone++
 				true
 			} else {
@@ -2489,7 +2429,7 @@ class Game(val myContext: Context) {
 		MessageLog.i(TAG, "[ENERGY] Now starting attempt to recover energy.")
 
 		// Check if it's summer
-		val isSummer = imageUtils.findImage("recover_energy_summer", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true).first != null
+		val isSummer = imageUtils.findImage("recover_energy_summer", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first != null
 
 		if (isSummer) {
 			// During summer, only rest if we really need it
@@ -2514,7 +2454,7 @@ class Game(val myContext: Context) {
 			}
 
 			// If we do need to rest during summer
-			if (findAndTapImage("recover_energy_summer", tries = 1, imageUtils.regionBottomHalf)) {
+			if (findAndTapImage("recover_energy_summer", tries = 1, ScreenRegion.BOTTOM_HALF)) {
 				findAndTapImage("ok")
 				MessageLog.i(TAG, "[ENERGY] Summer: Low energy detected. Using summer rest for recovery.")
 				raceRepeatWarningCheck = false
@@ -2524,7 +2464,7 @@ class Game(val myContext: Context) {
 
 		// Normal energy recovery (non-summer)
 		return when {
-			findAndTapImage("recover_energy", tries = 1, imageUtils.regionBottomHalf) -> {
+			findAndTapImage("recover_energy", tries = 1, ScreenRegion.BOTTOM_HALF) -> {
 				findAndTapImage("ok")
 				MessageLog.i(TAG, "[ENERGY] Successfully recovered energy.")
 				raceRepeatWarningCheck = false
@@ -2548,13 +2488,13 @@ class Game(val myContext: Context) {
 
 		// Detect what Mood the bot is at.
 		val currentMood: String = when {
-			imageUtils.findImage("mood_normal", tries = 1, region = imageUtils.regionTopHalf, suppressError = true).first != null -> {
+			imageUtils.findImage("mood_normal", tries = 1, region = ScreenRegion.TOP_HALF, suppressError = true).first != null -> {
 				"Normal"
 			}
-			imageUtils.findImage("mood_good", tries = 1, region = imageUtils.regionTopHalf, suppressError = true).first != null -> {
+			imageUtils.findImage("mood_good", tries = 1, region = ScreenRegion.TOP_HALF, suppressError = true).first != null -> {
 				"Good"
 			}
-			imageUtils.findImage("mood_great", tries = 1, region = imageUtils.regionTopHalf, suppressError = true).first != null -> {
+			imageUtils.findImage("mood_great", tries = 1, region = ScreenRegion.TOP_HALF, suppressError = true).first != null -> {
 				"Great"
 			}
 			else -> {
@@ -2571,14 +2511,14 @@ class Game(val myContext: Context) {
 		}
 
 		// Check if it's summer
-		val isSummer = imageUtils.findImage("recover_energy_summer", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true).first != null
+		val isSummer = imageUtils.findImage("recover_energy_summer", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first != null
 
 		// During summer, only recover mood if it's Bad/Awful (not Normal) since we want to maximize training
 		if (isSummer) {
 			if (currentMood == "Bad/Awful") {
 				MessageLog.i(TAG, "[MOOD] Summer: Current mood is Bad/Awful. Using summer rest for mood recovery.")
-				findAndTapImage("recover_energy_summer", tries = 1, region = imageUtils.regionBottomHalf)
-				findAndTapImage("ok", region = imageUtils.regionMiddle, suppressError = true)
+				findAndTapImage("recover_energy_summer", tries = 1, region = ScreenRegion.BOTTOM_HALF)
+				findAndTapImage("ok", region = ScreenRegion.MIDDLE, suppressError = true)
 				raceRepeatWarningCheck = false
 				return true
 			} else {
@@ -2593,17 +2533,17 @@ class Game(val myContext: Context) {
 			false
 		} else if (currentMood == "Bad/Awful" || currentMood == "Normal") {
 			MessageLog.i(TAG, "[MOOD] Current mood is not good. Recovering mood now.")
-			if (!findAndTapImage("recover_mood", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
+			if (!findAndTapImage("recover_mood", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true)) {
 				// Fallback to summer rest if available (shouldn't happen since we check isSummer above)
-				findAndTapImage("recover_energy_summer", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)
+				findAndTapImage("recover_energy_summer", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true)
 			}
 
 			// Do the date if it is unlocked.
-			if (findAndTapImage("recover_mood_date", tries = 1, region = imageUtils.regionMiddle, suppressError = true)) {
-				wait(1.0)
+			if (findAndTapImage("recover_mood_date", tries = 1, region = ScreenRegion.MIDDLE, suppressError = true)) {
+				GameUtils.wait(1.0)
 			}
 
-			findAndTapImage("ok", region = imageUtils.regionMiddle, suppressError = true)
+			findAndTapImage("ok", region = ScreenRegion.MIDDLE, suppressError = true)
 			raceRepeatWarningCheck = false
 			true
 		} else {
@@ -2630,50 +2570,50 @@ class Game(val myContext: Context) {
 	fun performMiscChecks(): Boolean {
 		MessageLog.i(TAG, "Beginning check for misc cases...")
 
-		if (enablePopupCheck && imageUtils.findImage("cancel", tries = 1, region = imageUtils.regionBottomHalf).first != null &&
-			imageUtils.findImage("recover_mood_date", tries = 1, region = imageUtils.regionMiddle).first == null) {
+		if (enablePopupCheck && imageUtils.findImage("cancel", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null &&
+			imageUtils.findImage("recover_mood_date", tries = 1, region = ScreenRegion.MIDDLE).first == null) {
 			MessageLog.i(TAG, "[END] Bot may have encountered a warning popup. Exiting now...")
 			notificationMessage = "Bot may have encountered a warning popup"
 			return false
-		} else if (findAndTapImage("next", tries = 1, region = imageUtils.regionBottomHalf)) {
+		} else if (findAndTapImage("next", tries = 1, region = ScreenRegion.BOTTOM_HALF)) {
 			// Now confirm the completion of a Training Goal popup.
-			wait(2.0)
-			findAndTapImage("next", tries = 1, region = imageUtils.regionBottomHalf)
-			wait(1.0)
-		} else if (imageUtils.findImage("crane_game", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
+			GameUtils.wait(2.0)
+			findAndTapImage("next", tries = 1, region = ScreenRegion.BOTTOM_HALF)
+			GameUtils.wait(1.0)
+		} else if (imageUtils.findImage("crane_game", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null) {
             if (enableSkipCraneGame) {
                 MessageLog.i(TAG, "Crane game event detected. Auto failing since skip crane game setting is enabled.")
-                findAndTapImage("crane_game", tries = 1, region = imageUtils.regionBottomHalf)
-			    wait(5.0)
+                findAndTapImage("crane_game", tries = 1, region = ScreenRegion.BOTTOM_HALF)
+			    GameUtils.wait(5.0)
             } else {
                 MessageLog.i(TAG, "[END] Bot will stop due to the detection of the Crane Game Event. Please complete it and restart the bot.")
                 notificationMessage = "Bot will stop due to the detection of the Crane Game Event. Please complete it and restart the bot."
                 return false
             }
 		} else if (
-			imageUtils.findImage("ordinary_cuties", tries = 1, region = imageUtils.regionBottomHalf).first != null &&
-			imageUtils.findImage("crane_ok", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
+			imageUtils.findImage("ordinary_cuties", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null &&
+			imageUtils.findImage("crane_ok", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null) {
             MessageLog.i(TAG, "Crane game complete screen.")
-			findAndTapImage("crane_ok", tries=1, region = imageUtils.regionBottomHalf)
-			wait(1.0)
-		}  else if (findAndTapImage("race_retry", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
+			findAndTapImage("crane_ok", tries=1, region = ScreenRegion.BOTTOM_HALF)
+			GameUtils.wait(1.0)
+		}  else if (findAndTapImage("race_retry", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true)) {
 			MessageLog.i(TAG, "There is a race retry popup.")
-			wait(5.0)
-		} else if (findAndTapImage("race_accept_trophy", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
+			GameUtils.wait(5.0)
+		} else if (findAndTapImage("race_accept_trophy", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true)) {
 			MessageLog.i(TAG, "There is a possible popup to accept a trophy.")
 			finishRace(true, isExtra = true)
-		} else if (findAndTapImage("race_end", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
+		} else if (findAndTapImage("race_end", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true)) {
 			MessageLog.i(TAG, "Ended a leftover race.")
-		} else if (imageUtils.findImage("connection_error", tries = 1, region = imageUtils.regionMiddle, suppressError = true).first != null) {
+		} else if (imageUtils.findImage("connection_error", tries = 1, region = ScreenRegion.MIDDLE, suppressError = true).first != null) {
 			MessageLog.i(TAG, "[END] Bot will stop due to detecting a connection error.")
 			notificationMessage = "Bot will stop due to detecting a connection error."
 			return false
-		} else if (imageUtils.findImage("race_not_enough_fans", tries = 1, region = imageUtils.regionMiddle, suppressError = true).first != null) {
+		} else if (imageUtils.findImage("race_not_enough_fans", tries = 1, region = ScreenRegion.MIDDLE, suppressError = true).first != null) {
 			MessageLog.i(TAG, "There was a popup about insufficient fans.")
 			encounteredRacingPopup = true
-			findAndTapImage("cancel", region = imageUtils.regionBottomHalf)
-		} else if (findAndTapImage("back", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
-			wait(1.0)
+			findAndTapImage("cancel", region = ScreenRegion.BOTTOM_HALF)
+		} else if (findAndTapImage("back", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true)) {
+			GameUtils.wait(1.0)
 		} else if (!BotService.isRunning) {
 			throw InterruptedException()
 		} else {
@@ -2690,7 +2630,7 @@ class Game(val myContext: Context) {
 	 */
 	fun start(): Boolean {
 		// Print current app settings at the start of the run.
-		SettingsPrinter.printCurrentSettings(myContext) { message ->
+		SettingsPrinter.printCurrentSettings(ctx) { message ->
 			MessageLog.i(TAG, message, newline=false)
 		}
 
@@ -2699,12 +2639,12 @@ class Game(val myContext: Context) {
 
 		// If debug mode is off, then it is necessary to wait a few seconds for the Toast message to disappear from the screen to prevent it obstructing anything beneath it.
 		if (!debugMode) {
-			wait(5.0)
+			GameUtils.wait(5.0)
 		}
 
 		// Print device and version information.
-		MessageLog.i(TAG, "Device Information: ${MediaProjectionService.displayWidth}x${MediaProjectionService.displayHeight}, DPI ${MediaProjectionService.displayDPI}")
-		if (MediaProjectionService.displayWidth != 1080) {
+		MessageLog.i(TAG, "Device Information: ${ScreenRegion.WIDTH}x${ScreenRegion.HEIGHT}, DPI ${ScreenRegion.DPI}")
+		if (ScreenRegion.WIDTH != 1080) {
             MessageLog.w(TAG, "⚠️ Bot performance will be severely degraded since display width is not 1080p unless an appropriate scale is set for your device.")
         }
 		if (debugMode) {
@@ -2715,9 +2655,9 @@ class Game(val myContext: Context) {
         }
 		MessageLog.w(TAG, "⚠️ Note that certain Android notification styles (like banners) are big enough that they cover the area that contains the Mood which will interfere with mood recovery logic in the beginning.")
 		val packageInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-			myContext.packageManager.getPackageInfo(myContext.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
+			ctx.packageManager.getPackageInfo(ctx.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
 		} else {
-			myContext.packageManager.getPackageInfo(myContext.packageName, 0)
+			ctx.packageManager.getPackageInfo(ctx.packageName, 0)
 		}
 		val versionCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
 			packageInfo.longVersionCode

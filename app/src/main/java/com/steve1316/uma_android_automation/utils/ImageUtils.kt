@@ -31,13 +31,19 @@ import kotlin.collections.component2
 import kotlin.math.sqrt
 import kotlin.text.replace
 
+import com.steve1316.uma_android_automation.utils.ScreenRegion
 
 /**
  * Utility functions for image processing via CV like OpenCV.
  */
-class ImageUtils(context: Context, private val game: Game) {
+object ImageUtils {
 	private val TAG: String = "ImageUtils"
-	private var myContext = context
+	private lateinit var ctx: Context
+
+    fun initialize(context: Context) {
+        ctx = context
+    }
+
 	private val matchMethod: Int = Imgproc.TM_CCOEFF_NORMED
 	private val decimalFormat = DecimalFormat("#.###")
 	private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -57,12 +63,10 @@ class ImageUtils(context: Context, private val game: Game) {
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	// Device configuration
-	private val displayWidth: Int = MediaProjectionService.displayWidth
-	private val displayHeight: Int = MediaProjectionService.displayHeight
-	private val isLowerEnd: Boolean = (displayWidth == 720)
-	private val isDefault: Boolean = (displayWidth == 1080)
-	val isTablet: Boolean = (displayWidth == 1600 && displayHeight == 2560) || (displayWidth == 2560 && displayHeight == 1600) // Galaxy Tab S7 1600x2560 Portrait Mode
-	private val isLandscape: Boolean = (displayWidth == 2560 && displayHeight == 1600) // Galaxy Tab S7 1600x2560 Landscape Mode
+	private val isLowerEnd: Boolean = (ScreenRegion.WIDTH == 720)
+	private val isDefault: Boolean = (ScreenRegion.WIDTH == 1080)
+	val isTablet: Boolean = (ScreenRegion.WIDTH == 1600 && ScreenRegion.HEIGHT == 2560) || (ScreenRegion.WIDTH == 2560 && ScreenRegion.HEIGHT == 1600) // Galaxy Tab S7 1600x2560 Portrait Mode
+	private val isLandscape: Boolean = (ScreenRegion.WIDTH == 2560 && ScreenRegion.HEIGHT == 1600) // Galaxy Tab S7 1600x2560 Landscape Mode
 	private val isSplitScreen: Boolean = false // Uma Musume Pretty Derby is only playable in Portrait mode.
 
 	// Scales
@@ -88,11 +92,6 @@ class ImageUtils(context: Context, private val game: Game) {
 
 	// TODO: Separate tablet landscape scale to non-splitscreen and splitscreen scales.
 
-	// Define template matching regions of the screen.
-	val regionTopHalf: IntArray = intArrayOf(0, 0, displayWidth, displayHeight / 2)
-	val regionBottomHalf: IntArray = intArrayOf(0, displayHeight / 2, displayWidth, displayHeight / 2)
-	val regionMiddle: IntArray = intArrayOf(0, displayHeight / 4, displayWidth, displayHeight / 2)
-
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 
@@ -111,7 +110,7 @@ class ImageUtils(context: Context, private val game: Game) {
 
 	init {
 		// Set the file path to the /files/temp/ folder.
-		val matchFilePath: String = myContext.getExternalFilesDir(null)?.absolutePath + "/temp"
+		val matchFilePath: String = ctx.getExternalFilesDir(null)?.absolutePath + "/temp"
 		updateMatchFilePath(matchFilePath)
 
 		// Initialize Tesseract with the traineddata model.
@@ -119,7 +118,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		tessBaseAPI = TessBaseAPI()
 
 		// Start up Tesseract.
-		tessBaseAPI.init(myContext.getExternalFilesDir(null)?.absolutePath + "/tesseract/", "eng")
+		tessBaseAPI.init(ctx.getExternalFilesDir(null)?.absolutePath + "/tesseract/", "eng")
 		MessageLog.i(TAG, "Training file loaded.")
 	}
 
@@ -605,7 +604,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		return if (isDefault) {
 			oldX
 		} else {
-			(oldX.toDouble() * (displayWidth.toDouble() / 1080.0)).toInt()
+			(oldX.toDouble() * (ScreenRegion.WIDTH.toDouble() / 1080.0)).toInt()
 		}
 	}
 
@@ -619,7 +618,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		return if (isDefault) {
 			oldY
 		} else {
-			(oldY.toDouble() * (displayHeight.toDouble() / 2340.0)).toInt()
+			(oldY.toDouble() * (ScreenRegion.HEIGHT.toDouble() / 2340.0)).toInt()
 		}
 	}
 
@@ -664,7 +663,7 @@ class ImageUtils(context: Context, private val game: Game) {
 		var templateBitmap: Bitmap?
 
 		// Get the Bitmap from the template image file inside the specified folder.
-		myContext.assets?.open("images/$templateName.png").use { inputStream ->
+		ctx.assets?.open("images/$templateName.png").use { inputStream ->
 			// Get the Bitmap from the template image file and then start matching.
 			templateBitmap = BitmapFactory.decodeStream(inputStream)
 		}
@@ -760,7 +759,7 @@ class ImageUtils(context: Context, private val game: Game) {
 					}
 
 					MessageLog.d(TAG, "Failed to find the ${templateName.uppercase()} button. Trying again...")
-					game.wait(0.1)
+					GameUtils.wait(0.1)
 					sourceBitmap = getSourceBitmap()
 				} else {
 					MessageLog.i(TAG, "[SUCCESS] Found the ${templateName.uppercase()} at $location.")
@@ -799,7 +798,7 @@ class ImageUtils(context: Context, private val game: Game) {
 						break
 					}
 
-					game.wait(0.1)
+					GameUtils.wait(0.1)
 					sourceBitmap = getSourceBitmap()
 				} else {
 					MessageLog.i(TAG, "[SUCCESS] Current location confirmed to be at ${templateName.uppercase()}.")
@@ -856,7 +855,7 @@ class ImageUtils(context: Context, private val game: Game) {
 	 */
 	private fun findAllWithBitmap(templateName: String, sourceBitmap: Bitmap, region: IntArray = intArrayOf(0, 0, 0, 0)): ArrayList<Point> {
 		var templateBitmap: Bitmap?
-		myContext.assets?.open("images/$templateName.png").use { inputStream ->
+		ctx.assets?.open("images/$templateName.png").use { inputStream ->
 			templateBitmap = BitmapFactory.decodeStream(inputStream)
 		}
 
@@ -1126,7 +1125,7 @@ class ImageUtils(context: Context, private val game: Game) {
 	 */
 	fun determineDayForExtraRace(): Int {
 		var result = -1
-		val (energyTextLocation, sourceBitmap) = findImage("energy", tries = 1, region = regionTopHalf)
+		val (energyTextLocation, sourceBitmap) = findImage("energy", tries = 1, region = ScreenRegion.TOP_HALF)
 
 		if (energyTextLocation != null) {
 			// Crop the source screenshot to only contain the day number.
@@ -1438,7 +1437,7 @@ class ImageUtils(context: Context, private val game: Game) {
 	 * @return A list of the results for each relationship bar.
 	 */
 	fun analyzeRelationshipBars(sourceBitmap: Bitmap? = null): ArrayList<BarFillResult> {
-		val customRegion = intArrayOf(displayWidth - (displayWidth / 3), 0, (displayWidth / 3), displayHeight - (displayHeight / 3))
+		val customRegion = intArrayOf(ScreenRegion.WIDTH - (ScreenRegion.WIDTH / 3), 0, (ScreenRegion.WIDTH / 3), ScreenRegion.HEIGHT - (ScreenRegion.HEIGHT / 3))
 
 		// Take a single screenshot first to avoid buffer overflow.
 		val sourceBitmap = sourceBitmap ?: getSourceBitmap()
@@ -1608,7 +1607,7 @@ class ImageUtils(context: Context, private val game: Game) {
 	 * @return The preferred distance (Sprint, Mile, Medium, or Long) or Medium as default if no aptitude is detected.
 	 */
 	fun determinePreferredDistance(): String {
-		val (distanceLocation, sourceBitmap) = findImage("stat_distance", tries = 1, region = regionMiddle)
+		val (distanceLocation, sourceBitmap) = findImage("stat_distance", tries = 1, region = ScreenRegion.MIDDLE)
 		if (distanceLocation == null) {
 			MessageLog.e(TAG, "Could not determine the preferred distance. Setting to Medium by default.")
 			return "Medium"
@@ -1812,7 +1811,7 @@ class ImageUtils(context: Context, private val game: Game) {
 	 * Initialize Tesseract for future OCR operations. Make sure to put your .traineddata inside the root of the /assets/ folder.
 	 */
 	private fun initTesseract() {
-		val externalFilesDir: File? = myContext.getExternalFilesDir(null)
+		val externalFilesDir: File? = ctx.getExternalFilesDir(null)
 		val tempDirectory: String = externalFilesDir?.absolutePath + "/tesseract/tessdata/"
 		val newTempDirectory = File(tempDirectory)
 
@@ -1836,7 +1835,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			if (!trainedDataPath.exists()) {
 				try {
 					MessageLog.i(TAG, "Starting Tesseract initialization.")
-					val input = myContext.assets.open("$lang.traineddata")
+					val input = ctx.assets.open("$lang.traineddata")
 
 					val output = FileOutputStream("$tempDirectory/$lang.traineddata")
 
@@ -1895,7 +1894,7 @@ class ImageUtils(context: Context, private val game: Game) {
 			// Pre-load all template bitmaps to avoid thread contention
 			val templateBitmaps = mutableMapOf<String, Bitmap?>()
 			for (templateName in templates) {
-				myContext.assets?.open("images/$templateName.png").use { inputStream ->
+				ctx.assets?.open("images/$templateName.png").use { inputStream ->
 					templateBitmaps[templateName] = BitmapFactory.decodeStream(inputStream)
 				}
 			}

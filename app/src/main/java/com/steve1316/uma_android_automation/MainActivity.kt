@@ -22,6 +22,9 @@ val START_TIME_MS = System.currentTimeMillis()
 
 class MainActivity : AppCompatActivity() {
 	private lateinit var appBarConfiguration: AppBarConfiguration
+
+    // Todo: Maybe move into BotService::onCreate()
+    ImageUtils.initialize(this)
 	
 	companion object {
 		const val TAG: String = "UAA"
@@ -29,6 +32,7 @@ class MainActivity : AppCompatActivity() {
 	
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+
 		setContentView(R.layout.activity_main)
 		val toolbar: Toolbar = findViewById(R.id.toolbar)
 		setSupportActionBar(toolbar)

@@ -6,14 +6,15 @@ import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.data.CharacterData
 import com.steve1316.uma_android_automation.data.SupportData
 import com.steve1316.uma_android_automation.utils.ImageUtils
+import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.MessageLog
 import net.ricecode.similarity.JaroWinklerStrategy
 import net.ricecode.similarity.StringSimilarityServiceImpl
 
-class TextDetection(private val game: Game, private val imageUtils: ImageUtils) {
+class TextDetection(private val ctx: Context) {
 	private val TAG: String = "TextDetection"
 	
-	private var sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(game.myContext)
+	private var sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(ctx)
 	
 	private var result = ""
 	private var confidence = 0.0
@@ -22,8 +23,8 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 	private var supportCardTitle = ""
 	private var eventOptionRewards: ArrayList<String> = arrayListOf()
 	
-	private var character = sharedPreferences.getString("character", "")!!
-	private val supportCards: List<String> = sharedPreferences.getString("supportList", "")!!.split("|")
+	private var character = sharedPreferences.getString("selectedCharacter", "")!!
+	private val supportCards: List<String> = sharedPreferences.getString("selectedSupportCards", "")!!.split("|")
 	private val hideComparisonResults: Boolean = sharedPreferences.getBoolean("hideComparisonResults", false)
 	private val selectAllCharacters: Boolean = sharedPreferences.getBoolean("selectAllCharacters", true)
 	private val selectAllSupportCards: Boolean = sharedPreferences.getBoolean("selectAllSupportCards", true)
@@ -74,7 +75,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 						confidence = score
 						eventTitle = eventName
 						eventOptionRewards = eventOptions
-						category = "character"
+						category = "selectedCharacter"
 						character = characterKey
 					}
 				}
@@ -90,7 +91,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 					confidence = score
 					eventTitle = eventName
 					eventOptionRewards = eventOptions
-					category = "character"
+					category = "selectedCharacter"
 				}
 			}
 		}
@@ -156,7 +157,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 	}
 
 	/**
-	 * Parses a date string from the game and converts it to a structured Game.Date object.
+	 * Parses a date string from the game and converts it to a structured GameUtils.Date object.
 	 * 
 	 * This function handles two types of date formats: Pre-Debut and regular date strings.
 	 * 
@@ -169,15 +170,15 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 	 * 
 	 * @param dateString The date string to parse (e.g., "Classic Year Early Jan" or "Pre-Debut")
 	 *
-	 * @return A Game.Date object containing the parsed year, phase, month, and calculated turn number.
+	 * @return A GameUtils.Date object containing the parsed year, phase, month, and calculated turn number.
 	 */
-	fun determineDateFromString(dateString: String): Game.Date {
+	fun determineDateFromString(dateString: String): GameUtils.Date {
 		if (dateString == "") {
 			MessageLog.e(TAG, "Received date string from OCR was empty. Defaulting to \"Senior Year Early Jan\" at turn number 49.")
-			return Game.Date(3, "Early", 1, 49)
+			return GameUtils.Date(3, "Early", 1, 49)
 		} else if (dateString.lowercase().contains("debut")) {
 			// Special handling for the Pre-Debut phase.
-			val turnsRemaining = imageUtils.determineDayForExtraRace()
+			val turnsRemaining = ImageUtils.determineDayForExtraRace()
 
 			// Pre-Debut ends on Early July (turn 13), so we calculate backwards.
 			// This includes the Race day.
@@ -185,7 +186,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 			val currentTurnInPreDebut = totalTurnsInPreDebut - turnsRemaining + 1
 
 			val month = ((currentTurnInPreDebut - 1) / 2) + 1
-			return Game.Date(1, "Pre-Debut", month, currentTurnInPreDebut)
+			return GameUtils.Date(1, "Pre-Debut", month, currentTurnInPreDebut)
 		}
 
 		// Example input is "Classic Year Early Jan".
@@ -213,7 +214,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 		val parts = dateString.trim().split(" ")
 		if (parts.size < 3) {
 			MessageLog.w(TAG, "[TEXT-DETECTION] Invalid date string format: $dateString")
-			return Game.Date(3, "Early", 1, 49)
+			return GameUtils.Date(3, "Early", 1, 49)
 		}
  
 		// Extract the parts with safe indexing using default values.
@@ -264,7 +265,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 		// Each month has 2 turns (Early and Late).
 		val turnNumber = ((year - 1) * 24) + ((month - 1) * 2) + (if (phase == "Early") 1 else 2)
 
-		return Game.Date(year, phase, month, turnNumber)
+		return GameUtils.Date(year, phase, month, turnNumber)
 	}
 	
 	fun start(): Pair<ArrayList<String>, Double> {
@@ -286,7 +287,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 		while (true) {
 			// Perform Tesseract OCR detection.
 			if ((255.0 - threshold - increment) > 0.0) {
-				result = imageUtils.findText(increment)
+				result = ImageUtils.findText(increment)
 			} else {
 				break
 			}
@@ -299,7 +300,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 				findMostSimilarString()
 				
 				when (category) {
-					"character" -> {
+					"selectedCharacter" -> {
 						if (!hideComparisonResults) {
 							MessageLog.i(TAG, "[RESULT] Character $character Event Name = $eventTitle with confidence = $confidence")
 						}

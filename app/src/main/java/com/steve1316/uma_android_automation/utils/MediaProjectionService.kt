@@ -32,6 +32,28 @@ import java.io.IOException
 import java.util.*
 import androidx.core.graphics.createBitmap
 
+
+// pseudo enum. Can't use enum since we can't calculate values until DisplayMetrics
+// is ready and enums aren't mutable.
+object ScreenRegion {
+    var WIDTH: Int = 0
+    var HEIGHT: Int = 0
+    var DPI: Int = 0
+    var TOP_HALF: IntArray = intArrayOf(0, 0, 0, 0)
+    var MIDDLE: IntArray = intArrayOf(0, 0, 0, 0)
+    var BOTTOM_HALF: IntArray = intArrayOf(0, 0, 0, 0)
+    
+    fun initialize(metrics: DisplayMetrics) {
+        WIDTH = metrics.widthPixels
+        HEIGHT = metrics.heightPixels
+        DPI = metrics.densityDpi
+
+        TOP_HALF = intArrayOf(0, 0, WIDTH, HEIGHT / 2)
+        MIDDLE = intArrayOf(0, HEIGHT / 4, WIDTH, HEIGHT / 2)
+        BOTTOM_HALF = intArrayOf(0, HEIGHT / 2, WIDTH, HEIGHT / 2)
+    }
+}
+
 /**
  * The MediaProjection service that will control taking screenshots.
  *
@@ -49,11 +71,6 @@ class MediaProjectionService : Service() {
 		private var orientationChangeCallback: OrientationEventListener? = null
 		private lateinit var tempDirectory: String
 		private lateinit var threadHandler: Handler
-		
-		var displayWidth: Int = 0
-		var displayHeight: Int = 0
-		var displayDPI: Int = 0
-		
 		private lateinit var virtualDisplay: VirtualDisplay
 		private lateinit var defaultDisplay: Display
 		private lateinit var windowManager: WindowManager
@@ -78,10 +95,10 @@ class MediaProjectionService : Service() {
 				val buffer = planes[0].buffer
 				val pixelStride = planes[0].pixelStride
 				val rowStride = planes[0].rowStride
-				val rowPadding: Int = rowStride - pixelStride * displayWidth
+				val rowPadding: Int = rowStride - pixelStride * ScreenRegion.WIDTH
 				
 				// Create the Bitmap.
-				sourceBitmap = createBitmap(displayWidth + rowPadding / pixelStride, displayHeight)
+				sourceBitmap = createBitmap(ScreenRegion.WIDTH + rowPadding / pixelStride, ScreenRegion.HEIGHT)
 				sourceBitmap.copyPixelsFromBuffer(buffer)
 				
 				// Now write the Bitmap to the specified file inside the /files/temp/ folder. This adds about 500-600ms to runtime every time this is called when Debug Mode is on.
@@ -356,20 +373,18 @@ class MediaProjectionService : Service() {
 		// Get the full width and height of the device screen such that making a screenshot would not scale it down and creating black bars that
 		// would offset the screen coordinates of matches by the difference.
 		val metrics = DisplayMetrics()
+        ScreenRegion.initialize(metrics)
 		defaultDisplay.getRealMetrics(metrics)
-		displayWidth = metrics.widthPixels
-		displayHeight = metrics.heightPixels
-		displayDPI = metrics.densityDpi
 		
-		MessageLog.d(TAG, "Screen Width: $displayWidth, Screen Height: $displayHeight, Screen DPI: $displayDPI")
+		MessageLog.d(TAG, "Screen Width: ${ScreenRegion.WIDTH}, Screen Height: ${ScreenRegion.HEIGHT}, Screen DPI: ${ScreenRegion.DPI}")
 		
 		// Start the ImageReader.
-		imageReader = ImageReader.newInstance(displayWidth, displayHeight, PixelFormat.RGBA_8888, 2)
+		imageReader = ImageReader.newInstance(ScreenRegion.WIDTH, ScreenRegion.HEIGHT, PixelFormat.RGBA_8888, 2)
 		
 		// Now create the VirtualDisplay.
 		virtualDisplay = mediaProjection?.createVirtualDisplay(
-			"$appName's Virtual Display", displayWidth, displayHeight,
-			displayDPI, getVirtualDisplayFlags(), imageReader.surface, null, threadHandler
+			"$appName's Virtual Display", ScreenRegion.WIDTH, ScreenRegion.HEIGHT,
+			ScreenRegion.DPI, getVirtualDisplayFlags(), imageReader.surface, null, threadHandler
 		)!!
 	}
 }
