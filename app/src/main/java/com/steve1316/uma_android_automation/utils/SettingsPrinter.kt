@@ -66,9 +66,9 @@ object SettingsPrinter {
 		val longWitTarget = sharedPreferences.getInt("trainingLongStatTarget_witStatTarget", 300)
 		
 		// Training Event Settings
-		val character = sharedPreferences.getString("character", "Please select one in the Training Event Settings")!!
+		val character = sharedPreferences.getString("selectedCharacter", "Please select one in the Training Event Settings")!!
 		val selectAllCharacters = sharedPreferences.getBoolean("selectAllCharacters", true)
-		val supportList = sharedPreferences.getString("supportList", "")?.split("|")!!
+		val supportList = sharedPreferences.getString("selectedSupportCards", "")?.split("|")!!
 		val selectAllSupportCards = sharedPreferences.getBoolean("selectAllSupportCards", true)
 		
 		// OCR Optimization Settings

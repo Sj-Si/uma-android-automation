@@ -31,7 +31,7 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 			when (key) {
 				"characterPicker" -> {
 					sharedPreferences.edit {
-						putString("character", characterPicker.value)
+						putString("selectedCharacter", characterPicker.value)
 						commit()
 					}
 					
@@ -46,7 +46,7 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 					characterPicker.value = ""
 					characterPicker.summary = "Covers all R, SR and SSR variants into one."
 					sharedPreferences.edit {
-						remove("character")
+						remove("selectedCharacter")
 						commit()
 					}
 				}
@@ -70,7 +70,7 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 					// Clear the selected Support Cards and then remove the setting from SharedPreferences.
 					userSelectedOptions.clear()
 					sharedPreferences.edit {
-						remove("supportList")
+						remove("selectedSupportCards")
 						apply()
 					}
 				}
@@ -99,7 +99,7 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 		sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
 		
 		// Grab the saved preferences from the previous time the user used the app.
-		val character = sharedPreferences.getString("character", "")
+		val character = sharedPreferences.getString("selectedCharacter", "")
 		val selectAllCharacters = sharedPreferences.getBoolean("selectAllCharacters", true)
 		val selectAllSupportCards = sharedPreferences.getBoolean("selectAllSupportCards", true)
 		
@@ -137,7 +137,7 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 	 */
 	private fun createSupportCardPicker() {
 		val multiplePreference: Preference = findPreference("supportPicker")!!
-		val savedOptions = sharedPreferences.getString("supportList", "")!!.split("|")
+		val savedOptions = sharedPreferences.getString("selectedSupportCards", "")!!.split("|")
 		val selectedOptions = sharedPreferences.getString("selectedOptions", "")!!.split("|")
 		
 		// Update the Preference's summary to reflect the order of options selected if the user did it before.
@@ -204,7 +204,7 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 				// Note: putStringSet does not support ordering or duplicate values. If you need ordering/duplicate values, either concatenate the values together as a String separated by a
 				// delimiter or think of another way.
 				sharedPreferences.edit {
-					putString("supportList", newValues)
+					putString("selectedSupportCards", newValues)
 					putString("selectedOptions", newSelectedOptions)
 					apply()
 				}
@@ -232,7 +232,7 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 				// After that, clear the list of user-selected options and the one in SharedPreferences.
 				userSelectedOptions.clear()
 				sharedPreferences.edit {
-					remove("supportList")
+					remove("selectedSupportCards")
 					apply()
 				}
 				

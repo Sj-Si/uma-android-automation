@@ -11,19 +11,19 @@
             app:title="Training Blacklist" />
 
         <Preference
-            app:key="statPrioritization"
+            app:key="statPriority"
             app:summary="Select Stat(s) to focus in order with descending priority. Will affect training event option selection.\n\nFollowing Default Prioritization Order:\n1. Speed\n2. Stamina\n3. Power\n4. Wit\n5. Guts"
             app:title="Prioritize Training Certain Stats" />
 
         <CheckBoxPreference
-            app:key="disableTrainingOnMaxedStat"
-            app:summary="Disables training on a maxed out stat (1200 for example). Defaults to enabled."
+            app:key="bEnableTrainMaxedStat"
+            app:summary="Disables training on a maxed out stat (1200 for example). Defaults to disabled."
             app:title="Disable Training on Maxed out Stat" />
 
         <SeekBarPreference
             android:defaultValue="15"
             android:max="99"
-            app:key="maximumFailureChance"
+            app:key="maxFailChance"
             app:min="1"
             app:showSeekBarValue="true"
             app:summary="Set the maximum failure chance that Training is allowed to have before recovering energy. Default is at 15%."

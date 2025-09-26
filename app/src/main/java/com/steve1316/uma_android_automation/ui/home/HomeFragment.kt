@@ -122,7 +122,7 @@ class HomeFragment : Fragment() {
 		val longWitTarget = sharedPreferences.getInt("trainingLongStatTarget_witStatTarget", 300)
 
 		// Training Event Settings page
-		val character = sharedPreferences.getString("character", "Please select one in the Training Event Settings")!!
+		val character = sharedPreferences.getString("selectedCharacter", "Please select one in the Training Event Settings")!!
 		val selectAllCharacters = sharedPreferences.getBoolean("selectAllCharacters", true)
 
 		////////////////////////////////////////////////////////////////////////////////////////////////////
