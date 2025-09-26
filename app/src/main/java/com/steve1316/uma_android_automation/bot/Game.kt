@@ -31,26 +31,6 @@ class Game(val myContext: Context) {
 	val gestureUtils: MyAccessibilityService = MyAccessibilityService.getInstance()
 	private val textDetection: TextDetection = TextDetection(this, imageUtils)
 
-    // Wrappers around the MessageLog object to tidy up logging code in this class.
-    // Use like Log.i, Log.d, etc.
-    companion object Log {
-        fun d(message: String, isOption: Boolean = false, newline: Boolean = false) {
-            MessageLog.d(message, TAG, isOption, newline)
-        }
-
-        fun i(message: String, isOption: Boolean = false, newline: Boolean = false) {
-            MessageLog.i(message, TAG, isOption, newline)
-        }
-
-        fun w(message: String, isOption: Boolean = false, newline: Boolean = false) {
-            MessageLog.w(message, TAG, isOption, newline)
-        }
-
-        fun e(message: String, isOption: Boolean = false, newline: Boolean = false) {
-            MessageLog.e(message, TAG, isOption, newline)
-        }
-    }
-
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	// SharedPreferences
@@ -274,13 +254,13 @@ class Game(val myContext: Context) {
 	 */
 	fun findAndTapImage(imageName: String, tries: Int = 3, region: IntArray = intArrayOf(0, 0, 0, 0), taps: Int = 1, suppressError: Boolean = false): Boolean {
 		if (debugMode) {
-			Log.d("Now attempting to find and click the \"$imageName\" button.")
+			MessageLog.d(TAG, "Now attempting to find and click the \"$imageName\" button.")
 		}
 
 		val tempLocation: Point? = imageUtils.findImage(imageName, tries = tries, region = region, suppressError = suppressError).first
 
 		return if (tempLocation != null) {
-			Log.d("Found and going to tap: $imageName")
+			MessageLog.d(TAG, "Found and going to tap: $imageName")
 			tap(tempLocation.x, tempLocation.y, imageName, taps = taps)
 			true
 		} else {
@@ -312,20 +292,20 @@ class Game(val myContext: Context) {
 	 * Handles the test to perform template matching to determine what the best scale will be for the device.
 	 */
 	fun startTemplateMatchingTest() {
-		Log.i("[TEST] Now beginning basic template match test on the Home screen.")
-		Log.i("[TEST] Template match confidence setting will be overridden for the test.")
+		MessageLog.i(TAG, "[TEST] Now beginning basic template match test on the Home screen.")
+		MessageLog.i(TAG, "[TEST] Template match confidence setting will be overridden for the test.")
 		val results = imageUtils.startTemplateMatchingTest()
-		Log.i("[TEST] Basic template match test complete.")
+		MessageLog.i(TAG, "[TEST] Basic template match test complete.")
 
 		// Print all scale/confidence combinations that worked for each template.
 		for ((templateName, scaleConfidenceResults) in results) {
 			if (scaleConfidenceResults.isNotEmpty()) {
-				Log.i("[TEST] All working scale/confidence combinations for $templateName:")
+				MessageLog.i(TAG, "[TEST] All working scale/confidence combinations for $templateName:")
 				for (result in scaleConfidenceResults) {
-					Log.i("[TEST]	Scale: ${result.scale}, Confidence: ${result.confidence}")
+					MessageLog.i(TAG, "[TEST]	Scale: ${result.scale}, Confidence: ${result.confidence}")
 				}
 			} else {
-				Log.w("No working scale/confidence combinations found for $templateName")
+				MessageLog.w(TAG, "No working scale/confidence combinations found for $templateName")
 			}
 		}
 
@@ -340,16 +320,16 @@ class Game(val myContext: Context) {
 				val medianConfidence = sortedConfidences[sortedConfidences.size / 2]
 				medianScales.add(medianScale)
 				medianConfidences.add(medianConfidence)
-				Log.i("[TEST] Median scale for $templateName: $medianScale")
-				Log.i("[TEST] Median confidence for $templateName: $medianConfidence")
+				MessageLog.i(TAG, "[TEST] Median scale for $templateName: $medianScale")
+				MessageLog.i(TAG, "[TEST] Median confidence for $templateName: $medianConfidence")
 			}
 		}
 
 		if (medianScales.isNotEmpty()) {
-			Log.i("[TEST] The following are the recommended scales to set (pick one as a whole number value): $medianScales.")
-			Log.i("[TEST] The following are the recommended confidences to set (pick one as a whole number value): $medianConfidences.")
+			MessageLog.i(TAG, "[TEST] The following are the recommended scales to set (pick one as a whole number value): $medianScales.")
+			MessageLog.i(TAG, "[TEST] The following are the recommended confidences to set (pick one as a whole number value): $medianConfidences.")
 		} else {
-			Log.e("No median scale/confidence can be found.")
+			MessageLog.e(TAG, "No median scale/confidence can be found.")
 		}
 	}
 
@@ -357,13 +337,13 @@ class Game(val myContext: Context) {
 	 * Handles the test to perform OCR on the training failure chance for the current training on display.
 	 */
 	fun startSingleTrainingFailureOCRTest() {
-		Log.i("[TEST] Now beginning Single Training Failure OCR test on the Training screen for the current training on display.")
-		Log.i("[TEST] Note that this test is dependent on having the correct scale.")
+		MessageLog.i(TAG, "[TEST] Now beginning Single Training Failure OCR test on the Training screen for the current training on display.")
+		MessageLog.i(TAG, "[TEST] Note that this test is dependent on having the correct scale.")
 		val failureChance: Int = imageUtils.findTrainingFailureChance()
 		if (failureChance == -1) {
-			Log.e("Training Failure Chance detection failed.")
+			MessageLog.e(TAG, "Training Failure Chance detection failed.")
 		} else {
-			Log.i("[TEST] Training Failure Chance: $failureChance")
+			MessageLog.i(TAG, "[TEST] Training Failure Chance: $failureChance")
 		}
 	}
 
@@ -371,8 +351,8 @@ class Game(val myContext: Context) {
 	 * Handles the test to perform OCR on training failure chances for all 5 of the trainings on display.
 	 */
 	fun startComprehensiveTrainingFailureOCRTest() {
-		Log.i("[TEST] Now beginning Comprehensive Training Failure OCR test on the Training screen for all 5 trainings on display.")
-		Log.i("[TEST] Note that this test is dependent on having the correct scale.")
+		MessageLog.i(TAG, "[TEST] Now beginning Comprehensive Training Failure OCR test on the Training screen for all 5 trainings on display.")
+		MessageLog.i(TAG, "[TEST] Note that this test is dependent on having the correct scale.")
 		analyzeTrainings(test = true)
 		printTrainingMap()
 	}
@@ -394,10 +374,10 @@ class Game(val myContext: Context) {
 	 * @return True if the bot is at the Main screen. Otherwise false.
 	 */
 	fun checkMainScreen(): Boolean {
-		Log.i("Checking if the bot is sitting at the Main screen.")
+		MessageLog.i(TAG, "Checking if the bot is sitting at the Main screen.")
 		return if (imageUtils.findImage("tazuna", tries = 1, region = imageUtils.regionTopHalf).first != null &&
 			imageUtils.findImage("race_select_mandatory", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true).first == null) {
-			Log.i("Current bot location is at Main screen.")
+			MessageLog.i(TAG, "Current bot location is at Main screen.")
 
 			// Perform updates here if necessary.
 			updateDate()
@@ -406,7 +386,7 @@ class Game(val myContext: Context) {
 		} else if (!enablePopupCheck && imageUtils.findImage("cancel", tries = 1, region = imageUtils.regionBottomHalf).first != null &&
 			imageUtils.findImage("race_confirm", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
 			// This popup is most likely the insufficient fans popup. Force an extra race to catch up on the required fans.
-			Log.i("There is a possible insufficient fans or maiden race popup.")
+			MessageLog.i(TAG, "There is a possible insufficient fans or maiden race popup.")
 			encounteredRacingPopup = true
 			skipRacing = false
 			true
@@ -421,9 +401,9 @@ class Game(val myContext: Context) {
 	 * @return True if the bot is at the Training Event screen. Otherwise false.
 	 */
 	fun checkTrainingEventScreen(): Boolean {
-		Log.i("Checking if the bot is sitting on the Training Event screen.")
+		MessageLog.i(TAG, "Checking if the bot is sitting on the Training Event screen.")
 		return if (imageUtils.findImage("training_event_active", tries = 1, region = imageUtils.regionMiddle).first != null) {
-			Log.i("Current bot location is at Training Event screen.")
+			MessageLog.i(TAG, "Current bot location is at Training Event screen.")
 			true
 		} else {
 			false
@@ -436,14 +416,14 @@ class Game(val myContext: Context) {
 	 * @return True if the bot is at the Main screen with a mandatory race. Otherwise false.
 	 */
 	fun checkMandatoryRacePrepScreen(): Boolean {
-		Log.i("Checking if the bot is sitting on the Race Preparation screen.")
+		MessageLog.i(TAG, "Checking if the bot is sitting on the Race Preparation screen.")
 		return if (imageUtils.findImage("race_select_mandatory", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
-			Log.i("Current bot location is at the preparation screen with a mandatory race ready to be completed.")
+			MessageLog.i(TAG, "Current bot location is at the preparation screen with a mandatory race ready to be completed.")
 			true
 		} else if (imageUtils.findImage("race_select_mandatory_goal", tries = 1, region = imageUtils.regionMiddle).first != null) {
 			// Most likely the user started the bot here so a delay will need to be placed to allow the start banner of the Service to disappear.
 			wait(2.0)
-			Log.i("Current bot location is at the Race Selection screen with a mandatory race needing to be selected.")
+			MessageLog.i(TAG, "Current bot location is at the Race Selection screen with a mandatory race needing to be selected.")
 			// Walk back to the preparation screen.
 			findAndTapImage("back", tries = 1, region = imageUtils.regionBottomHalf)
 			wait(1.0)
@@ -459,9 +439,9 @@ class Game(val myContext: Context) {
 	 * @return True if the bot is at the Racing screen. Otherwise, false.
 	 */
 	fun checkRacingScreen(): Boolean {
-		Log.i("Checking if the bot is sitting on the Racing screen.")
+		MessageLog.i(TAG, "Checking if the bot is sitting on the Racing screen.")
 		return if (imageUtils.findImage("race_change_strategy", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
-			Log.i("Current bot location is at the Racing screen waiting to be skipped or done manually.")
+			MessageLog.i(TAG, "Current bot location is at the Racing screen waiting to be skipped or done manually.")
 			true
 		} else {
 			false
@@ -475,7 +455,7 @@ class Game(val myContext: Context) {
 	 */
 	fun checkExtraRaceAvailability(): Boolean {
 		val dayNumber = imageUtils.determineDayForExtraRace()
-		Log.i("Current remaining number of days before the next mandatory race: $dayNumber.")
+		MessageLog.i(TAG, "Current remaining number of days before the next mandatory race: $dayNumber.")
 
 		// If the setting to force racing extra races is enabled, always return true.
 		if (enableForceRacing) return true
@@ -493,7 +473,7 @@ class Game(val myContext: Context) {
 	 */
 	fun checkEndScreen(): Boolean {
 		return if (imageUtils.findImage("complete_career", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
-			Log.i("[END] Bot has reached the End screen.")
+			MessageLog.i(TAG, "[END] Bot has reached the End screen.")
 			true
 		} else {
 			false
@@ -516,17 +496,17 @@ class Game(val myContext: Context) {
 			if (findAndTapImage("recover_injury", tries = 1, region = imageUtils.regionBottomHalf)) {
 				wait(0.3)
 				if (imageUtils.confirmLocation("recover_injury", tries = 1, region = imageUtils.regionMiddle)) {
-					Log.i("Injury detected and attempted to heal.")
+					MessageLog.i(TAG, "Injury detected and attempted to heal.")
 					true
 				} else {
 					false
 				}
 			} else {
-				Log.w("Injury detected but attempt to rest failed.")
+				MessageLog.w(TAG, "Injury detected but attempt to rest failed.")
 				false
 			}
 		} else {
-			Log.i("No injury detected.")
+			MessageLog.i(TAG, "No injury detected.")
 			false
 		}
 	}
@@ -537,12 +517,12 @@ class Game(val myContext: Context) {
 	 * @return True if the game is still loading or is awaiting for a server response. Otherwise, false.
 	 */
 	fun checkLoading(): Boolean {
-		Log.i("Now checking if the game is still loading...")
+		MessageLog.i(TAG, "Now checking if the game is still loading...")
 		return if (imageUtils.findImage("connecting", tries = 1, region = imageUtils.regionTopHalf, suppressError = true).first != null) {
-			Log.i("Detected that the game is awaiting a response from the server from the \"Connecting\" text at the top of the screen. Waiting...")
+			MessageLog.i(TAG, "Detected that the game is awaiting a response from the server from the \"Connecting\" text at the top of the screen. Waiting...")
 			true
 		} else if (imageUtils.findImage("now_loading", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true).first != null) {
-			Log.i("Detected that the game is still loading from the \"Now Loading\" text at the bottom of the screen. Waiting...")
+			MessageLog.i(TAG, "Detected that the game is still loading from the \"Now Loading\" text at the bottom of the screen. Waiting...")
 			true
 		} else {
 			false
@@ -557,7 +537,7 @@ class Game(val myContext: Context) {
 	 * The entry point for handling Training.
 	 */
 	fun handleTraining() {
-		Log.i("[TRAINING] Starting Training process...")
+		MessageLog.i(TAG, "[TRAINING] Starting Training process...")
 
 		// Enter the Training screen.
 		if (findAndTapImage("training_option", region = imageUtils.regionBottomHalf)) {
@@ -566,15 +546,15 @@ class Game(val myContext: Context) {
 			analyzeTrainings()
 
 			if (trainingMap.isEmpty()) {
-				Log.i("[TRAINING] Backing out of Training and returning on the Main screen.")
+				MessageLog.i(TAG, "[TRAINING] Backing out of Training and returning on the Main screen.")
 				findAndTapImage("back", region = imageUtils.regionBottomHalf)
 				wait(1.0)
 
 				if (checkMainScreen()) {
-					Log.i("[TRAINING] Will recover energy due to either failure chance was high enough to do so or no failure chances were detected via OCR.")
+					MessageLog.i(TAG, "[TRAINING] Will recover energy due to either failure chance was high enough to do so or no failure chances were detected via OCR.")
 					recoverEnergy()
 				} else {
-					Log.e("Could not head back to the Main screen in order to recover energy.")
+					MessageLog.e(TAG, "Could not head back to the Main screen in order to recover energy.")
 				}
 			} else {
 				// Now select the training option with the highest weight.
@@ -584,9 +564,9 @@ class Game(val myContext: Context) {
 			}
 
 			raceRepeatWarningCheck = false
-			Log.i("[TRAINING] Training process completed.")
+			MessageLog.i(TAG, "[TRAINING] Training process completed.")
 		} else {
-			Log.e("Cannot start the Training process. Moving on...")
+			MessageLog.e(TAG, "Cannot start the Training process. Moving on...")
 		}
 	}
 
@@ -621,24 +601,24 @@ class Game(val myContext: Context) {
 		val needsRecovery = when {
 			// Critical energy - must recover
 			estimatedEnergy < 15 -> {
-				Log.i("[RECOVERY] Critical energy level (~${estimatedEnergy.toInt()}%) - MUST recover")
+				MessageLog.i(TAG, "[RECOVERY] Critical energy level (~${estimatedEnergy.toInt()}%) - MUST recover")
 				true
 			}
 			// Very high failure rates across the board
 			avgFailureRate > 40 -> {
-				Log.i("[RECOVERY] Very high average failure rate (${avgFailureRate.toInt()}%) - should recover")
+				MessageLog.i(TAG, "[RECOVERY] Very high average failure rate (${avgFailureRate.toInt()}%) - should recover")
 				true
 			}
 			// Low energy and no high-value trainings available
 			estimatedEnergy < 30 && trainingMap.values.none {
 				it.failureChance <= 15 && (it.relationshipBars.size >= 2 || it.statGains.sum() > 50)
 			} -> {
-				Log.i("[RECOVERY] Low energy with no high-value safe options - should recover")
+				MessageLog.i(TAG, "[RECOVERY] Low energy with no high-value safe options - should recover")
 				true
 			}
 			// Consecutive failures detected (if we could track this)
 			historicalTrainingCounts.getOrDefault("Rest", 0) == 0 && estimatedEnergy < 25 -> {
-				Log.i("[RECOVERY] Haven't rested recently and energy is low - consider recovery")
+				MessageLog.i(TAG, "[RECOVERY] Haven't rested recently and energy is low - consider recovery")
 				true
 			}
 			else -> false
@@ -693,7 +673,7 @@ class Game(val myContext: Context) {
 		// Check if summer is approaching (Early June = 2 turns before Late June summer)
 		val isSummerApproaching = currentDate.month == 6 && currentDate.phase == "Early"
 		if (isSummerApproaching && estimatedEnergy < 70) {
-			Log.i("[WIT VS REST] Summer training approaching in 2 turns. Energy low (~${estimatedEnergy.toInt()}%), prioritizing Rest for Lv5 training benefits")
+			MessageLog.i(TAG, "[WIT VS REST] Summer training approaching in 2 turns. Energy low (~${estimatedEnergy.toInt()}%), prioritizing Rest for Lv5 training benefits")
 			return false  // Always rest before summer if energy is not high
 		}
 
@@ -714,15 +694,15 @@ class Game(val myContext: Context) {
 					witTraining.relationshipBars.size >= 3
 
 			if (!hasExceptionalValue && !hasGreatFriendships) {
-				Log.i("[WIT VS REST] Wit stat already at target ($currentWit/$witTarget). Rest is better unless exceptional value.")
+				MessageLog.i(TAG, "[WIT VS REST] Wit stat already at target ($currentWit/$witTarget). Rest is better unless exceptional value.")
 				return false
 			}
-			Log.i("[WIT VS REST] Wit at target but training has exceptional value - considering it")
+			MessageLog.i(TAG, "[WIT VS REST] Wit at target but training has exceptional value - considering it")
 		} else if (witDeficit <= 50) {
 			// We're very close to target
 			if (witStatGain >= witDeficit * 2) {
 				// This would overshoot significantly
-				Log.i("[WIT VS REST] Wit training would overshoot target significantly ($currentWit + $witStatGain vs $witTarget)")
+				MessageLog.i(TAG, "[WIT VS REST] Wit training would overshoot target significantly ($currentWit + $witStatGain vs $witTarget)")
 				// Only do it if it has other great benefits
 				if (witTraining.relationshipBars.count { it.fillPercent >= 80 } < 2 &&
 					witTraining.failureChance > 15) {
@@ -791,14 +771,14 @@ class Game(val myContext: Context) {
 		}
 
 		if (shouldDoWit) {
-			Log.i("[WIT VS REST] Wit training is worth doing: ${witValuePerTurn} value/turn, ${witTraining.failureChance}% failure")
-			Log.i("[WIT VS REST] Current Wit: $currentWit/$witTarget (deficit: $witDeficit)")
+			MessageLog.i(TAG, "[WIT VS REST] Wit training is worth doing: ${witValuePerTurn} value/turn, ${witTraining.failureChance}% failure")
+			MessageLog.i(TAG, "[WIT VS REST] Current Wit: $currentWit/$witTarget (deficit: $witDeficit)")
 		} else {
-			Log.i("[WIT VS REST] Rest is better: Wit only provides ${witValuePerTurn} value at ${witTraining.failureChance}% failure")
+			MessageLog.i(TAG, "[WIT VS REST] Rest is better: Wit only provides ${witValuePerTurn} value at ${witTraining.failureChance}% failure")
 			if (isSummerApproaching && estimatedEnergy < 70) {
-				Log.i("[WIT VS REST] Pre-summer preparation: Resting to maximize Lv5 training benefits")
+				MessageLog.i(TAG, "[WIT VS REST] Pre-summer preparation: Resting to maximize Lv5 training benefits")
 			} else if (witDeficit <= 0) {
-				Log.i("[WIT VS REST] Wit target already reached: $currentWit/$witTarget")
+				MessageLog.i(TAG, "[WIT VS REST] Wit target already reached: $currentWit/$witTarget")
 			}
 		}
 
@@ -812,7 +792,7 @@ class Game(val myContext: Context) {
 	 * @param test Flag that forces the failure chance through even if it is not in the acceptable range for testing purposes.
 	 */
 	private fun analyzeTrainings(test: Boolean = false) {
-		Log.i("[TRAINING] Now starting process to analyze all 5 Trainings.")
+		MessageLog.i(TAG, "[TRAINING] Now starting process to analyze all 5 Trainings.")
 
 		// Acquire the position of the speed stat text.
 		val (speedStatTextLocation, _) = if (campaign == "Ao Haru") {
@@ -830,20 +810,20 @@ class Game(val myContext: Context) {
 
 			val initialFailureChance: Int = imageUtils.findTrainingFailureChance()
 			if (initialFailureChance == -1) {
-				Log.w("Skipping training due to not being able to confirm whether or not the bot is at the Training screen.")
+				MessageLog.w(TAG, "Skipping training due to not being able to confirm whether or not the bot is at the Training screen.")
 				return
 			}
 
 			// Early exit if initial failure is very high - likely all trainings will be high
 			if (!test && initialFailureChance > 50) {
-				Log.i("[TRAINING] Initial failure chance is very high (${initialFailureChance}%). All trainings likely have high failure.")
-				Log.i("[TRAINING] Going to rest instead of checking all trainings.")
+				MessageLog.i(TAG, "[TRAINING] Initial failure chance is very high (${initialFailureChance}%). All trainings likely have high failure.")
+				MessageLog.i(TAG, "[TRAINING] Going to rest instead of checking all trainings.")
 				trainingMap.clear()  // Clear map to trigger rest
 				return
 			}
 
 			// Analyze all trainings once to make informed decisions
-			Log.i("[TRAINING] Checking all trainings to find the best option...")
+			MessageLog.i(TAG, "[TRAINING] Checking all trainings to find the best option...")
 
 			// Check all trainings to build a complete picture
 			if (test || true) {  // Always check to make informed decisions
@@ -852,7 +832,7 @@ class Game(val myContext: Context) {
 				// Iterate through every training that is not blacklisted.
 				trainings.forEachIndexed { index, training ->
 					if (blacklist.getOrElse(index) { "" } == training) {
-						Log.i("[TRAINING] Skipping $training training due to being blacklisted.")
+						MessageLog.i(TAG, "[TRAINING] Skipping $training training due to being blacklisted.")
 						return@forEachIndexed
 					}
 
@@ -920,7 +900,7 @@ class Game(val myContext: Context) {
 						try {
 							statGains = imageUtils.determineStatGainFromTraining(training, sourceBitmap, skillPointsLocation!!)
 						} catch (e: Exception) {
-							Log.e("Error in determineStatGainFromTraining: ${e.stackTraceToString()}")
+							MessageLog.e(TAG, "Error in determineStatGainFromTraining: ${e.stackTraceToString()}")
 							statGains = intArrayOf(0, 0, 0, 0, 0)
 						} finally {
 							latch.countDown()
@@ -932,7 +912,7 @@ class Game(val myContext: Context) {
 						try {
 							failureChance = imageUtils.findTrainingFailureChance(sourceBitmap, trainingSelectionLocation!!)
 						} catch (e: Exception) {
-							Log.e("Error in findTrainingFailureChance: ${e.stackTraceToString()}")
+							MessageLog.e(TAG, "Error in findTrainingFailureChance: ${e.stackTraceToString()}")
 							failureChance = -1
 						} finally {
 							latch.countDown()
@@ -944,7 +924,7 @@ class Game(val myContext: Context) {
 						try {
 							relationshipBars = imageUtils.analyzeRelationshipBars(sourceBitmap)
 						} catch (e: Exception) {
-							Log.e("Error in analyzeRelationshipBars: ${e.stackTraceToString()}")
+							MessageLog.e(TAG, "Error in analyzeRelationshipBars: ${e.stackTraceToString()}")
 							relationshipBars = arrayListOf()
 						} finally {
 							latch.countDown()
@@ -955,7 +935,7 @@ class Game(val myContext: Context) {
 					try {
 						latch.await(10, TimeUnit.SECONDS)
 					} catch (_: InterruptedException) {
-						Log.e("Parallel training analysis timed out")
+						MessageLog.e(TAG, "Parallel training analysis timed out")
 					}
 
 					val newTraining = Training(
@@ -970,11 +950,11 @@ class Game(val myContext: Context) {
 					if (failureChance > 40) {
 						highFailureCount++
 						if (highFailureCount >= 3 && training != "Wit") {
-							Log.i("[TRAINING] Found 3+ consecutive trainings with >40% failure. Skipping remaining checks.")
+							MessageLog.i(TAG, "[TRAINING] Found 3+ consecutive trainings with >40% failure. Skipping remaining checks.")
 							// Still need to check Wit training for recovery option
 							if (index < trainings.size - 1 && trainings[trainings.size - 1] == "Wit") {
 								// Jump to Wit training directly
-								Log.i("[TRAINING] Checking Wit training for recovery option...")
+								MessageLog.i(TAG, "[TRAINING] Checking Wit training for recovery option...")
 								// Will check Wit in the next iteration
 							} else {
 								return@forEachIndexed
@@ -986,7 +966,7 @@ class Game(val myContext: Context) {
 				}
 
 				// After analyzing all trainings, decide what to do
-				Log.i("[TRAINING] Process to analyze all 5 Trainings complete.")
+				MessageLog.i(TAG, "[TRAINING] Process to analyze all 5 Trainings complete.")
 
 				// Count friendship trainings available
 				val friendshipTrainingCount = trainingMap.values.count { training ->
@@ -1002,7 +982,7 @@ class Game(val myContext: Context) {
 				// Estimate current energy based on failure rates
 				// Formula: Energy ≈ 50 - (FailureRate * 2)
 				val estimatedEnergy = (50 - avgFailureRate * 2).coerceIn(0.0, 100.0)
-				Log.i("[TRAINING] Estimated energy: ${estimatedEnergy.toInt()}% (avg failure: ${avgFailureRate.toInt()}%)")
+				MessageLog.i(TAG, "[TRAINING] Estimated energy: ${estimatedEnergy.toInt()}% (avg failure: ${avgFailureRate.toInt()}%)")
 
 				// Calculate the value of the best friendship training
 				val bestFriendshipValue = trainingMap.values
@@ -1017,7 +997,7 @@ class Game(val myContext: Context) {
 				val isSummerApproaching = when {
 					// 2 turns before summer: Early June (month 6, phase "Early")
 					currentDate.month == 6 && currentDate.phase == "Early" -> {
-						Log.i("[TRAINING] Summer training is 2 turns away (currently Early June)")
+						MessageLog.i(TAG, "[TRAINING] Summer training is 2 turns away (currently Early June)")
 						true
 					}
 					// 1 turn before summer: Mid June (between Early and Late)
@@ -1027,9 +1007,9 @@ class Game(val myContext: Context) {
 
 				// Pre-summer rest strategy logging
 				if (isSummerApproaching && estimatedEnergy < 60) {
-					Log.i("[TRAINING] PRE-SUMMER: Energy is low (~${estimatedEnergy.toInt()}%) with summer approaching in 2 turns")
-					Log.i("[TRAINING] Prioritizing rest to maximize summer training benefits (equivalent to Lv5 training)")
-					Log.i("[TRAINING] Setting ultra-conservative 5% failure threshold for pre-summer preparation")
+					MessageLog.i(TAG, "[TRAINING] PRE-SUMMER: Energy is low (~${estimatedEnergy.toInt()}%) with summer approaching in 2 turns")
+					MessageLog.i(TAG, "[TRAINING] Prioritizing rest to maximize summer training benefits (equivalent to Lv5 training)")
+					MessageLog.i(TAG, "[TRAINING] Setting ultra-conservative 5% failure threshold for pre-summer preparation")
 				}
 
 				// Check if we're currently IN summer training (not just approaching)
@@ -1039,54 +1019,54 @@ class Game(val myContext: Context) {
 				val adjustedFailureThreshold = when {
 					// DURING SUMMER - Be more aggressive to maximize Lv5 training
 					isCurrentlySummer && estimatedEnergy >= 40 -> {
-						Log.i("[TRAINING] SUMMER LV5: Accepting higher risk (25%) to maximize training benefits")
+						MessageLog.i(TAG, "[TRAINING] SUMMER LV5: Accepting higher risk (25%) to maximize training benefits")
 						25
 					}
 					isCurrentlySummer && estimatedEnergy >= 30 -> {
-						Log.i("[TRAINING] SUMMER LV5: Moderate energy, accepting 20% risk for summer training")
+						MessageLog.i(TAG, "[TRAINING] SUMMER LV5: Moderate energy, accepting 20% risk for summer training")
 						20
 					}
 
 					// PRE-SUMMER PREPARATION - Rest if energy is low
 					isSummerApproaching && estimatedEnergy < 60 -> {
-						Log.i("[TRAINING] PRE-SUMMER REST: Preparing for summer training - max 5% failure risk")
+						MessageLog.i(TAG, "[TRAINING] PRE-SUMMER REST: Preparing for summer training - max 5% failure risk")
 						5
 					}
 
 					// CRITICAL SITUATIONS - Be very conservative
 					estimatedEnergy < 20 -> {
-						Log.i("[TRAINING] CRITICAL: Very low energy (~${estimatedEnergy.toInt()}%) - max 5% failure risk")
+						MessageLog.i(TAG, "[TRAINING] CRITICAL: Very low energy (~${estimatedEnergy.toInt()}%) - max 5% failure risk")
 						5
 					}
 
 					// HIGH VALUE OPPORTUNITIES - Accept more risk
 					friendshipTrainingCount >= 3 && bestFriendshipValue > 200 -> {
-						Log.i("[TRAINING] HIGH VALUE: $friendshipTrainingCount friendship trainings (value: $bestFriendshipValue) - accepting up to 25% failure risk")
+						MessageLog.i(TAG, "[TRAINING] HIGH VALUE: $friendshipTrainingCount friendship trainings (value: $bestFriendshipValue) - accepting up to 25% failure risk")
 						25
 					}
 					friendshipTrainingCount >= 2 && bestFriendshipValue > 150 -> {
-						Log.i("[TRAINING] GOOD VALUE: $friendshipTrainingCount friendship trainings (value: $bestFriendshipValue) - accepting up to 20% failure risk")
+						MessageLog.i(TAG, "[TRAINING] GOOD VALUE: $friendshipTrainingCount friendship trainings (value: $bestFriendshipValue) - accepting up to 20% failure risk")
 						20
 					}
 					friendshipTrainingCount == 1 && bestFriendshipValue > 100 -> {
-						Log.i("[TRAINING] MODERATE VALUE: 1 friendship training (value: $bestFriendshipValue) - accepting up to 15% failure risk")
+						MessageLog.i(TAG, "[TRAINING] MODERATE VALUE: 1 friendship training (value: $bestFriendshipValue) - accepting up to 15% failure risk")
 						15
 					}
 
 					// GAME PHASE ADJUSTMENTS
 					currentDate.year == 3 && currentDate.month >= 11 -> {
 						// Very late game: need to preserve energy for final push
-						Log.i("[TRAINING] ENDGAME: Year 3, Month 11+ - conservative 8% failure risk")
+						MessageLog.i(TAG, "[TRAINING] ENDGAME: Year 3, Month 11+ - conservative 8% failure risk")
 						8
 					}
 					currentDate.year == 3 -> {
 						// Late game: slightly conservative
-						Log.i("[TRAINING] Late game (Year 3) - standard 12% failure risk")
+						MessageLog.i(TAG, "[TRAINING] Late game (Year 3) - standard 12% failure risk")
 						12
 					}
 					currentDate.year == 1 && estimatedEnergy > 40 -> {
 						// Early game with good energy: can take more risks for relationships
-						Log.i("[TRAINING] Early game with good energy - accepting up to 18% failure risk")
+						MessageLog.i(TAG, "[TRAINING] Early game with good energy - accepting up to 18% failure risk")
 						18
 					}
 
@@ -1094,23 +1074,23 @@ class Game(val myContext: Context) {
 					estimatedEnergy > 60 -> {
 						// High energy: can afford some risk
 						val threshold = minOf(20, maximumFailureChance + 5)
-						Log.i("[TRAINING] High energy (~${estimatedEnergy.toInt()}%) - accepting up to $threshold% failure risk")
+						MessageLog.i(TAG, "[TRAINING] High energy (~${estimatedEnergy.toInt()}%) - accepting up to $threshold% failure risk")
 						threshold
 					}
 					estimatedEnergy > 40 -> {
 						// Moderate energy: standard threshold
-						Log.i("[TRAINING] Moderate energy (~${estimatedEnergy.toInt()}%) - standard ${maximumFailureChance}% failure risk")
+						MessageLog.i(TAG, "[TRAINING] Moderate energy (~${estimatedEnergy.toInt()}%) - standard ${maximumFailureChance}% failure risk")
 						maximumFailureChance
 					}
 					estimatedEnergy > 25 -> {
 						// Low energy: be more conservative
 						val threshold = maxOf(10, maximumFailureChance - 5)
-						Log.i("[TRAINING] Low energy (~${estimatedEnergy.toInt()}%) - reduced $threshold% failure risk")
+						MessageLog.i(TAG, "[TRAINING] Low energy (~${estimatedEnergy.toInt()}%) - reduced $threshold% failure risk")
 						threshold
 					}
 					else -> {
 						// Very low energy: minimal risk
-						Log.i("[TRAINING] Very low energy (~${estimatedEnergy.toInt()}%) - minimal 8% failure risk")
+						MessageLog.i(TAG, "[TRAINING] Very low energy (~${estimatedEnergy.toInt()}%) - minimal 8% failure risk")
 						8
 					}
 				}
@@ -1119,7 +1099,7 @@ class Game(val myContext: Context) {
 				val riskAdjustment = when {
 					// If we're close to stat caps, be more conservative
 					currentStatsMap.values.any { it >= currentStatCap - 50 } -> {
-						Log.i("[TRAINING] Near stat cap - reducing risk tolerance by 3%")
+						MessageLog.i(TAG, "[TRAINING] Near stat cap - reducing risk tolerance by 3%")
 						-3
 					}
 					// If we have high stat deficits, accept more risk
@@ -1130,7 +1110,7 @@ class Game(val myContext: Context) {
 								targets[index] - currentStatsMap.getOrDefault(stat, 0)
 							} ?: 0
 							if (maxDeficit > 300) {
-								Log.i("[TRAINING] High stat deficit ($maxDeficit) - increasing risk tolerance by 3%")
+								MessageLog.i(TAG, "[TRAINING] High stat deficit ($maxDeficit) - increasing risk tolerance by 3%")
 								3
 							} else {
 								0
@@ -1142,7 +1122,7 @@ class Game(val myContext: Context) {
 				}
 
 				val finalThreshold = (adjustedFailureThreshold + riskAdjustment).coerceIn(5, 30)
-				Log.i("[TRAINING] Final failure threshold: $finalThreshold%")
+				MessageLog.i(TAG, "[TRAINING] Final failure threshold: $finalThreshold%")
 
 				// Check if we should prioritize recovery
 				val needsRecovery = shouldPrioritizeRecovery(avgFailureRate, estimatedEnergy)
@@ -1158,9 +1138,9 @@ class Game(val myContext: Context) {
 
 				// Log the best risk-reward options
 				if (trainingsWithRatios.isNotEmpty()) {
-					Log.i("[TRAINING] Best risk-reward ratios:")
+					MessageLog.i(TAG, "[TRAINING] Best risk-reward ratios:")
 					trainingsWithRatios.take(3).forEach { (training, ratio) ->
-						Log.i("  - ${training.name}: ${ratio.toInt()} (${training.failureChance}% risk, ${training.statGains.sum()} stats, ${training.relationshipBars.size} friends)")
+						MessageLog.i(TAG, "  - ${training.name}: ${ratio.toInt()} (${training.failureChance}% risk, ${training.statGains.sum()} stats, ${training.relationshipBars.size} friends)")
 					}
 				}
 
@@ -1170,12 +1150,12 @@ class Game(val myContext: Context) {
 				// Decision logic based on recovery needs and available options
 				if (needsRecovery) {
 					if (witIsBetterThanRest) {
-						Log.i("[RECOVERY] Need recovery but Wit training provides good value - will do Wit")
+						MessageLog.i(TAG, "[RECOVERY] Need recovery but Wit training provides good value - will do Wit")
 						// Keep only Wit in the map
 						trainingMap.clear()
 						trainingMap["Wit"] = witTraining!!
 					} else {
-						Log.i("[RECOVERY] Need recovery and no good Wit option - will rest")
+						MessageLog.i(TAG, "[RECOVERY] Need recovery and no good Wit option - will rest")
 						trainingMap.clear()
 					}
 				} else if (acceptableTrainings.isNotEmpty()) {
@@ -1186,38 +1166,38 @@ class Game(val myContext: Context) {
 						.map { it.first }
 
 					if (goodTrainings.isNotEmpty()) {
-						Log.i("[TRAINING] Found ${goodTrainings.size} training(s) with good risk-reward ratios (>= $minRiskReward)")
+						MessageLog.i(TAG, "[TRAINING] Found ${goodTrainings.size} training(s) with good risk-reward ratios (>= $minRiskReward)")
 						// Keep only good trainings in the map
 						val goodTrainingNames = goodTrainings.map { it.name }.toSet()
 						trainingMap.entries.removeIf { it.key !in goodTrainingNames }
 					} else {
-						Log.i("[TRAINING] Found ${acceptableTrainings.size} acceptable training(s) but risk-reward ratios are low")
+						MessageLog.i(TAG, "[TRAINING] Found ${acceptableTrainings.size} acceptable training(s) but risk-reward ratios are low")
 					}
 				} else if (witIsBetterThanRest) {
 					// Wit training is better than resting - keep it in the map for scoring
-					Log.i("[TRAINING] No trainings within normal range, but Wit training is better than resting:")
-					Log.i("[TRAINING] - Wit has ${witTraining!!.relationshipBars.size} friends, ${witTraining.statGains.sum()} total stats, ${witTraining.failureChance}% failure")
+					MessageLog.i(TAG, "[TRAINING] No trainings within normal range, but Wit training is better than resting:")
+					MessageLog.i(TAG, "[TRAINING] - Wit has ${witTraining!!.relationshipBars.size} friends, ${witTraining.statGains.sum()} total stats, ${witTraining.failureChance}% failure")
 					// Keep only Wit
 					trainingMap.clear()
 					trainingMap["Wit"] = witTraining
 				} else if (witTraining != null && witTraining.failureChance <= 40) {
 					// Wit is available but not amazing - still consider it
-					Log.i("[TRAINING] No trainings within acceptable range. Wit training available at ${witTraining.failureChance}% failure.")
-					Log.i("[TRAINING] Wit has ${witTraining.relationshipBars.size} friends and ${witTraining.statGains.sum()} total stats.")
+					MessageLog.i(TAG, "[TRAINING] No trainings within acceptable range. Wit training available at ${witTraining.failureChance}% failure.")
+					MessageLog.i(TAG, "[TRAINING] Wit has ${witTraining.relationshipBars.size} friends and ${witTraining.statGains.sum()} total stats.")
 					if (witTraining.statGains.sum() > 30 || witTraining.relationshipBars.isNotEmpty()) {
-						Log.i("[TRAINING] Will consider Wit training as it provides some value.")
+						MessageLog.i(TAG, "[TRAINING] Will consider Wit training as it provides some value.")
 					} else {
-						Log.i("[TRAINING] Wit training doesn't provide enough value. Will rest instead.")
+						MessageLog.i(TAG, "[TRAINING] Wit training doesn't provide enough value. Will rest instead.")
 						trainingMap.clear()
 					}
 				} else {
 					// No good options - need to recover energy
-					Log.i("[TRAINING] No viable training options. All failure chances too high. Proceeding to recover energy.")
+					MessageLog.i(TAG, "[TRAINING] No viable training options. All failure chances too high. Proceeding to recover energy.")
 					trainingMap.clear()
 				}
 			} else {
 				// This shouldn't happen anymore since we always check all trainings
-				Log.i("[TRAINING] Unable to analyze trainings properly.")
+				MessageLog.i(TAG, "[TRAINING] Unable to analyze trainings properly.")
 				trainingMap.clear()
 			}
 		}
@@ -1261,7 +1241,7 @@ class Game(val myContext: Context) {
 		 */
 		fun scoreFriendshipTraining(training: Training): Double {
 			// Ignore the blacklist in favor of making sure we build up the relationship bars as fast as possible.
-			Log.i("[TRAINING] Starting process to score ${training.name} Training with a focus on building relationship bars.")
+			MessageLog.i(TAG, "[TRAINING] Starting process to score ${training.name} Training with a focus on building relationship bars.")
 
 			val barResults = training.relationshipBars
 			if (barResults.isEmpty()) return Double.NEGATIVE_INFINITY
@@ -1277,7 +1257,7 @@ class Game(val myContext: Context) {
 				score += contribution
 			}
 
-			Log.i("[TRAINING] ${training.name} Training has a score of ${decimalFormat.format(score)} with a focus on building relationship bars.")
+			MessageLog.i(TAG, "[TRAINING] ${training.name} Training has a score of ${decimalFormat.format(score)} with a focus on building relationship bars.")
 			return score
 		}
 
@@ -1343,12 +1323,12 @@ class Game(val myContext: Context) {
 						else -> 0.5          // Surplus (diminishing returns)
 					}
 
-					Log.d("Priority Weight: $priorityWeight, Deficit: $deficit, Deficit Multiplier: $deficitMultiplier")
+					MessageLog.d(TAG, "Priority Weight: $priorityWeight, Deficit: $deficit, Deficit Multiplier: $deficitMultiplier")
 
 					// Calculate efficiency based on remaining gap between the current stat and the target.
 					var efficiency = if (deficit > 0) {
 						// Stat is below target, apply deficit multiplier
-						Log.d("Giving bonus for remaining efficiency.")
+						MessageLog.d(TAG, "Giving bonus for remaining efficiency.")
 						val gapRatio = deficit.toDouble() / targetStat
 						val targetBonus = when {
 							gapRatio > 0.1 -> 1.5
@@ -1358,12 +1338,12 @@ class Game(val myContext: Context) {
 						targetBonus + (statGain.toDouble() / deficit).coerceAtMost(1.0)
 					} else {
 						// Stat is above target, give a diminishing bonus based on how much over.
-						Log.d("Stat is above target so giving diminishing bonus.")
+						MessageLog.d(TAG, "Stat is above target so giving diminishing bonus.")
 						val overageRatio = (statGain.toDouble() / (-deficit + statGain))
 						1.0 + overageRatio * 0.5 // Reduced bonus for over-target training
 					}
 
-					Log.d("Efficiency: $efficiency")
+					MessageLog.d(TAG, "Efficiency: $efficiency")
 
 					// Apply Spark stat target focus when enabled.
 					if (focusOnSparkStatTarget) {
@@ -1382,7 +1362,7 @@ class Game(val myContext: Context) {
 					// Apply deficit multiplier to the scoring
 					score += statGain * 2
 					score += (statGain * 2) * (efficiency * priorityWeight * deficitMultiplier)
-					Log.d("Score: $score")
+					MessageLog.d(TAG, "Score: $score")
 				}
 			}
 
@@ -1479,7 +1459,7 @@ class Game(val myContext: Context) {
 			// Apply mood bonus to score - more impactful for stat-heavy trainings
 			if (training.statGains.sum() > 30) {
 				score *= moodMultiplier
-				Log.i("[TRAINING] Mood multiplier ${moodMultiplier}x applied for ${training.name} (${currentMood} mood)")
+				MessageLog.i(TAG, "[TRAINING] Mood multiplier ${moodMultiplier}x applied for ${training.name} (${currentMood} mood)")
 			}
 
 			// Energy recovery bonus for Wit training
@@ -1497,21 +1477,21 @@ class Game(val myContext: Context) {
 						// Critical energy state - Wit recovery is very valuable
 						val bonus = avgFailureRate * 2.0  // Dynamic scaling
 						score += bonus
-						Log.i("[TRAINING] Wit gets +${bonus.toInt()} for energy recovery (critical: ${avgFailureRate.toInt()}% avg failure)")
+						MessageLog.i(TAG, "[TRAINING] Wit gets +${bonus.toInt()} for energy recovery (critical: ${avgFailureRate.toInt()}% avg failure)")
 						bonus
 					}
 					avgFailureRate > 15 -> {
 						// Low energy - Wit recovery is valuable
 						val bonus = avgFailureRate * 1.5
 						score += bonus
-						Log.i("[TRAINING] Wit gets +${bonus.toInt()} for energy recovery (low: ${avgFailureRate.toInt()}% avg failure)")
+						MessageLog.i(TAG, "[TRAINING] Wit gets +${bonus.toInt()} for energy recovery (low: ${avgFailureRate.toInt()}% avg failure)")
 						bonus
 					}
 					avgFailureRate > 10 -> {
 						// Moderate energy - Wit recovery has some value
 						val bonus = avgFailureRate * 1.0
 						score += bonus
-						Log.i("[TRAINING] Wit gets +${bonus.toInt()} for energy recovery (moderate: ${avgFailureRate.toInt()}% avg failure)")
+						MessageLog.i(TAG, "[TRAINING] Wit gets +${bonus.toInt()} for energy recovery (moderate: ${avgFailureRate.toInt()}% avg failure)")
 						bonus
 					}
 					else -> 0.0
@@ -1530,7 +1510,7 @@ class Game(val myContext: Context) {
 				if (witTotalValue > restingValue && training.failureChance <= 30) {
 					val preferenceBonus = (witTotalValue - restingValue) * 0.5  // Half the difference as bonus
 					score += preferenceBonus
-					Log.i("[TRAINING] Wit preferred over rest: +${preferenceBonus.toInt()} (${witStatValue} stats, ${training.relationshipBars.size} friends)")
+					MessageLog.i(TAG, "[TRAINING] Wit preferred over rest: +${preferenceBonus.toInt()} (${witStatValue} stats, ${training.relationshipBars.size} friends)")
 				}
 			}
 
@@ -1545,7 +1525,7 @@ class Game(val myContext: Context) {
 					val statBonus = minOf(training.statGains.sum() * 0.5, 20.0)
 					if (statBonus > 0) {
 						score += statBonus
-						Log.i("[TRAINING] Year 1 stat bonus: +${statBonus.toInt()}")
+						MessageLog.i(TAG, "[TRAINING] Year 1 stat bonus: +${statBonus.toInt()}")
 					}
 				}
 				currentDate.year == 2 -> {
@@ -1554,7 +1534,7 @@ class Game(val myContext: Context) {
 					val statBonus = minOf(training.statGains.sum() * 0.8, 40.0)
 					score += statBonus
 					if (statBonus > 20) {
-						Log.i("[TRAINING] Year 2 stat bonus: +${statBonus.toInt()}")
+						MessageLog.i(TAG, "[TRAINING] Year 2 stat bonus: +${statBonus.toInt()}")
 					}
 				}
 				currentDate.year == 3 -> {
@@ -1566,7 +1546,7 @@ class Game(val myContext: Context) {
 					if (training.statGains.sum() > 40) {
 						val extraBonus = (training.statGains.sum() - 40) * 0.5
 						score += extraBonus
-						Log.i("[TRAINING] Year 3 high stat bonus: +${(statBonus + extraBonus).toInt()}")
+						MessageLog.i(TAG, "[TRAINING] Year 3 high stat bonus: +${(statBonus + extraBonus).toInt()}")
 					}
 				}
 			}
@@ -1584,7 +1564,7 @@ class Game(val myContext: Context) {
 			if (skillHintLocations.isNotEmpty()) {
 				val hintBonus = skillHintLocations.size * 25.0  // 25 points per hint
 				score += hintBonus
-				Log.i("[TRAINING] Skill hint bonus: +${hintBonus.toInt()} for ${skillHintLocations.size} hints")
+				MessageLog.i(TAG, "[TRAINING] Skill hint bonus: +${hintBonus.toInt()} for ${skillHintLocations.size} hints")
 			}
 
 			// Rainbow training (multiple friendship training) bonus
@@ -1596,7 +1576,7 @@ class Game(val myContext: Context) {
 				// Rainbow training typically gives 50-100% more stats
 				val rainbowBonus = training.statGains.sum() * 0.5 * highFriendshipBars
 				score += rainbowBonus
-				Log.i("[TRAINING] Rainbow training bonus: +${rainbowBonus.toInt()} for ${highFriendshipBars} high friendship bars")
+				MessageLog.i(TAG, "[TRAINING] Rainbow training bonus: +${rainbowBonus.toInt()} for ${highFriendshipBars} high friendship bars")
 			}
 
 			// Summer training special handling
@@ -1608,21 +1588,21 @@ class Game(val myContext: Context) {
 				// Base summer bonus for ANY training (Lv5 facilities)
 				val baseSummerBonus = 30.0
 				score += baseSummerBonus
-				Log.i("[TRAINING] Summer Lv5 facility bonus: +${baseSummerBonus.toInt()}")
+				MessageLog.i(TAG, "[TRAINING] Summer Lv5 facility bonus: +${baseSummerBonus.toInt()}")
 
 				// Extra bonus for high-value summer trainings
 				if (training.relationshipBars.size >= 2) {
 					// Multiple friends during summer are extremely valuable
 					val summerFriendBonus = training.relationshipBars.size * 20.0
 					score += summerFriendBonus
-					Log.i("[TRAINING] Summer friendship bonus: +${summerFriendBonus.toInt()} for ${training.relationshipBars.size} friends")
+					MessageLog.i(TAG, "[TRAINING] Summer friendship bonus: +${summerFriendBonus.toInt()} for ${training.relationshipBars.size} friends")
 				}
 
 				// Bonus for high stat gains during summer
 				if (training.statGains.sum() > 30) {
 					val summerStatBonus = (training.statGains.sum() - 30) * 0.5
 					score += summerStatBonus
-					Log.i("[TRAINING] Summer high-stat bonus: +${summerStatBonus.toInt()}")
+					MessageLog.i(TAG, "[TRAINING] Summer high-stat bonus: +${summerStatBonus.toInt()}")
 				}
 
 				// Reduce penalty for slightly higher failure during summer
@@ -1630,7 +1610,7 @@ class Game(val myContext: Context) {
 				if (training.failureChance <= 25) {
 					val summerRiskBonus = 15.0
 					score += summerRiskBonus
-					Log.i("[TRAINING] Summer acceptable risk bonus: +${summerRiskBonus.toInt()}")
+					MessageLog.i(TAG, "[TRAINING] Summer acceptable risk bonus: +${summerRiskBonus.toInt()}")
 				}
 			}
 
@@ -1662,7 +1642,7 @@ class Game(val myContext: Context) {
 				return 0.0
 			}
 
-			Log.i("[TRAINING] Starting scoring for ${training.name} Training.")
+			MessageLog.i(TAG, "[TRAINING] Starting scoring for ${training.name} Training.")
 
 			val target = statTargetsByDistance[preferredDistance] ?: intArrayOf(600, 600, 600, 300, 300)
 
@@ -1695,16 +1675,18 @@ class Game(val myContext: Context) {
 				maxPossibleScore += 100.0 * 0.3
 			}
 
-			Log.i(
-				"[TRAINING] Scores | Current Stat: ${currentStatsMap[training.name]}, Target Stat: ${target[trainings.indexOf(training.name)]}, " +
-						"Stat Efficiency: ${decimalFormat.format(statScore)}, Relationship: ${decimalFormat.format(relationshipScore)}, " +
-						"Context: ${decimalFormat.format(contextScore)}"
-			)
+            val scoresString = "[TRAINING] Scores | " +
+                "Current Stat: ${currentStatsMap[training.name]}, " +
+                "Target Stat: ${target[trainings.indexOf(training.name)]}, " +
+                "Stat Efficiency: ${decimalFormat.format(statScore)}, " +
+                "Relationship: ${decimalFormat.format(relationshipScore)}, " +
+                "Context: ${decimalFormat.format(contextScore)}"
+			MessageLog.i(TAG, scoresString)
 
 			// Normalize the score.
 			val normalizedScore = (totalScore / maxPossibleScore * 100.0).coerceIn(1.0, 1000.0)
 
-			Log.i("[TRAINING] Enhanced final score for ${training.name} Training: ${decimalFormat.format(normalizedScore)}/1000.0")
+			MessageLog.i(TAG, "[TRAINING] Enhanced final score for ${training.name} Training: ${decimalFormat.format(normalizedScore)}/1000.0")
 
 			return normalizedScore
 		}
@@ -1715,7 +1697,7 @@ class Game(val myContext: Context) {
 		}
 
 		if (acceptableTrainings.isEmpty()) {
-			Log.i("[TRAINING] No trainings within acceptable failure threshold (${maximumFailureChance}%)")
+			MessageLog.i(TAG, "[TRAINING] No trainings within acceptable failure threshold (${maximumFailureChance}%)")
 			return ""
 		}
 
@@ -1726,7 +1708,7 @@ class Game(val myContext: Context) {
 		} else acceptableTrainings.maxByOrNull { scoreStatTraining(it) }
 
 		return if (best != null) {
-			Log.i("[TRAINING] Selected ${best.name} training with ${best.failureChance}% failure chance")
+			MessageLog.i(TAG, "[TRAINING] Selected ${best.name} training with ${best.failureChance}% failure chance")
 			historicalTrainingCounts.put(best.name, historicalTrainingCounts.getOrDefault(best.name, 0) + 1)
 			best.name
 		} else {
@@ -1738,20 +1720,20 @@ class Game(val myContext: Context) {
 	 * Execute the training with the highest stat weight.
 	 */
 	private fun executeTraining() {
-		Log.i("********************")
-		Log.i("[TRAINING] Now starting process to execute training...")
+		MessageLog.i(TAG, "********************")
+		MessageLog.i(TAG, "[TRAINING] Now starting process to execute training...")
 		val trainingSelected = recommendTraining()
 
 		if (trainingSelected != "") {
 			printTrainingMap()
-			Log.i("[TRAINING] Executing the $trainingSelected Training.")
+			MessageLog.i(TAG, "[TRAINING] Executing the $trainingSelected Training.")
 			findAndTapImage("training_${trainingSelected.lowercase()}", region = imageUtils.regionBottomHalf, taps = 3)
-			Log.i("[TRAINING] Process to execute training completed.")
+			MessageLog.i(TAG, "[TRAINING] Process to execute training completed.")
 		} else {
-			Log.i("[TRAINING] Conditions have not been met so training will not be done.")
+			MessageLog.i(TAG, "[TRAINING] Conditions have not been met so training will not be done.")
 		}
 
-		Log.i("********************")
+		MessageLog.i(TAG, "********************")
 
 		// Now reset the Training map.
 		trainingMap.clear()
@@ -1766,7 +1748,7 @@ class Game(val myContext: Context) {
 	 * It will then select the best option according to the user's preferences. By default, it will choose the first option.
 	 */
 	fun handleTrainingEvent() {
-		Log.i("[TRAINING-EVENT] Starting Training Event process...")
+		MessageLog.i(TAG, "[TRAINING-EVENT] Starting Training Event process...")
 
 		val (eventRewards, confidence) = textDetection.start()
 
@@ -1794,8 +1776,8 @@ class Game(val myContext: Context) {
 						.trim()
 						.lowercase()
 
-					Log.i("[TRAINING-EVENT] Original line is \"$line\".")
-					Log.i("[TRAINING-EVENT] Formatted line is \"$formattedLine\".")
+					MessageLog.i(TAG, "[TRAINING-EVENT] Original line is \"$line\".")
+					MessageLog.i(TAG, "[TRAINING-EVENT] Formatted line is \"$formattedLine\".")
 
 					var priorityStatCheck = false
 					if (line.lowercase().contains("energy")) {
@@ -1807,7 +1789,7 @@ class Game(val myContext: Context) {
 									sum += try {
 										split.trim().toInt()
 									} catch (_: NumberFormatException) {
-										Log.w("Could not convert $formattedLine to a number for energy with a forward slash.")
+										MessageLog.w(TAG, "Could not convert $formattedLine to a number for energy with a forward slash.")
 										20
 									}
 								}
@@ -1822,29 +1804,29 @@ class Game(val myContext: Context) {
 								energyValue * 3
 							}
 						} catch (_: NumberFormatException) {
-							Log.w("Could not convert $formattedLine to a number for energy.")
+							MessageLog.w(TAG, "Could not convert $formattedLine to a number for energy.")
 							20
 						}
-						Log.i("[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of $finalEnergyValue for energy.")
+						MessageLog.i(TAG, "[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of $finalEnergyValue for energy.")
 						selectionWeight[optionSelected] += finalEnergyValue
 					} else if (line.lowercase().contains("mood")) {
 						val moodWeight = if (formattedLine.contains("-")) -50 else 50
-						Log.i("[TRAINING-EVENT Adding weight for option#${optionSelected + 1} of $moodWeight for ${if (moodWeight > 0) "positive" else "negative"} mood gain.")
+						MessageLog.i(TAG, "[TRAINING-EVENT Adding weight for option#${optionSelected + 1} of $moodWeight for ${if (moodWeight > 0) "positive" else "negative"} mood gain.")
 						selectionWeight[optionSelected] += moodWeight
 					} else if (line.lowercase().contains("bond")) {
-						Log.i("[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of 20 for bond.")
+						MessageLog.i(TAG, "[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of 20 for bond.")
 						selectionWeight[optionSelected] += 20
 					} else if (line.lowercase().contains("event chain ended")) {
-						Log.i("[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of -50 for event chain ending.")
+						MessageLog.i(TAG, "[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of -50 for event chain ending.")
 						selectionWeight[optionSelected] += -50
 					} else if (line.lowercase().contains("(random)")) {
-						Log.i("[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of -10 for random reward.")
+						MessageLog.i(TAG, "[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of -10 for random reward.")
 						selectionWeight[optionSelected] += -10
 					} else if (line.lowercase().contains("randomly")) {
-						Log.i("[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of 50 for random options.")
+						MessageLog.i(TAG, "[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of 50 for random options.")
 						selectionWeight[optionSelected] += 50
 					} else if (line.lowercase().contains("hint")) {
-						Log.i("[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of 25 for skill hint(s).")
+						MessageLog.i(TAG, "[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of 25 for skill hint(s).")
 						selectionWeight[optionSelected] += 25
 					} else if (line.lowercase().contains("skill")) {
 						val finalSkillPoints = if (formattedLine.contains("/")) {
@@ -1854,7 +1836,7 @@ class Game(val myContext: Context) {
 								sum += try {
 									split.trim().toInt()
 								} catch (_: NumberFormatException) {
-									Log.w("Could not convert $formattedLine to a number for skill points with a forward slash.")
+									MessageLog.w(TAG, "Could not convert $formattedLine to a number for skill points with a forward slash.")
 									10
 								}
 							}
@@ -1862,7 +1844,7 @@ class Game(val myContext: Context) {
 						} else {
 							formattedLine.toInt()
 						}
-						Log.i("[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of $finalSkillPoints for skill points.")
+						MessageLog.i(TAG, "[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of $finalSkillPoints for skill points.")
 						selectionWeight[optionSelected] += finalSkillPoints
 					} else {
 						// Apply inflated weights to the prioritized stats based on their order.
@@ -1886,7 +1868,7 @@ class Game(val myContext: Context) {
 											sum += try {
 												split.trim().toInt()
 											} catch (_: NumberFormatException) {
-												Log.w("Could not convert $formattedLine to a number for a priority stat with a forward slash.")
+												MessageLog.w(TAG, "Could not convert $formattedLine to a number for a priority stat with a forward slash.")
 												10
 											}
 										}
@@ -1895,11 +1877,11 @@ class Game(val myContext: Context) {
 										formattedLine.toInt() + priorityBonus
 									}
 								} catch (_: NumberFormatException) {
-									Log.w("Could not convert $formattedLine to a number for a priority stat.")
+									MessageLog.w(TAG, "Could not convert $formattedLine to a number for a priority stat.")
 									priorityStatCheck = false
 									10
 								}
-								Log.i("[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of $finalStatValue for prioritized stat.")
+								MessageLog.i(TAG, "[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of $finalStatValue for prioritized stat.")
 								selectionWeight[optionSelected] += finalStatValue
 							}
 						}
@@ -1914,7 +1896,7 @@ class Game(val myContext: Context) {
 										sum += try {
 											split.trim().toInt()
 										} catch (_: NumberFormatException) {
-											Log.w("Could not convert $formattedLine to a number for non-prioritized stat with a forward slash.")
+											MessageLog.w(TAG, "Could not convert $formattedLine to a number for non-prioritized stat with a forward slash.")
 											10
 										}
 									}
@@ -1923,15 +1905,15 @@ class Game(val myContext: Context) {
 									formattedLine.toInt()
 								}
 							} catch (_: NumberFormatException) {
-								Log.w("Could not convert $formattedLine to a number for non-prioritized stat.")
+								MessageLog.w(TAG, "Could not convert $formattedLine to a number for non-prioritized stat.")
 								10
 							}
-							Log.i("[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of $finalStatValue for non-prioritized stat.")
+							MessageLog.i(TAG, "[TRAINING-EVENT] Adding weight for option #${optionSelected + 1} of $finalStatValue for non-prioritized stat.")
 							selectionWeight[optionSelected] += finalStatValue
 						}
 					}
 
-					Log.i("[TRAINING-EVENT] Final weight for option #${optionSelected + 1} is: ${selectionWeight[optionSelected]}.")
+					MessageLog.i(TAG, "[TRAINING-EVENT] Final weight for option #${optionSelected + 1} is: ${selectionWeight[optionSelected]}.")
 				}
 
 				optionSelected++
@@ -1947,9 +1929,9 @@ class Game(val myContext: Context) {
 			}
 
 			// Print the selection weights.
-			Log.i("[TRAINING-EVENT] Selection weights for each option:")
+			MessageLog.i(TAG, "[TRAINING-EVENT] Selection weights for each option:")
 			selectionWeight.forEachIndexed { index, weight ->
-				Log.i("Option ${index + 1}: $weight")
+				MessageLog.i(TAG, "Option ${index + 1}: $weight")
 			}
 
 			// Format the string to display each option's rewards.
@@ -1968,9 +1950,9 @@ class Game(val myContext: Context) {
 				"[TRAINING-EVENT] Since the confidence was less than the set minimum, first option will be selected."
 			}
 
-			Log.i(resultString)
+			MessageLog.i(TAG, resultString)
 		} else {
-			Log.i("[TRAINING-EVENT] First option will be selected since OCR failed to detect anything.")
+			MessageLog.i(TAG, "[TRAINING-EVENT] First option will be selected since OCR failed to detect anything.")
 			optionSelected = 0
 		}
 
@@ -1991,7 +1973,7 @@ class Game(val myContext: Context) {
 			tap(selectedLocation.x + imageUtils.relWidth(100), selectedLocation.y, "training_event_active")
 		}
 
-		Log.i("[TRAINING-EVENT] Process to handle detected Training Event completed.")
+		MessageLog.i(TAG, "[TRAINING-EVENT] Process to handle detected Training Event completed.")
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2004,7 +1986,7 @@ class Game(val myContext: Context) {
 	 * @return True if the mandatory/extra race was completed successfully. Otherwise false.
 	 */
 	fun handleRaceEvents(): Boolean {
-		Log.i("[RACE] Starting Racing process...")
+		MessageLog.i(TAG, "[RACE] Starting Racing process...")
 		if (encounteredRacingPopup) {
 			// Dismiss the insufficient fans popup here and head to the Race Selection screen.
 			findAndTapImage("race_confirm", tries = 1, region = imageUtils.regionBottomHalf)
@@ -2014,7 +1996,7 @@ class Game(val myContext: Context) {
 
 		// If there are no races available, cancel the racing process.
 		if (imageUtils.findImage("race_none_available", tries = 1, region = imageUtils.regionMiddle, suppressError = true).first != null) {
-			Log.i("[RACE] There are no races to compete in. Canceling the racing process and doing something else.")
+			MessageLog.i(TAG, "[RACE] There are no races to compete in. Canceling the racing process and doing something else.")
 			return false
 		}
 
@@ -2024,7 +2006,7 @@ class Game(val myContext: Context) {
 		// Note: If there is a mandatory race, the bot would be on the Home screen.
 		// Otherwise, it would have found itself at the Race Selection screen already (by way of the insufficient fans popup).
 		if (findAndTapImage("race_select_mandatory", tries = 1, region = imageUtils.regionBottomHalf)) {
-			Log.i("[RACE] Starting process for handling a mandatory race.")
+			MessageLog.i(TAG, "[RACE] Starting process for handling a mandatory race.")
 
 			if (enableStopOnMandatoryRace) {
 				detectedMandatoryRaceCheck = true
@@ -2036,10 +2018,10 @@ class Game(val myContext: Context) {
 
 			// There is a mandatory race. Now confirm the selection and the resultant popup and then wait for the game to load.
 			wait(2.0)
-			Log.i("[RACE] Confirming the mandatory race selection.")
+			MessageLog.i(TAG, "[RACE] Confirming the mandatory race selection.")
 			findAndTapImage("race_confirm", tries = 3, region = imageUtils.regionBottomHalf)
 			wait(1.0)
-			Log.i("[RACE] Confirming any popup from the mandatory race selection.")
+			MessageLog.i(TAG, "[RACE] Confirming any popup from the mandatory race selection.")
 			findAndTapImage("race_confirm", tries = 3, region = imageUtils.regionBottomHalf)
 			wait(2.0)
 
@@ -2065,16 +2047,16 @@ class Game(val myContext: Context) {
 
 			finishRace(resultCheck)
 
-			Log.i("[RACE] Racing process for Mandatory Race is completed.")
+			MessageLog.i(TAG, "[RACE] Racing process for Mandatory Race is completed.")
 			return true
 		} else if (currentDate.phase != "Pre-Debut" && findAndTapImage("race_select_extra", tries = 1, region = imageUtils.regionBottomHalf)) {
-			Log.i("[RACE] Starting process for handling a extra race.")
+			MessageLog.i(TAG, "[RACE] Starting process for handling a extra race.")
 
 			// If there is a popup warning about repeating races 3+ times, stop the process and do something else other than racing.
 			if (imageUtils.findImage("race_repeat_warning").first != null) {
 				if (!enableForceRacing) {
 					raceRepeatWarningCheck = true
-					Log.i("[RACE] Closing popup warning of doing more than 3+ races and setting flag to prevent racing for now. Canceling the racing process and doing something else.")
+					MessageLog.i(TAG, "[RACE] Closing popup warning of doing more than 3+ races and setting flag to prevent racing for now. Canceling the racing process and doing something else.")
 					findAndTapImage("cancel", region = imageUtils.regionBottomHalf)
 					return false
 				} else {
@@ -2087,7 +2069,7 @@ class Game(val myContext: Context) {
 			// Swipe up the list to get to the top and then select the first option.
 			val statusLocation = imageUtils.findImage("race_status").first
 			if (statusLocation == null) {
-				Log.e("Unable to determine existence of list of extra races. Canceling the racing process and doing something else.")
+				MessageLog.e(TAG, "Unable to determine existence of list of extra races. Canceling the racing process and doing something else.")
 				return false
 			}
 			gestureUtils.swipe(statusLocation.x.toFloat(), statusLocation.y.toFloat() + 300, statusLocation.x.toFloat(), statusLocation.y.toFloat() + 888)
@@ -2098,16 +2080,16 @@ class Game(val myContext: Context) {
 			var count = 0
 			val maxCount = imageUtils.findAll("race_selection_fans", region = imageUtils.regionBottomHalf).size
 			if (maxCount == 0) {
-				Log.w("Was unable to find any extra races to select. Canceling the racing process and doing something else.")
+				MessageLog.w(TAG, "Was unable to find any extra races to select. Canceling the racing process and doing something else.")
 				return false
 			} else {
-				Log.i("[RACE] There are $maxCount extra race options currently on screen.")
+				MessageLog.i(TAG, "[RACE] There are $maxCount extra race options currently on screen.")
 			}
 			val listOfFans = mutableListOf<Int>()
 			val extraRaceLocation = mutableListOf<Point>()
 			val doublePredictionLocations = imageUtils.findAll("race_extra_double_prediction")
 			if (doublePredictionLocations.size == 1) {
-				Log.i("[RACE] There is only one race with double predictions so selecting that one.")
+				MessageLog.i(TAG, "[RACE] There is only one race with double predictions so selecting that one.")
 				tap(
 					doublePredictionLocations[0].x,
 					doublePredictionLocations[0].y,
@@ -2121,7 +2103,7 @@ class Game(val myContext: Context) {
 					// Save the location of the selected extra race.
 					val selectedExtraRace = imageUtils.findImage("race_extra_selection", region = imageUtils.regionBottomHalf).first
 					if (selectedExtraRace == null) {
-						Log.e("Unable to find the location of the selected extra race. Canceling the racing process and doing something else.")
+						MessageLog.e(TAG, "Unable to find the location of the selected extra race. Canceling the racing process and doing something else.")
 						break
 					}
 					extraRaceLocation.add(selectedExtraRace)
@@ -2161,13 +2143,13 @@ class Game(val myContext: Context) {
 				}
 
 				val fansList = listOfRaces.joinToString(", ") { it.fans.toString() }
-				Log.i("[RACE] Number of fans detected for each extra race are: $fansList")
+				MessageLog.i(TAG, "[RACE] Number of fans detected for each extra race are: $fansList")
 
 				// Next determine the maximum fans and select the extra race.
 				val maxFans: Int? = listOfFans.maxOrNull()
 				if (maxFans != null) {
 					if (maxFans == -1) {
-						Log.w("Max fans was returned as -1. Canceling the racing process and doing something else.")
+						MessageLog.w(TAG, "Max fans was returned as -1. Canceling the racing process and doing something else.")
 						return false
 					}
 
@@ -2178,16 +2160,16 @@ class Game(val myContext: Context) {
 						// When force racing is enabled, prioritize races with double predictions.
 						val doublePredictionIndex = listOfRaces.indexOfFirst { it.hasDoublePredictions }
 						if (doublePredictionIndex != -1) {
-							Log.i("[RACE] Force racing enabled - selecting race with double predictions.")
+							MessageLog.i(TAG, "[RACE] Force racing enabled - selecting race with double predictions.")
 							doublePredictionIndex
 						} else {
 							// Fall back to the race with maximum fans if no double predictions found
-							Log.i("[RACE] Force racing enabled but no double predictions found - falling back to race with maximum fans.")
+							MessageLog.i(TAG, "[RACE] Force racing enabled but no double predictions found - falling back to race with maximum fans.")
 							listOfFans.indexOf(maxFans)
 						}
 					}
 
-					Log.i("[RACE] Selecting the extra race at option #${index + 1}.")
+					MessageLog.i(TAG, "[RACE] Selecting the extra race at option #${index + 1}.")
 
 					// Select the extra race that matches the double star prediction and the most fan gain.
 					tap(
@@ -2198,7 +2180,7 @@ class Game(val myContext: Context) {
 					)
 				} else if (extraRaceLocation.isNotEmpty()) {
 					// If no maximum is determined, select the very first extra race.
-					Log.i("[RACE] Selecting the first extra race on the list by default.")
+					MessageLog.i(TAG, "[RACE] Selecting the first extra race on the list by default.")
 					tap(
 						extraRaceLocation[0].x - imageUtils.relWidth((100 * 1.36).toInt()),
 						extraRaceLocation[0].y - imageUtils.relHeight(70),
@@ -2206,7 +2188,7 @@ class Game(val myContext: Context) {
 						ignoreWaiting = true
 					)
 				} else {
-					Log.w("No extra races detected and thus no fan maximums were calculated. Canceling the racing process and doing something else.")
+					MessageLog.w(TAG, "No extra races detected and thus no fan maximums were calculated. Canceling the racing process and doing something else.")
 					return false
 				}
 			}
@@ -2236,7 +2218,7 @@ class Game(val myContext: Context) {
 
 			finishRace(resultCheck, isExtra = true)
 
-			Log.i("[RACE] Racing process for Extra Race is completed.")
+			MessageLog.i(TAG, "[RACE] Racing process for Extra Race is completed.")
 			return true
 		}
 
@@ -2247,7 +2229,7 @@ class Game(val myContext: Context) {
 	 * The entry point for handling standalone races if the user started the bot on the Racing screen.
 	 */
 	fun handleStandaloneRace() {
-		Log.i("[RACE] Starting Standalone Racing process...")
+		MessageLog.i(TAG, "[RACE] Starting Standalone Racing process...")
 
 		// Select the preferred race strategy if it is not already selected.
 		if (strategySelected == false) {
@@ -2269,7 +2251,7 @@ class Game(val myContext: Context) {
 
 		finishRace(resultCheck)
 
-		Log.i("[RACE] Racing process for Standalone Race is completed.")
+		MessageLog.i(TAG, "[RACE] Racing process for Standalone Race is completed.")
 	}
 
 	/**
@@ -2279,11 +2261,11 @@ class Game(val myContext: Context) {
 	 */
 	private fun skipRace(): Boolean {
 		while (raceRetries >= 0) {
-			Log.i("[RACE] Skipping race...")
+			MessageLog.i(TAG, "[RACE] Skipping race...")
 
 			// Press the skip button and then wait for your result of the race to show.
 			if (findAndTapImage("race_skip", tries = 30, region = imageUtils.regionBottomHalf)) {
-				Log.i("[RACE] Race was able to be skipped.")
+				MessageLog.i(TAG, "[RACE] Race was able to be skipped.")
 			}
 			wait(2.0)
 
@@ -2293,12 +2275,12 @@ class Game(val myContext: Context) {
 			// Check if the race needed to be retried.
 			if (imageUtils.findImage("race_retry", tries = 5, region = imageUtils.regionBottomHalf, suppressError = true).first != null) {
 				if (disableRaceRetries) {
-					Log.i("[END] Stopping the bot due to failing a mandatory race.")
+					MessageLog.i(TAG, "[END] Stopping the bot due to failing a mandatory race.")
 					notificationMessage = "Stopping the bot due to failing a mandatory race."
 					throw IllegalStateException()
 				}
 				findAndTapImage("race_retry", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)
-				Log.i("[RACE] The skipped race failed and needs to be run again. Attempting to retry...")
+				MessageLog.i(TAG, "[RACE] The skipped race failed and needs to be run again. Attempting to retry...")
 				wait(3.0)
 				raceRetries--
 			} else {
@@ -2316,17 +2298,17 @@ class Game(val myContext: Context) {
 	 */
 	private fun manualRace(): Boolean {
 		while (raceRetries >= 0) {
-			Log.i("[RACE] Skipping manual race...")
+			MessageLog.i(TAG, "[RACE] Skipping manual race...")
 
 			// Press the manual button.
 			if (findAndTapImage("race_manual", tries = 30, region = imageUtils.regionBottomHalf)) {
-				Log.i("[RACE] Started the manual race.")
+				MessageLog.i(TAG, "[RACE] Started the manual race.")
 			}
 			wait(2.0)
 
 			// Confirm the Race Playback popup if it appears.
 			if (findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle, suppressError = true)) {
-				Log.i("[RACE] Confirmed the Race Playback popup.")
+				MessageLog.i(TAG, "[RACE] Confirmed the Race Playback popup.")
 				wait(5.0)
 			}
 
@@ -2334,7 +2316,7 @@ class Game(val myContext: Context) {
 
 			// Now press the confirm button to get past the list of participants.
 			if (findAndTapImage("race_confirm", tries = 30, region = imageUtils.regionBottomHalf)) {
-				Log.i("[RACE] Dismissed the list of participants.")
+				MessageLog.i(TAG, "[RACE] Dismissed the list of participants.")
 			}
 			waitForLoading()
 			wait(1.0)
@@ -2343,25 +2325,25 @@ class Game(val myContext: Context) {
 
 			// Skip the part where it reveals the name of the race.
 			if (findAndTapImage("race_skip_manual", tries = 30, region = imageUtils.regionBottomHalf)) {
-				Log.i("[RACE] Skipped the name reveal of the race.")
+				MessageLog.i(TAG, "[RACE] Skipped the name reveal of the race.")
 			}
 			// Skip the walkthrough of the starting gate.
 			if (findAndTapImage("race_skip_manual", tries = 30, region = imageUtils.regionBottomHalf)) {
-				Log.i("[RACE] Skipped the walkthrough of the starting gate.")
+				MessageLog.i(TAG, "[RACE] Skipped the walkthrough of the starting gate.")
 			}
 			wait(3.0)
 			// Skip the start of the race.
 			if (findAndTapImage("race_skip_manual", tries = 30, region = imageUtils.regionBottomHalf)) {
-				Log.i("[RACE] Skipped the start of the race.")
+				MessageLog.i(TAG, "[RACE] Skipped the start of the race.")
 			}
 			// Skip the lead up to the finish line.
 			if (findAndTapImage("race_skip_manual", tries = 30, region = imageUtils.regionBottomHalf)) {
-				Log.i("[RACE] Skipped the lead up to the finish line.")
+				MessageLog.i(TAG, "[RACE] Skipped the lead up to the finish line.")
 			}
 			wait(2.0)
 			// Skip the result screen.
 			if (findAndTapImage("race_skip_manual", tries = 30, region = imageUtils.regionBottomHalf)) {
-				Log.i("[RACE] Skipped the results screen.")
+				MessageLog.i(TAG, "[RACE] Skipped the results screen.")
 			}
 			wait(2.0)
 
@@ -2371,18 +2353,18 @@ class Game(val myContext: Context) {
 			// Check if the race needed to be retried.
 			if (imageUtils.findImage("race_retry", tries = 5, region = imageUtils.regionBottomHalf, suppressError = true).first != null) {
 				if (disableRaceRetries) {
-					Log.i("[END] Stopping the bot due to failing a mandatory race.")
+					MessageLog.i(TAG, "[END] Stopping the bot due to failing a mandatory race.")
 					notificationMessage = "Stopping the bot due to failing a mandatory race."
 					throw IllegalStateException()
 				}
 				findAndTapImage("race_retry", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)
-				Log.i("[RACE] Manual race failed and needs to be run again. Attempting to retry...")
+				MessageLog.i(TAG, "[RACE] Manual race failed and needs to be run again. Attempting to retry...")
 				wait(5.0)
 				raceRetries--
 			} else {
 				// Check if a Trophy was acquired.
 				if (findAndTapImage("race_accept_trophy", tries = 5, region = imageUtils.regionBottomHalf)) {
-					Log.i("[RACE] Closing popup to claim trophy...")
+					MessageLog.i(TAG, "[RACE] Closing popup to claim trophy...")
 				}
 
 				return true
@@ -2399,7 +2381,7 @@ class Game(val myContext: Context) {
 	 * @param isExtra Flag to determine the following actions to finish up this mandatory or extra race.
 	 */
 	private fun finishRace(resultCheck: Boolean, isExtra: Boolean = false) {
-		Log.i("[RACE] Now performing cleanup and finishing the race.")
+		MessageLog.i(TAG, "[RACE] Now performing cleanup and finishing the race.")
 		if (!resultCheck) {
 			notificationMessage = "Bot has run out of retry attempts for racing. Stopping the bot now..."
 			throw IllegalStateException()
@@ -2407,7 +2389,7 @@ class Game(val myContext: Context) {
 
 		// Bot will be at the screen where it shows the final positions of all participants.
 		// Press the confirm button and wait to see the triangle of fans.
-		Log.i("[RACE] Now attempting to confirm the final positions of all participants and number of gained fans")
+		MessageLog.i(TAG, "[RACE] Now attempting to confirm the final positions of all participants and number of gained fans")
 		if (findAndTapImage("next", tries = 30, region = imageUtils.regionBottomHalf)) {
 			wait(0.5)
 
@@ -2418,7 +2400,7 @@ class Game(val myContext: Context) {
 			findAndTapImage("race_end", tries = 30, region = imageUtils.regionBottomHalf)
 
 			if (!isExtra) {
-				Log.i("[RACE] Seeing if a Training Goal popup will appear.")
+				MessageLog.i(TAG, "[RACE] Seeing if a Training Goal popup will appear.")
 				// Wait until the popup showing the completion of a Training Goal appears and confirm it.
 				// There will be dialog before it so the delay should be longer.
 				wait(5.0)
@@ -2426,7 +2408,7 @@ class Game(val myContext: Context) {
 					wait(2.0)
 
 					// Now confirm the completion of a Training Goal popup.
-					Log.i("[RACE] There was a Training Goal popup. Confirming it now.")
+					MessageLog.i(TAG, "[RACE] There was a Training Goal popup. Confirming it now.")
 					findAndTapImage("next", tries = 10, region = imageUtils.regionBottomHalf)
 				}
 			} else if (findAndTapImage("next", tries = 10, region = imageUtils.regionBottomHalf)) {
@@ -2435,7 +2417,7 @@ class Game(val myContext: Context) {
 				findAndTapImage("race_end", tries = 10, region = imageUtils.regionBottomHalf)
 			}
 		} else {
-			Log.e("Cannot start the cleanup process for finishing the race. Moving on...")
+			MessageLog.e(TAG, "Cannot start the cleanup process for finishing the race. Moving on...")
 		}
 	}
 
@@ -2444,11 +2426,11 @@ class Game(val myContext: Context) {
 	// Helper Functions
 
 	fun updatePreferredDistance() {
-		Log.i("[STATS] Updating preferred distance.")
+		MessageLog.i(TAG, "[STATS] Updating preferred distance.")
 		if (findAndTapImage("main_status", tries = 1, region = imageUtils.regionMiddle)) {
 			preferredDistance = imageUtils.determinePreferredDistance()
 			findAndTapImage("race_accept_trophy", tries = 1, region = imageUtils.regionBottomHalf)
-			Log.i("[STATS] Preferred distance set to $preferredDistance.")
+			MessageLog.i(TAG, "[STATS] Preferred distance set to $preferredDistance.")
 		}
 	}
 
@@ -2456,23 +2438,23 @@ class Game(val myContext: Context) {
 	 * Updates the current stat value mapping by reading the character's current stats from the Main screen.
 	 */
 	fun updateStatValueMapping() {
-		Log.i("[STATS] Updating stat value mapping.")
+		MessageLog.i(TAG, "[STATS] Updating stat value mapping.")
 		currentStatsMap = imageUtils.determineStatValues(currentStatsMap)
 		// Print the updated stat value mapping here.
 		currentStatsMap.forEach { it ->
-			Log.i("[STATS] ${it.key}: ${it.value}")
+			MessageLog.i(TAG, "[STATS] ${it.key}: ${it.value}")
 		}
-		Log.i("[STATS] Stat value mapping updated.")
+		MessageLog.i(TAG, "[STATS] Stat value mapping updated.")
 	}
 
 	/**
 	 * Updates the stored date in memory by keeping track of the current year, phase, month and current turn number.
 	 */
 	fun updateDate() {
-		Log.i("[DATE] Updating the current turn number.")
+		MessageLog.i(TAG, "[DATE] Updating the current turn number.")
 		val dateString = imageUtils.determineDayNumber()
 		currentDate = textDetection.determineDateFromString(dateString)
-		Log.i("[DATE] It is currently $currentDate.")
+		MessageLog.i(TAG, "[DATE] It is currently $currentDate.")
 	}
 
 	/**
@@ -2500,7 +2482,7 @@ class Game(val myContext: Context) {
 	 * @return True if the bot successfully recovered energy. Otherwise false.
 	 */
 	private fun recoverEnergy(): Boolean {
-		Log.i("[ENERGY] Now starting attempt to recover energy.")
+		MessageLog.i(TAG, "[ENERGY] Now starting attempt to recover energy.")
 
 		// Check if it's summer
 		val isSummer = imageUtils.findImage("recover_energy_summer", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true).first != null
@@ -2508,7 +2490,7 @@ class Game(val myContext: Context) {
 		if (isSummer) {
 			// During summer, only rest if we really need it
 			// Summer rest gives +40 energy and +1 mood level
-			Log.i("[ENERGY] Summer training active. Rest provides +40 energy and +1 mood.")
+			MessageLog.i(TAG, "[ENERGY] Summer training active. Rest provides +40 energy and +1 mood.")
 
 			// Try to estimate current energy based on failure rates if available
 			val avgFailureRate = trainingMap.values
@@ -2518,11 +2500,11 @@ class Game(val myContext: Context) {
 
 			if (!avgFailureRate.isNaN()) {
 				val estimatedEnergy = (50 - avgFailureRate * 2).coerceIn(0.0, 100.0)
-				Log.i("[ENERGY] Estimated energy: ${estimatedEnergy.toInt()}% based on training failure rates")
+				MessageLog.i(TAG, "[ENERGY] Estimated energy: ${estimatedEnergy.toInt()}% based on training failure rates")
 
 				// Only rest during summer if energy is quite low
 				if (estimatedEnergy >= 40) {
-					Log.i("[ENERGY] Summer: Energy is sufficient (~${estimatedEnergy.toInt()}%). Skipping rest to maximize Lv5 training.")
+					MessageLog.i(TAG, "[ENERGY] Summer: Energy is sufficient (~${estimatedEnergy.toInt()}%). Skipping rest to maximize Lv5 training.")
 					return false
 				}
 			}
@@ -2530,7 +2512,7 @@ class Game(val myContext: Context) {
 			// If we do need to rest during summer
 			if (findAndTapImage("recover_energy_summer", tries = 1, imageUtils.regionBottomHalf)) {
 				findAndTapImage("ok")
-				Log.i("[ENERGY] Summer: Low energy detected. Using summer rest for recovery.")
+				MessageLog.i(TAG, "[ENERGY] Summer: Low energy detected. Using summer rest for recovery.")
 				raceRepeatWarningCheck = false
 				return true
 			}
@@ -2540,12 +2522,12 @@ class Game(val myContext: Context) {
 		return when {
 			findAndTapImage("recover_energy", tries = 1, imageUtils.regionBottomHalf) -> {
 				findAndTapImage("ok")
-				Log.i("[ENERGY] Successfully recovered energy.")
+				MessageLog.i(TAG, "[ENERGY] Successfully recovered energy.")
 				raceRepeatWarningCheck = false
 				true
 			}
 			else -> {
-				Log.i("[ENERGY] Failed to recover energy. Moving on...")
+				MessageLog.i(TAG, "[ENERGY] Failed to recover energy. Moving on...")
 				false
 			}
 		}
@@ -2558,7 +2540,7 @@ class Game(val myContext: Context) {
 	 * @return True if the bot successfully recovered mood. Otherwise false.
 	 */
 	fun recoverMood(): Boolean {
-		Log.i("[MOOD] Detecting current mood.")
+		MessageLog.i(TAG, "[MOOD] Detecting current mood.")
 
 		// Detect what Mood the bot is at.
 		val currentMood: String = when {
@@ -2576,11 +2558,11 @@ class Game(val myContext: Context) {
 			}
 		}
 
-		Log.i("[MOOD] Detected mood to be $currentMood.")
+		MessageLog.i(TAG, "[MOOD] Detected mood to be $currentMood.")
 
 		// Never recover mood on turn 1 (random chance opportunity)
 		if (currentDate.turnNumber == 1) {
-			Log.i("[MOOD] Turn 1 detected. Never recovering mood on turn 1 to utilize random chance opportunity.")
+			MessageLog.i(TAG, "[MOOD] Turn 1 detected. Never recovering mood on turn 1 to utilize random chance opportunity.")
 			return false
 		}
 
@@ -2590,23 +2572,23 @@ class Game(val myContext: Context) {
 		// During summer, only recover mood if it's Bad/Awful (not Normal) since we want to maximize training
 		if (isSummer) {
 			if (currentMood == "Bad/Awful") {
-				Log.i("[MOOD] Summer: Current mood is Bad/Awful. Using summer rest for mood recovery.")
+				MessageLog.i(TAG, "[MOOD] Summer: Current mood is Bad/Awful. Using summer rest for mood recovery.")
 				findAndTapImage("recover_energy_summer", tries = 1, region = imageUtils.regionBottomHalf)
 				findAndTapImage("ok", region = imageUtils.regionMiddle, suppressError = true)
 				raceRepeatWarningCheck = false
 				return true
 			} else {
-				Log.i("[MOOD] Summer: Current mood is $currentMood. Skipping rest to maximize Lv5 training opportunities.")
+				MessageLog.i(TAG, "[MOOD] Summer: Current mood is $currentMood. Skipping rest to maximize Lv5 training opportunities.")
 				return false
 			}
 		}
 
 		// Normal (non-summer) mood recovery logic
 		return if (firstTrainingCheck && currentMood == "Normal") {
-			Log.i("[MOOD] Current mood is Normal. Not recovering mood due to firstTrainingCheck flag being active. Will need to complete a training first before being allowed to recover mood.")
+			MessageLog.i(TAG, "[MOOD] Current mood is Normal. Not recovering mood due to firstTrainingCheck flag being active. Will need to complete a training first before being allowed to recover mood.")
 			false
 		} else if (currentMood == "Bad/Awful" || currentMood == "Normal") {
-			Log.i("[MOOD] Current mood is not good. Recovering mood now.")
+			MessageLog.i(TAG, "[MOOD] Current mood is not good. Recovering mood now.")
 			if (!findAndTapImage("recover_mood", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
 				// Fallback to summer rest if available (shouldn't happen since we check isSummer above)
 				findAndTapImage("recover_energy_summer", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)
@@ -2621,7 +2603,7 @@ class Game(val myContext: Context) {
 			raceRepeatWarningCheck = false
 			true
 		} else {
-			Log.i("[MOOD] Current mood is good enough. Moving on...")
+			MessageLog.i(TAG, "[MOOD] Current mood is good enough. Moving on...")
 			false
 		}
 	}
@@ -2630,9 +2612,9 @@ class Game(val myContext: Context) {
 	 * Prints the training map object for informational purposes.
 	 */
 	private fun printTrainingMap() {
-		Log.i("Stat Gains by Training:")
+		MessageLog.i(TAG, "Stat Gains by Training:")
 		trainingMap.forEach { name, training ->
-			Log.i("[TRAINING] $name Training stat gains: ${training.statGains.contentToString()}, failure chance: ${training.failureChance}%.")
+			MessageLog.i(TAG, "[TRAINING] $name Training stat gains: ${training.statGains.contentToString()}, failure chance: ${training.failureChance}%.")
 		}
 	}
 
@@ -2642,11 +2624,11 @@ class Game(val myContext: Context) {
 	 * @return True if the checks passed. Otherwise false if the bot encountered a warning popup and needs to exit.
 	 */
 	fun performMiscChecks(): Boolean {
-		Log.i("Beginning check for misc cases...")
+		MessageLog.i(TAG, "Beginning check for misc cases...")
 
 		if (enablePopupCheck && imageUtils.findImage("cancel", tries = 1, region = imageUtils.regionBottomHalf).first != null &&
 			imageUtils.findImage("recover_mood_date", tries = 1, region = imageUtils.regionMiddle).first == null) {
-			Log.i("[END] Bot may have encountered a warning popup. Exiting now...")
+			MessageLog.i(TAG, "[END] Bot may have encountered a warning popup. Exiting now...")
 			notificationMessage = "Bot may have encountered a warning popup"
 			return false
 		} else if (findAndTapImage("next", tries = 1, region = imageUtils.regionBottomHalf)) {
@@ -2656,34 +2638,34 @@ class Game(val myContext: Context) {
 			wait(1.0)
 		} else if (imageUtils.findImage("crane_game", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
             if (enableSkipCraneGame) {
-                Log.i("Crane game event detected. Auto failing since skip crane game setting is enabled.")
+                MessageLog.i(TAG, "Crane game event detected. Auto failing since skip crane game setting is enabled.")
                 findAndTapImage("crane_game", tries = 1, region = imageUtils.regionBottomHalf)
 			    wait(5.0)
             } else {
-                Log.i("[END] Bot will stop due to the detection of the Crane Game Event. Please complete it and restart the bot.")
+                MessageLog.i(TAG, "[END] Bot will stop due to the detection of the Crane Game Event. Please complete it and restart the bot.")
                 notificationMessage = "Bot will stop due to the detection of the Crane Game Event. Please complete it and restart the bot."
                 return false
             }
 		} else if (
 			imageUtils.findImage("ordinary_cuties", tries = 1, region = imageUtils.regionBottomHalf).first != null &&
 			imageUtils.findImage("crane_ok", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
-            Log.i("Crane game complete screen.")
+            MessageLog.i(TAG, "Crane game complete screen.")
 			findAndTapImage("crane_ok", tries=1, region = imageUtils.regionBottomHalf)
 			wait(1.0)
 		}  else if (findAndTapImage("race_retry", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
-			Log.i("There is a race retry popup.")
+			MessageLog.i(TAG, "There is a race retry popup.")
 			wait(5.0)
 		} else if (findAndTapImage("race_accept_trophy", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
-			Log.i("There is a possible popup to accept a trophy.")
+			MessageLog.i(TAG, "There is a possible popup to accept a trophy.")
 			finishRace(true, isExtra = true)
 		} else if (findAndTapImage("race_end", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
-			Log.i("Ended a leftover race.")
+			MessageLog.i(TAG, "Ended a leftover race.")
 		} else if (imageUtils.findImage("connection_error", tries = 1, region = imageUtils.regionMiddle, suppressError = true).first != null) {
-			Log.i("[END] Bot will stop due to detecting a connection error.")
+			MessageLog.i(TAG, "[END] Bot will stop due to detecting a connection error.")
 			notificationMessage = "Bot will stop due to detecting a connection error."
 			return false
 		} else if (imageUtils.findImage("race_not_enough_fans", tries = 1, region = imageUtils.regionMiddle, suppressError = true).first != null) {
-			Log.i("There was a popup about insufficient fans.")
+			MessageLog.i(TAG, "There was a popup about insufficient fans.")
 			encounteredRacingPopup = true
 			findAndTapImage("cancel", region = imageUtils.regionBottomHalf)
 		} else if (findAndTapImage("back", tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
@@ -2691,7 +2673,7 @@ class Game(val myContext: Context) {
 		} else if (!BotService.isRunning) {
 			throw InterruptedException()
 		} else {
-			Log.i("Did not detect any popups or the Crane Game on the screen. Moving on...")
+			MessageLog.i(TAG, "Did not detect any popups or the Crane Game on the screen. Moving on...")
 		}
 
 		return true
@@ -2705,7 +2687,7 @@ class Game(val myContext: Context) {
 	fun start(): Boolean {
 		// Print current app settings at the start of the run.
 		SettingsPrinter.printCurrentSettings(myContext) { message ->
-			Log.i(message)
+			MessageLog.i(TAG, message)
 		}
 
 		// Update the stat targets by distances.
@@ -2717,17 +2699,17 @@ class Game(val myContext: Context) {
 		}
 
 		// Print device and version information.
-		Log.i("Device Information: ${MediaProjectionService.displayWidth}x${MediaProjectionService.displayHeight}, DPI ${MediaProjectionService.displayDPI}")
+		MessageLog.i(TAG, "Device Information: ${MediaProjectionService.displayWidth}x${MediaProjectionService.displayHeight}, DPI ${MediaProjectionService.displayDPI}")
 		if (MediaProjectionService.displayWidth != 1080) {
-            Log.w("⚠️ Bot performance will be severely degraded since display width is not 1080p unless an appropriate scale is set for your device.")
+            MessageLog.w(TAG, "⚠️ Bot performance will be severely degraded since display width is not 1080p unless an appropriate scale is set for your device.")
         }
 		if (debugMode) {
-            Log.w("⚠️ Debug Mode is enabled. All bot operations will be significantly slower as a result.")
+            MessageLog.w(TAG, "⚠️ Debug Mode is enabled. All bot operations will be significantly slower as a result.")
         }
 		if (sharedPreferences.getInt("customScale", 100).toDouble() / 100.0 != 1.0) {
-            Log.i("Manual scale has been set to ${sharedPreferences.getInt("customScale", 100).toDouble() / 100.0}")
+            MessageLog.i(TAG, "Manual scale has been set to ${sharedPreferences.getInt("customScale", 100).toDouble() / 100.0}")
         }
-		Log.w("⚠️ Note that certain Android notification styles (like banners) are big enough that they cover the area that contains the Mood which will interfere with mood recovery logic in the beginning.")
+		MessageLog.w(TAG, "⚠️ Note that certain Android notification styles (like banners) are big enough that they cover the area that contains the Mood which will interfere with mood recovery logic in the beginning.")
 		val packageInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
 			myContext.packageManager.getPackageInfo(myContext.packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
 		} else {
@@ -2739,7 +2721,7 @@ class Game(val myContext: Context) {
 			@Suppress("DEPRECATION")
 			packageInfo.versionCode.toLong()
 		}
-		Log.i("Bot version: ${packageInfo.versionName} ($versionCode)\n")
+		MessageLog.i(TAG, "Bot version: ${packageInfo.versionName} ($versionCode)\n")
 
 		val startTime: Long = System.currentTimeMillis()
 
@@ -2761,7 +2743,7 @@ class Game(val myContext: Context) {
 		}
 
 		val endTime: Long = System.currentTimeMillis()
-		Log.d("Total Runtime: ${endTime - startTime}ms")
+		MessageLog.d(TAG, "Total Runtime: ${endTime - startTime}ms")
 
 		return true
 	}
