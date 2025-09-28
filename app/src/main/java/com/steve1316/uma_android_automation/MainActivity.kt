@@ -18,6 +18,8 @@ import com.google.android.material.navigation.NavigationView
 import org.opencv.android.OpenCVLoader
 import java.util.Locale
 
+import com.steve1316.uma_android_automation.utils.UserConfig
+
 val START_TIME_MS = System.currentTimeMillis()
 
 class MainActivity : AppCompatActivity() {
@@ -29,6 +31,9 @@ class MainActivity : AppCompatActivity() {
 	
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+
+        UserConfig.initialize(this)
+
 		setContentView(R.layout.activity_main)
 		val toolbar: Toolbar = findViewById(R.id.toolbar)
 		setSupportActionBar(toolbar)

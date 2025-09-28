@@ -10,6 +10,7 @@ import androidx.navigation.fragment.findNavController
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.R
 import com.steve1316.uma_android_automation.utils.MessageLog
+import com.steve1316.uma_android_automation.utils.UserConfig
 
 class TrainingFragment : PreferenceFragmentCompat() {
 	private val TAG: String = "TrainingFragment"
@@ -31,21 +32,21 @@ class TrainingFragment : PreferenceFragmentCompat() {
 		
 		// Grab the saved preferences from the previous time the user used the app.
 		val trainingBlacklist = sharedPreferences.getStringSet("trainingBlacklist", setOf())
-		val maximumFailureChance = sharedPreferences.getInt("maximumFailureChance", 15)
-		val disableTrainingOnMaxedStat = sharedPreferences.getBoolean("disableTrainingOnMaxedStat", true)
-		val focusOnSparkStatTarget = sharedPreferences.getBoolean("focusOnSparkStatTarget", false)
+		val maxFailChance = sharedPreferences.getInt("maxFailChance", 15)
+		val bEnableTrainMaxedStat = sharedPreferences.getBoolean("bEnableTrainMaxedStat", false)
+		val bFocusSparks = sharedPreferences.getBoolean("bFocusSparks", false)
 		
 		// Get references to the Preference components.
 		val trainingBlacklistPreference = findPreference<MultiSelectListPreference>("trainingBlacklist")!!
-		val maximumFailureChancePreference = findPreference<SeekBarPreference>("maximumFailureChance")!!
-		val disableTrainingOnMaxedStatPreference = findPreference<CheckBoxPreference>("disableTrainingOnMaxedStat")!!
-		val focusOnSparkStatTargetPreference = findPreference<CheckBoxPreference>("focusOnSparkStatTarget")!!
+		val maxFailChancePreference = findPreference<SeekBarPreference>("maxFailChance")!!
+		val bEnableTrainMaxedStatPreference = findPreference<CheckBoxPreference>("bEnableTrainMaxedStat")!!
+		val bFocusSparksPreference = findPreference<CheckBoxPreference>("bFocusSparks")!!
 		
 		// Now set the following values from the SharedPreferences.
 		trainingBlacklistPreference.values = trainingBlacklist
-		maximumFailureChancePreference.value = maximumFailureChance
-		disableTrainingOnMaxedStatPreference.isChecked = disableTrainingOnMaxedStat
-		focusOnSparkStatTargetPreference.isChecked = focusOnSparkStatTarget
+		maxFailChancePreference.value = maxFailChance
+		bEnableTrainMaxedStatPreference.isChecked = bEnableTrainMaxedStat
+		bFocusSparksPreference.isChecked = bFocusSparks
 		createMultiSelectAlertDialog()
 		setupStatTargetPreferences()
 		
@@ -126,30 +127,33 @@ class TrainingFragment : PreferenceFragmentCompat() {
 						commit()
 					}
 				}
-				"maximumFailureChance" -> {
-					val maximumFailureChancePreference = findPreference<SeekBarPreference>("maximumFailureChance")!!
+				"maxFailChance" -> {
+					val maxFailChancePreference = findPreference<SeekBarPreference>("maxFailChance")!!
 					
 					sharedPreferences.edit {
-						putInt("maximumFailureChance", maximumFailureChancePreference.value)
+						putInt("maxFailChance", maxFailChancePreference.value)
 						commit()
 					}
 				}
-				"disableTrainingOnMaxedStat" -> {
-					val disableTrainingOnMaxedStatPreference = findPreference<CheckBoxPreference>("disableTrainingOnMaxedStat")!!
+				"bEnableTrainMaxedStat" -> {
+					val bEnableTrainMaxedStatPreference = findPreference<CheckBoxPreference>("bEnableTrainMaxedStat")!!
 					sharedPreferences.edit {
-						putBoolean("disableTrainingOnMaxedStat", disableTrainingOnMaxedStatPreference.isChecked)
+						putBoolean("bEnableTrainMaxedStat", bEnableTrainMaxedStatPreference.isChecked)
 						commit()
 					}
 				}
-				"focusOnSparkStatTarget" -> {
-					val focusOnSparkStatTargetPreference = findPreference<CheckBoxPreference>("focusOnSparkStatTarget")!!
+				"bFocusSparks" -> {
+					val bFocusSparksPreference = findPreference<CheckBoxPreference>("bFocusSparks")!!
 					sharedPreferences.edit {
-						putBoolean("focusOnSparkStatTarget", focusOnSparkStatTargetPreference.isChecked)
+						putBoolean("bFocusSparks", bFocusSparksPreference.isChecked)
 						commit()
 					}
 				}
 			}
 			
+            // Re-initialize our UserConfig now that we have committed changes.
+            UserConfig.reloadPreferences()
+
 			updateSummaries()
 		}
 	}
@@ -178,13 +182,13 @@ class TrainingFragment : PreferenceFragmentCompat() {
 			"Select Training(s) to blacklist from being selected in order to narrow the focus of overall Training. Note that the blacklist is ignored during Junior Year to focus on building bond levels.\n\nNone Selected"
 		}
 		
-		val statPrioritizationPreference = findPreference<Preference>("statPrioritization")!!
-		val statPrioritization: List<String> = sharedPreferences.getString("statPrioritization", "")!!.split("|")
-		statPrioritizationPreference.summary = if (statPrioritization.isNotEmpty() && statPrioritization[0] != "") {
+		val statPriorityPreference = findPreference<Preference>("statPriority")!!
+		val statPriority: List<String> = sharedPreferences.getString("statPriority", "")!!.split("|")
+		statPriorityPreference.summary = if (statPriority.isNotEmpty() && statPriority[0] != "") {
 			var summaryBody = "Select Stat(s) to prioritize in order from highest priority to lowest. Any stat not selected will be assigned the lowest priority.\n\nOrder of Stat Prioritisation:"
 			
 			var count = 1
-			statPrioritization.forEach { stat ->
+			statPriority.forEach { stat ->
 				summaryBody += "\n$count. $stat"
 				count++
 			}
@@ -238,9 +242,9 @@ class TrainingFragment : PreferenceFragmentCompat() {
 	 * This also serves the purpose of populating the Preference with previously selected values from SharedPreferences.
 	 */
 	private fun createMultiSelectAlertDialog() {
-		val multiplePreference = findPreference<Preference>("statPrioritization")!!
-		val key = "statPrioritization"
-		val savedOptions: List<String> = sharedPreferences.getString("statPrioritization", "")!!.split("|")
+		val multiplePreference = findPreference<Preference>("statPriority")!!
+		val key = "statPriority"
+		val savedOptions: List<String> = sharedPreferences.getString("statPriority", "")!!.split("|")
 		val selectedOptions: List<String> = sharedPreferences.getString("selectedOptions", "")!!.split("|")
 		
 		// Update the Preference's summary to reflect the order of options selected if the user did it before.

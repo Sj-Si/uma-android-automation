@@ -42,7 +42,7 @@
     <PreferenceCategory app:title="Racing Options">
 
         <CheckBoxPreference
-            app:key="enableFarmingFans"
+            app:key="bEnableFarmingFans"
             app:summary="Enables prioritizing farming fans via conducting extra races instead of focusing on training."
             app:title="Enable Prioritizing Farming Fans" />
 
@@ -56,17 +56,17 @@
             app:title="Set what Days to do Extra Races" />
 
         <CheckBoxPreference
-            app:key="disableRaceRetries"
+            app:key="bEnableRaceRetries"
             app:summary="Disable retrying on failed mandatory races and stops the bot. Defaults to disabled."
             app:title="Disable Retrying on Failed Races" />
 
         <CheckBoxPreference
-            app:key="enableStopOnMandatoryRace"
+            app:key="bEnableStopOnMandatoryRace"
             app:summary="Enables check to automatically stop the bot when reaching a mandatory race."
             app:title="Enable Stop on Mandatory Race" />
 
         <CheckBoxPreference
-            app:key="enableForceRacing"
+            app:key="bEnableForceRacing"
             app:summary="Forces the bot to race extra races for every single day with no rest, mood recovery, or training. Focuses purely on racing."
             app:title="Force Racing Every Day" />
 
@@ -75,30 +75,30 @@
     <PreferenceCategory app:title="Misc Options">
 
         <CheckBoxPreference
-            app:key="enableSkillPointCheck"
+            app:key="bEnableSkillPointCheck"
             app:summary="Enables check for a certain Skill Point threshold. If reached, the bot will stop so that you can spend the skill points."
             app:title="Enable Skill Point Check" />
 
         <SeekBarPreference
             android:max="1500"
             app:defaultValue="750"
-            app:key="skillPointCheck"
+            app:key="skillPointCheckThreshold"
             app:min="500"
             app:showSeekBarValue="true"
             app:title="Set Threshold for Skill Point Check" />
 
         <CheckBoxPreference
-            app:key="enablePopupCheck"
+            app:key="bEnablePopupCheck"
             app:summary="Enables check for warning popups like lack of fans or lack of trophies gathered.\n\nStops the bot if detected for the user to deal with them manually to prevent potentially ending the run prematurely."
             app:title="Enable Check for Popups" />
 
         <CheckBoxPreference
-            app:key="enablePrioritizeEnergyOptions"
+            app:key="bEnablePrioritizeEnergy"
             app:summary="Overrides all stat weight prioritization settings and have the bot pick options that give the highest Energy. Will fallback to the current stat weight prioritization settings if no option for that is available."
             app:title="Prioritize Energy Above All Else" />
 
         <CheckBoxPreference
-            app:key="enableSkipCraneGame"
+            app:key="bEnableSkipCraneGame"
             app:summary="Forces bot to fail the crane game event automatically. This way no user input is required."
             app:title="Skip Crane Game (Auto fail)" />
 
@@ -107,14 +107,14 @@
     <PreferenceCategory app:title="Debug Options">
 
         <CheckBoxPreference
-            app:key="debugMode"
+            app:key="bEnableDebugMode"
             app:summary="Allows debugging messages in the log and test images to be created in the /temp/ folder.\n\nIncreases the average runtime of the bot due to constant IO operations."
             app:title="Enable Debug Mode" />
 
         <SeekBarPreference
             android:defaultValue="80"
             android:max="100"
-            app:key="confidence"
+            app:key="debugOcrConfidence"
             app:min="50"
             app:seekBarIncrement="1"
             app:showSeekBarValue="true"
@@ -124,7 +124,7 @@
         <SeekBarPreference
             android:defaultValue="100"
             android:max="300"
-            app:key="customScale"
+            app:key="debugOcrScale"
             app:min="50"
             app:seekBarIncrement="1"
             app:showSeekBarValue="true"
@@ -132,23 +132,23 @@
             app:title="Set Scale for Template Matching" />
 
         <CheckBoxPreference
-            app:key="debugMode_startTemplateMatchingTest"
+            app:key="bRunTemplateMatchingTest"
             app:summary="Disables normal bot operations and starts the template match test. Only on the Home screen and will check if it can find various buttons on the screen. It will also output what scale it had the most success with.\n\nRecommended to enable Debug Mode as well."
             app:title="Start Basic Template Matching Test" />
 
         <CheckBoxPreference
-            app:key="debugMode_startSingleTrainingFailureOCRTest"
+            app:key="bRunSingleTrainingFailureOcrTest"
             app:summary="Disables normal bot operations and starts the training failure OCR test. Only on the Training screen and only tests on the training currently on display for their failure chance.\n\nRecommended to enable Debug Mode as well."
             app:title="Training Failure Chance OCR Test" />
 
         <CheckBoxPreference
-            app:key="debugMode_startComprehensiveTrainingFailureOCRTest"
+            app:key="bRunComprehensiveTrainingFailureOcrTest"
             app:summary="Disables normal bot operations and starts the comprehensive training OCR test. Only on the Training screen and tests all 5 trainings for their stat gain weights and failure chances.\n\nRecommended to enable Debug Mode as well."
             app:title="Comprehensive Training OCR Test" />
 
         <CheckBoxPreference
             app:defaultValue="true"
-            app:key="hideComparisonResults"
+            app:key="bHideComparisonResults"
             app:summary="Hides the log messages regarding the string comparison process."
             app:title="Hide String Comparison Results" />
 

@@ -8,6 +8,7 @@ import androidx.preference.*
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.R
 import com.steve1316.uma_android_automation.utils.MessageLog
+import com.steve1316.uma_android_automation.utils.UserConfig
 
 class SettingsFragment : PreferenceFragmentCompat() {
 	private val TAG: String = "SettingsFragment"
@@ -34,14 +35,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
 						commit()
 					}
 				}
-				"enableFarmingFans" -> {
-					val enableFarmingFansPreference = findPreference<CheckBoxPreference>("enableFarmingFans")!!
+				"bEnableFarmingFans" -> {
+					val bEnableFarmingFansPreference = findPreference<CheckBoxPreference>("bEnableFarmingFans")!!
 					val daysToRunExtraRacesPreference = findPreference<SeekBarPreference>("daysToRunExtraRaces")!!
 					
-					daysToRunExtraRacesPreference.isEnabled = enableFarmingFansPreference.isChecked
+					daysToRunExtraRacesPreference.isEnabled = bEnableFarmingFansPreference.isChecked
 					
 					sharedPreferences.edit {
-						putBoolean("enableFarmingFans", enableFarmingFansPreference.isChecked)
+						putBoolean("bEnableFarmingFans", bEnableFarmingFansPreference.isChecked)
 						commit()
 					}
 				}
@@ -53,129 +54,131 @@ class SettingsFragment : PreferenceFragmentCompat() {
 						commit()
 					}
 				}
-				"enableSkillPointCheck" -> {
-					val enableSkillPointCheckPreference = findPreference<CheckBoxPreference>("enableSkillPointCheck")!!
-					val skillPointCheckPreference = findPreference<SeekBarPreference>("skillPointCheck")!!
-					skillPointCheckPreference.isEnabled = enableSkillPointCheckPreference.isChecked
+				"bEnableSkillPointCheck" -> {
+					val bEnableSkillPointCheckPreference = findPreference<CheckBoxPreference>("bEnableSkillPointCheck")!!
+					val skillPointCheckThresholdPreference = findPreference<SeekBarPreference>("skillPointCheckThreshold")!!
+					skillPointCheckThresholdPreference.isEnabled = bEnableSkillPointCheckPreference.isChecked
 					
 					sharedPreferences.edit {
-						putBoolean("enableSkillPointCheck", enableSkillPointCheckPreference.isChecked)
+						putBoolean("bEnableSkillPointCheck", bEnableSkillPointCheckPreference.isChecked)
 						commit()
 					}
 				}
-				"skillPointCheck" -> {
-					val skillPointCheckPreference = findPreference<SeekBarPreference>("skillPointCheck")!!
+				"skillPointCheckThreshold" -> {
+					val skillPointCheckThresholdPreference = findPreference<SeekBarPreference>("skillPointCheckThreshold")!!
 					
 					sharedPreferences.edit {
-						putInt("skillPointCheck", skillPointCheckPreference.value)
+						putInt("skillPointCheckThreshold", skillPointCheckThresholdPreference.value)
 						commit()
 					}
 				}
-				"enablePopupCheck" -> {
-					val enablePopupCheckPreference = findPreference<CheckBoxPreference>("enablePopupCheck")!!
+				"bEnablePopupCheck" -> {
+					val bEnablePopupCheckPreference = findPreference<CheckBoxPreference>("bEnablePopupCheck")!!
 					
 					sharedPreferences.edit {
-						putBoolean("enablePopupCheck", enablePopupCheckPreference.isChecked)
+						putBoolean("bEnablePopupCheck", bEnablePopupCheckPreference.isChecked)
 						commit()
 					}
 				}
-				"disableRaceRetries" -> {
-					val disableRaceRetriesPreference = findPreference<CheckBoxPreference>("disableRaceRetries")!!
+				"bEnableRaceRetries" -> {
+					val bEnableRaceRetriesPreference = findPreference<CheckBoxPreference>("bEnableRaceRetries")!!
 
 					sharedPreferences.edit {
-						putBoolean("disableRaceRetries", disableRaceRetriesPreference.isChecked)
+						putBoolean("bEnableRaceRetries", bEnableRaceRetriesPreference.isChecked)
 						commit()
 					}
 				}
-				"enableStopOnMandatoryRace" -> {
-					val enableStopOnMandatoryRacePreference = findPreference<CheckBoxPreference>("enableStopOnMandatoryRace")!!
+				"bEnableStopOnMandatoryRace" -> {
+					val bEnableStopOnMandatoryRacePreference = findPreference<CheckBoxPreference>("bEnableStopOnMandatoryRace")!!
 					
 					sharedPreferences.edit {
-						putBoolean("enableStopOnMandatoryRace", enableStopOnMandatoryRacePreference.isChecked)
+						putBoolean("bEnableStopOnMandatoryRace", bEnableStopOnMandatoryRacePreference.isChecked)
 						commit()
 					}
 				}
-				"enablePrioritizeEnergyOptions" -> {
-					val enablePrioritizeEnergyOptionsPreference = findPreference<CheckBoxPreference>("enablePrioritizeEnergyOptions")!!
+				"bEnablePrioritizeEnergy" -> {
+					val bEnablePrioritizeEnergyPreference = findPreference<CheckBoxPreference>("bEnablePrioritizeEnergy")!!
 
 					sharedPreferences.edit {
-						putBoolean("enablePrioritizeEnergyOptions", enablePrioritizeEnergyOptionsPreference.isChecked)
+						putBoolean("bEnablePrioritizeEnergy", bEnablePrioritizeEnergyPreference.isChecked)
 						commit()
 					}
 				}
-                "enableSkipCraneGame" -> {
-                    val enableSkipCraneGamePreference = findPreference<CheckBoxPreference>("enableSkipCraneGame")!!
+                "bEnableSkipCraneGame" -> {
+                    val bEnableSkipCraneGamePreference = findPreference<CheckBoxPreference>("bEnableSkipCraneGame")!!
 
 					sharedPreferences.edit {
-						putBoolean("enableSkipCraneGame", enableSkipCraneGamePreference.isChecked)
+						putBoolean("bEnableSkipCraneGame", bEnableSkipCraneGamePreference.isChecked)
 						commit()
 					}
                 }
-				"enableForceRacing" -> {
-					val enableForceRacingPreference = findPreference<CheckBoxPreference>("enableForceRacing")!!
+				"bEnableForceRacing" -> {
+					val bEnableForceRacingPreference = findPreference<CheckBoxPreference>("bEnableForceRacing")!!
 
 					sharedPreferences.edit {
-						putBoolean("enableForceRacing", enableForceRacingPreference.isChecked)
+						putBoolean("bEnableForceRacing", bEnableForceRacingPreference.isChecked)
 						commit()
 					}
 				}
-				"debugMode" -> {
-					val debugModePreference = findPreference<CheckBoxPreference>("debugMode")!!
+				"bEnableDebugMode" -> {
+					val bEnableDebugModePreference = findPreference<CheckBoxPreference>("bEnableDebugMode")!!
 					
 					sharedPreferences.edit {
-						putBoolean("debugMode", debugModePreference.isChecked)
+						putBoolean("bEnableDebugMode", bEnableDebugModePreference.isChecked)
 						commit()
 					}
 				}
-				"confidence" -> {
-					val confidencePreference = findPreference<SeekBarPreference>("confidence")!!
+				"debugOcrConfidence" -> {
+					val debugOcrConfidencePreference = findPreference<SeekBarPreference>("debugOcrConfidence")!!
 
 					sharedPreferences.edit {
-						putInt("confidence", confidencePreference.value)
+						putInt("debugOcrConfidence", debugOcrConfidencePreference.value)
 						commit()
 					}
 				}
-				"customScale" -> {
-					val customScalePreference = findPreference<SeekBarPreference>("customScale")!!
+				"debugOcrScale" -> {
+					val debugOcrScalePreference = findPreference<SeekBarPreference>("debugOcrScale")!!
 
 					sharedPreferences.edit {
-						putInt("customScale", customScalePreference.value)
+						putInt("debugOcrScale", debugOcrScalePreference.value)
 						commit()
 					}
 				}
-				"debugMode_startTemplateMatchingTest" -> {
-					val debugModeStartTemplateMatchingTestPreference = findPreference<CheckBoxPreference>("debugMode_startTemplateMatchingTest")!!
+				"bRunTemplateMatchingTest" -> {
+					val bRunTemplateMatchingTestPreference = findPreference<CheckBoxPreference>("bRunTemplateMatchingTest")!!
 
 					sharedPreferences.edit {
-						putBoolean("debugMode_startTemplateMatchingTest", debugModeStartTemplateMatchingTestPreference.isChecked)
+						putBoolean("bRunTemplateMatchingTest", bRunTemplateMatchingTestPreference.isChecked)
 						commit()
 					}
 				}
-				"debugMode_startSingleTrainingFailureOCRTest" -> {
-					val debugModeStartSingleTrainingFailureOCRTestPreference = findPreference<CheckBoxPreference>("debugMode_startSingleTrainingFailureOCRTest")!!
+				"bRunSingleTrainingFailureOcrTest" -> {
+					val bRunSingleTrainingFailureOcrTestPreference = findPreference<CheckBoxPreference>("bRunSingleTrainingFailureOcrTest")!!
 
 					sharedPreferences.edit {
-						putBoolean("debugMode_startSingleTrainingFailureOCRTest", debugModeStartSingleTrainingFailureOCRTestPreference.isChecked)
+						putBoolean("bRunSingleTrainingFailureOcrTest", bRunSingleTrainingFailureOcrTestPreference.isChecked)
 						commit()
 					}
 				}
-				"debugMode_startComprehensiveTrainingFailureOCRTest" -> {
-					val debugModeStartComprehensiveTrainingFailureOCRTestPreference = findPreference<CheckBoxPreference>("debugMode_startComprehensiveTrainingFailureOCRTest")!!
+				"bRunComprehensiveTrainingFailureOcrTest" -> {
+					val bRunComprehensiveTrainingFailureOcrTestPreference = findPreference<CheckBoxPreference>("bRunComprehensiveTrainingFailureOcrTest")!!
 
 					sharedPreferences.edit {
-						putBoolean("debugMode_startComprehensiveTrainingFailureOCRTest", debugModeStartComprehensiveTrainingFailureOCRTestPreference.isChecked)
+						putBoolean("bRunComprehensiveTrainingFailureOcrTest", bRunComprehensiveTrainingFailureOcrTestPreference.isChecked)
 						commit()
 					}
 				}
-				"hideComparisonResults" -> {
-					val hideComparisonResultsPreference = findPreference<CheckBoxPreference>("hideComparisonResults")!!
+				"bHideComparisonResults" -> {
+					val bHideComparisonResultsPreference = findPreference<CheckBoxPreference>("bHideComparisonResults")!!
 					
 					sharedPreferences.edit {
-						putBoolean("hideComparisonResults", hideComparisonResultsPreference.isChecked)
+						putBoolean("bHideComparisonResults", bHideComparisonResultsPreference.isChecked)
 						commit()
 					}
 				}
 			}
+            // Re-initialize our UserConfig now that we have committed changes.
+            UserConfig.reloadPreferences()
 		}
 	}
 	
@@ -202,44 +205,44 @@ class SettingsFragment : PreferenceFragmentCompat() {
 		// Grab the saved preferences from the previous time the user used the app.
 		val campaign: String = sharedPreferences.getString("campaign", "")!!
 		val strategy: String = sharedPreferences.getString("strategy", "")!!
-		val enableFarmingFans: Boolean = sharedPreferences.getBoolean("enableFarmingFans", false)
+		val bEnableFarmingFans: Boolean = sharedPreferences.getBoolean("bEnableFarmingFans", false)
 		val daysToRunExtraRaces: Int = sharedPreferences.getInt("daysToRunExtraRaces", 4)
-		val enableSkillPointCheck: Boolean = sharedPreferences.getBoolean("enableSkillPointCheck", false)
-		val skillPointCheck: Int = sharedPreferences.getInt("skillPointCheck", 750)
-		val enablePopupCheck: Boolean = sharedPreferences.getBoolean("enablePopupCheck", false)
-		val disableRaceRetries: Boolean = sharedPreferences.getBoolean("disableRaceRetries", false)
-		val enableStopOnMandatoryRace: Boolean = sharedPreferences.getBoolean("enableStopOnMandatoryRace", false)
-		val enablePrioritizeEnergyOptions: Boolean = sharedPreferences.getBoolean("enablePrioritizeEnergyOptions", false)
-        val enableSkipCraneGame: Boolean = sharedPreferences.getBoolean("enableSkipCraneGame", false)
-		val enableForceRacing: Boolean = sharedPreferences.getBoolean("enableForceRacing", false)
-		val debugMode: Boolean = sharedPreferences.getBoolean("debugMode", false)
-		val confidence: Int = sharedPreferences.getInt("confidence", 80)
-		val customScale: Int = sharedPreferences.getInt("customScale", 100)
-		val debugModeStartTemplateMatchingTest: Boolean = sharedPreferences.getBoolean("debugMode_startTemplateMatchingTest", false)
-		val debugModeStartSingleTrainingFailureOCRTest: Boolean = sharedPreferences.getBoolean("debugMode_startSingleTrainingFailureOCRTest", false)
-		val debugModeStartComprehensiveTrainingFailureOCRTest: Boolean = sharedPreferences.getBoolean("debugMode_startComprehensiveTrainingFailureOCRTest", false)
-		val hideComparisonResults: Boolean = sharedPreferences.getBoolean("hideComparisonResults", true)
+		val bEnableSkillPointCheck: Boolean = sharedPreferences.getBoolean("bEnableSkillPointCheck", false)
+		val skillPointCheckThreshold: Int = sharedPreferences.getInt("skillPointCheckThreshold", 750)
+		val bEnablePopupCheck: Boolean = sharedPreferences.getBoolean("bEnablePopupCheck", false)
+		val bEnableRaceRetries: Boolean = sharedPreferences.getBoolean("bEnableRaceRetries", true)
+		val bEnableStopOnMandatoryRace: Boolean = sharedPreferences.getBoolean("bEnableStopOnMandatoryRace", false)
+		val bEnablePrioritizeEnergy: Boolean = sharedPreferences.getBoolean("bEnablePrioritizeEnergy", false)
+        val bEnableSkipCraneGame: Boolean = sharedPreferences.getBoolean("bEnableSkipCraneGame", false)
+		val bEnableForceRacing: Boolean = sharedPreferences.getBoolean("bEnableForceRacing", false)
+		val bEnableDebugMode: Boolean = sharedPreferences.getBoolean("bEnableDebugMode", false)
+		val debugOcrConfidence: Int = sharedPreferences.getInt("debugOcrConfidence", 80)
+		val debugOcrScale: Int = sharedPreferences.getInt("debugOcrScale", 100)
+		val bRunTemplateMatchingTest: Boolean = sharedPreferences.getBoolean("bRunTemplateMatchingTest", false)
+		val bRunSingleTrainingFailureOcrTest: Boolean = sharedPreferences.getBoolean("bRunSingleTrainingFailureOcrTest", false)
+		val bRunComprehensiveTrainingFailureOcrTest: Boolean = sharedPreferences.getBoolean("bRunComprehensiveTrainingFailureOcrTest", false)
+		val bHideComparisonResults: Boolean = sharedPreferences.getBoolean("bHideComparisonResults", true)
 		
 		// Get references to the Preference components.
 		val campaignListPreference = findPreference<ListPreference>("campaign")!!
 		val strategyListPreference = findPreference<ListPreference>("strategy")!!
-		val enableFarmingFansPreference = findPreference<CheckBoxPreference>("enableFarmingFans")!!
+		val bEnableFarmingFansPreference = findPreference<CheckBoxPreference>("bEnableFarmingFans")!!
 		val daysToRunExtraRacesPreference = findPreference<SeekBarPreference>("daysToRunExtraRaces")!!
-		val enableSkillPointCheckPreference = findPreference<CheckBoxPreference>("enableSkillPointCheck")!!
-		val skillPointCheckPreference = findPreference<SeekBarPreference>("skillPointCheck")!!
-		val enablePopupCheckPreference = findPreference<CheckBoxPreference>("enablePopupCheck")!!
-		val disableRaceRetriesPreference = findPreference<CheckBoxPreference>("disableRaceRetries")!!
-		val enableStopOnMandatoryRacePreference = findPreference<CheckBoxPreference>("enableStopOnMandatoryRace")!!
-		val enablePrioritizeEnergyOptionsPreference = findPreference<CheckBoxPreference>("enablePrioritizeEnergyOptions")!!
-        val enableSkipCraneGamePreference = findPreference<CheckBoxPreference>("enableSkipCraneGame")!!
-		val enableForceRacingPreference = findPreference<CheckBoxPreference>("enableForceRacing")!!
-		val debugModePreference = findPreference<CheckBoxPreference>("debugMode")!!
-		val confidencePreference = findPreference<SeekBarPreference>("confidence")!!
-		val customScalePreference = findPreference<SeekBarPreference>("customScale")!!
-		val debugModeStartTemplateMatchingTestPreference = findPreference<CheckBoxPreference>("debugMode_startTemplateMatchingTest")!!
-		val debugModeStartSingleTrainingFailureOCRTestPreference = findPreference<CheckBoxPreference>("debugMode_startSingleTrainingFailureOCRTest")!!
-		val debugModeStartComprehensiveTrainingFailureOCRTestPreference = findPreference<CheckBoxPreference>("debugMode_startComprehensiveTrainingFailureOCRTest")!!
-		val hideComparisonResultsPreference = findPreference<CheckBoxPreference>("hideComparisonResults")!!
+		val bEnableSkillPointCheckPreference = findPreference<CheckBoxPreference>("bEnableSkillPointCheck")!!
+		val skillPointCheckThresholdPreference = findPreference<SeekBarPreference>("skillPointCheckThreshold")!!
+		val bEnablePopupCheckPreference = findPreference<CheckBoxPreference>("bEnablePopupCheck")!!
+		val bEnableRaceRetriesPreference = findPreference<CheckBoxPreference>("bEnableRaceRetries")!!
+		val bEnableStopOnMandatoryRacePreference = findPreference<CheckBoxPreference>("bEnableStopOnMandatoryRace")!!
+		val bEnablePrioritizeEnergyPreference = findPreference<CheckBoxPreference>("bEnablePrioritizeEnergy")!!
+        val bEnableSkipCraneGamePreference = findPreference<CheckBoxPreference>("bEnableSkipCraneGame")!!
+		val bEnableForceRacingPreference = findPreference<CheckBoxPreference>("bEnableForceRacing")!!
+		val bEnableDebugModePreference = findPreference<CheckBoxPreference>("bEnableDebugMode")!!
+		val debugOcrConfidencePreference = findPreference<SeekBarPreference>("debugOcrConfidence")!!
+		val debugOcrScalePreference = findPreference<SeekBarPreference>("debugOcrScale")!!
+		val bRunTemplateMatchingTestPreference = findPreference<CheckBoxPreference>("bRunTemplateMatchingTest")!!
+		val bRunSingleTrainingFailureOcrTestPreference = findPreference<CheckBoxPreference>("bRunSingleTrainingFailureOcrTest")!!
+		val bRunComprehensiveTrainingFailureOcrTestPreference = findPreference<CheckBoxPreference>("bRunComprehensiveTrainingFailureOcrTest")!!
+		val bHideComparisonResultsPreference = findPreference<CheckBoxPreference>("bHideComparisonResults")!!
 		
 		// Now set the following values from the shared preferences.
 		campaignListPreference.value = campaign
@@ -250,25 +253,25 @@ class SettingsFragment : PreferenceFragmentCompat() {
 		if (strategy != "") {
 			strategyListPreference.summary = "Selected: ${strategyListPreference.value}"
 		}
-		enableFarmingFansPreference.isChecked = enableFarmingFans
-		daysToRunExtraRacesPreference.isEnabled = enableFarmingFansPreference.isChecked
+		bEnableFarmingFansPreference.isChecked = bEnableFarmingFans
+		daysToRunExtraRacesPreference.isEnabled = bEnableFarmingFansPreference.isChecked
 		daysToRunExtraRacesPreference.value = daysToRunExtraRaces
-		enableSkillPointCheckPreference.isChecked = enableSkillPointCheck
-		skillPointCheckPreference.value = skillPointCheck
-		enablePopupCheckPreference.isChecked = enablePopupCheck
-		disableRaceRetriesPreference.isChecked = disableRaceRetries
-		enableStopOnMandatoryRacePreference.isChecked = enableStopOnMandatoryRace
-		enablePrioritizeEnergyOptionsPreference.isChecked = enablePrioritizeEnergyOptions
-        enableSkipCraneGamePreference.isChecked = enableSkipCraneGame
-		enableForceRacingPreference.isChecked = enableForceRacing
-		debugModePreference.isChecked = debugMode
-		confidencePreference.value = confidence
-		customScalePreference.value = customScale
-		debugModeStartTemplateMatchingTestPreference.isChecked = debugModeStartTemplateMatchingTest
-		debugModeStartSingleTrainingFailureOCRTestPreference.isChecked = debugModeStartSingleTrainingFailureOCRTest
-		debugModeStartComprehensiveTrainingFailureOCRTestPreference.isChecked = debugModeStartComprehensiveTrainingFailureOCRTest
-		hideComparisonResultsPreference.isChecked = hideComparisonResults
-		skillPointCheckPreference.isEnabled = enableSkillPointCheckPreference.isChecked
+		bEnableSkillPointCheckPreference.isChecked = bEnableSkillPointCheck
+		skillPointCheckThresholdPreference.value = skillPointCheckThreshold
+		bEnablePopupCheckPreference.isChecked = bEnablePopupCheck
+		bEnableRaceRetriesPreference.isChecked = bEnableRaceRetries
+		bEnableStopOnMandatoryRacePreference.isChecked = bEnableStopOnMandatoryRace
+		bEnablePrioritizeEnergyPreference.isChecked = bEnablePrioritizeEnergy
+        bEnableSkipCraneGamePreference.isChecked = bEnableSkipCraneGame
+		bEnableForceRacingPreference.isChecked = bEnableForceRacing
+		bEnableDebugModePreference.isChecked = bEnableDebugMode
+		debugOcrConfidencePreference.value = debugOcrConfidence
+		debugOcrScalePreference.value = debugOcrScale
+		bRunTemplateMatchingTestPreference.isChecked = bRunTemplateMatchingTest
+		bRunSingleTrainingFailureOcrTestPreference.isChecked = bRunSingleTrainingFailureOcrTest
+		bRunComprehensiveTrainingFailureOcrTestPreference.isChecked = bRunComprehensiveTrainingFailureOcrTest
+		bHideComparisonResultsPreference.isChecked = bHideComparisonResults
+		skillPointCheckThresholdPreference.isEnabled = bEnableSkillPointCheckPreference.isChecked
 		
 		// Solution courtesy of https://stackoverflow.com/a/63368599
 		// In short, Fragments via the mobile_navigation.xml are children of NavHostFragment, not MainActivity's supportFragmentManager.
