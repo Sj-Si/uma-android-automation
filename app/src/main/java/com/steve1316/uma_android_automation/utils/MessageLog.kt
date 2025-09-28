@@ -174,9 +174,8 @@ class MessageLog {
 		 * @param tag Distinguishes between messages for where they came from. Defaults to Game's TAG.
          * @param level The log level of the message. String added to beginning of message in brackets.
 		 * @param isOption Flag to determine whether to append a newline right after the time in the string.
-         * @param newline When true, message drops to a new line (newline char added to front of message.)
 		 */
-		fun log(tag: String = TAG, message: String, level: LogLevel = LogLevel.DEBUG, isOption: Boolean = false, newline: Boolean = true) {
+		fun log(tag: String = TAG, message: String, level: LogLevel = LogLevel.DEBUG, isOption: Boolean = false) {
             when (level) {
                 LogLevel.DEBUG -> Log.d(tag, message)
                 LogLevel.INFO -> Log.i(tag, message)
@@ -187,7 +186,11 @@ class MessageLog {
 
             var msg = message.removePrefix("\n")
             msg = msg.trimEnd()
-            msg = "[${level}] [${MainActivity.TAG}::${tag}] ${msg}"
+            var prefix = "[${level}]"
+            if (tag != "") {
+                prefix += " [${MainActivity.TAG}::${tag}]"
+            }
+            msg = "${prefix} ${msg}"
 
             if (isOption) {
                 msg = "${printElapsedTime()}\n${msg}"
@@ -195,28 +198,24 @@ class MessageLog {
                 msg = "${printElapsedTime()} ${msg}"
             }
 
-            if (newline) {
-                msg = "\n${msg}"
-            }
-
             addMessage(msg)
 		}
 
         // Wrappers arouns the log() function.
-        fun d(tag: String = TAG, message: String, isOption: Boolean = false, newline: Boolean = true) {
-            log(tag, message, LogLevel.DEBUG, isOption, newline)
+        fun d(tag: String = TAG, message: String, isOption: Boolean = false) {
+            log(tag, message, LogLevel.DEBUG, isOption)
         }
 
-        fun i(tag: String = TAG, message: String, isOption: Boolean = false, newline: Boolean = true) {
-            log(tag, message, LogLevel.INFO, isOption, newline)
+        fun i(tag: String = TAG, message: String, isOption: Boolean = false) {
+            log(tag, message, LogLevel.INFO, isOption)
         }
 
-        fun w(tag: String = TAG, message: String, isOption: Boolean = false, newline: Boolean = true) {
-            log(tag, message, LogLevel.WARN, isOption, newline)
+        fun w(tag: String = TAG, message: String, isOption: Boolean = false) {
+            log(tag, message, LogLevel.WARN, isOption)
         }
 
-        fun e(tag: String = TAG, message: String, isOption: Boolean = false, newline: Boolean = true) {
-            log(tag, message, LogLevel.ERROR, isOption, newline)
+        fun e(tag: String = TAG, message: String, isOption: Boolean = false) {
+            log(tag, message, LogLevel.ERROR, isOption)
         }
 	}
 }
