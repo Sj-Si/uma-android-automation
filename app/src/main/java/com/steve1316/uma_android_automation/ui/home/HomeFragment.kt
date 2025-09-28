@@ -31,7 +31,7 @@ import com.steve1316.uma_android_automation.utils.MessageLog
 import com.steve1316.uma_android_automation.utils.MyAccessibilityService
 import java.io.StringReader
 import androidx.core.net.toUri
-import com.steve1316.uma_android_automation.utils.SettingsPrinter
+import com.steve1316.uma_android_automation.utils.UserConfig
 
 class HomeFragment : Fragment() {
 	private val TAG: String = "HomeFragment"
@@ -83,112 +83,59 @@ class HomeFragment : Fragment() {
 				startButton.text = getString(R.string.start)
 			}
 		}
+
+
+        // Set default values in SharedPreferences just in case these keys do not exist yet.
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
 		
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
-		
-		// Main Settings page
-		val campaign: String = sharedPreferences.getString("campaign", "")!!
-        val strategy: String = sharedPreferences.getString("strategy", "")!!
-
-		// Training Settings page
-		val statPrioritization: String = sharedPreferences.getString("statPrioritization", "Speed|Stamina|Power|Guts|Wit")!!
-
-		// Training Stat Targets Settings page
-		val sprintSpeedTarget = sharedPreferences.getInt("trainingSprintStatTarget_speedStatTarget", 900)
-		val sprintStaminaTarget = sharedPreferences.getInt("trainingSprintStatTarget_staminaStatTarget", 300)
-		val sprintPowerTarget = sharedPreferences.getInt("trainingSprintStatTarget_powerStatTarget", 600)
-		val sprintGutsTarget = sharedPreferences.getInt("trainingSprintStatTarget_gutsStatTarget", 300)
-		val sprintWitTarget = sharedPreferences.getInt("trainingSprintStatTarget_witStatTarget", 300)
-
-		val mileSpeedTarget = sharedPreferences.getInt("trainingMileStatTarget_speedStatTarget", 900)
-		val mileStaminaTarget = sharedPreferences.getInt("trainingMileStatTarget_staminaStatTarget", 300)
-		val milePowerTarget = sharedPreferences.getInt("trainingMileStatTarget_powerStatTarget", 600)
-		val mileGutsTarget = sharedPreferences.getInt("trainingMileStatTarget_gutsStatTarget", 300)
-		val mileWitTarget = sharedPreferences.getInt("trainingMileStatTarget_witStatTarget", 300)
-
-		val mediumSpeedTarget = sharedPreferences.getInt("trainingMediumStatTarget_speedStatTarget", 800)
-		val mediumStaminaTarget = sharedPreferences.getInt("trainingMediumStatTarget_staminaStatTarget", 450)
-		val mediumPowerTarget = sharedPreferences.getInt("trainingMediumStatTarget_powerStatTarget", 550)
-		val mediumGutsTarget = sharedPreferences.getInt("trainingMediumStatTarget_gutsStatTarget", 300)
-		val mediumWitTarget = sharedPreferences.getInt("trainingMediumStatTarget_witStatTarget", 300)
-
-		val longSpeedTarget = sharedPreferences.getInt("trainingLongStatTarget_speedStatTarget", 700)
-		val longStaminaTarget = sharedPreferences.getInt("trainingLongStatTarget_staminaStatTarget", 600)
-		val longPowerTarget = sharedPreferences.getInt("trainingLongStatTarget_powerStatTarget", 450)
-		val longGutsTarget = sharedPreferences.getInt("trainingLongStatTarget_gutsStatTarget", 300)
-		val longWitTarget = sharedPreferences.getInt("trainingLongStatTarget_witStatTarget", 300)
-
-		// Training Event Settings page
-		val character = sharedPreferences.getString("character", "Please select one in the Training Event Settings")!!
-		val selectAllCharacters = sharedPreferences.getBoolean("selectAllCharacters", true)
-
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-		// Set default values in SharedPreferences just in case these keys do not exist yet.
-
 		sharedPreferences.edit {
 			// Set the default stat prioritization order if it does not exist.
-			putString("statPrioritization", statPrioritization)
+			putString("statPriority", UserConfig.config.training.statPriority.joinToString("|"))
 
 			// Set default stat targets for each distance type if they do not exist.
-			putInt("trainingSprintStatTarget_speedStatTarget", sprintSpeedTarget)
-			putInt("trainingSprintStatTarget_staminaStatTarget", sprintStaminaTarget)
-			putInt("trainingSprintStatTarget_powerStatTarget", sprintPowerTarget)
-			putInt("trainingSprintStatTarget_gutsStatTarget", sprintGutsTarget)
-			putInt("trainingSprintStatTarget_witStatTarget", sprintWitTarget)
+            listOf("Sprint", "Mile", "Medium", "Long").forEach { distance ->
+                listOf("speed", "stamina", "power", "guts", "wit").forEach { stat ->
+                    putInt(
+                        "training${distance}StatTarget_${stat}StatTarget",
+                        UserConfig.config.training.getTrainingStatTargets(distance).get(stat),
+					)
+                }
+            }
 
-			putInt("trainingMileStatTarget_speedStatTarget", mileSpeedTarget)
-			putInt("trainingMileStatTarget_staminaStatTarget", mileStaminaTarget)
-			putInt("trainingMileStatTarget_powerStatTarget", milePowerTarget)
-			putInt("trainingMileStatTarget_gutsStatTarget", mileGutsTarget)
-			putInt("trainingMileStatTarget_witStatTarget", mileWitTarget)
-
-			putInt("trainingMediumStatTarget_speedStatTarget", mediumSpeedTarget)
-			putInt("trainingMediumStatTarget_staminaStatTarget", mediumStaminaTarget)
-			putInt("trainingMediumStatTarget_powerStatTarget", mediumPowerTarget)
-			putInt("trainingMediumStatTarget_gutsStatTarget", mediumGutsTarget)
-			putInt("trainingMediumStatTarget_witStatTarget", mediumWitTarget)
-
-			putInt("trainingLongStatTarget_speedStatTarget", longSpeedTarget)
-			putInt("trainingLongStatTarget_staminaStatTarget", longStaminaTarget)
-			putInt("trainingLongStatTarget_powerStatTarget", longPowerTarget)
-			putInt("trainingLongStatTarget_gutsStatTarget", longGutsTarget)
-			putInt("trainingLongStatTarget_witStatTarget", longWitTarget)
-			
 			commit()
 		}
 
 		////////////////////////////////////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////////////////////////////////////
-		// Update the TextView here based on the information of the SharedPreferences.
+		// Update the TextView here based on the information in the UserConfig.
 
 		// Add visual indicators for character and support card selections
-		val characterString: String = if (selectAllCharacters) {
+		val characterString: String = if (UserConfig.config.events.bSelectAllCharacters) {
 			"👥 All Characters Selected"
-		} else if (character == "" || character.contains("Please select")) {
+		} else if (
+            UserConfig.config.events.selectedCharacter == "" ||
+            UserConfig.config.events.selectedCharacter.contains("Please select")
+        ) {
 			"⚠️ Please select one in the Training Event Settings"
 		} else {
-			"👤 $character"
+			"👤 ${UserConfig.config.events.selectedCharacter}"
 		}
 		
 		// Add visual indicator for campaign selection
-		val campaignString: String = if (campaign != "") {
-			"🎯 $campaign"
+		val campaignString: String = if (UserConfig.config.campaign != "") {
+			"🎯 ${UserConfig.config.campaign}"
 		} else {
 			"⚠️ Please select one in the Select Campaign option"
 		}
 
-        val strategyString: String = if (strategy != "") {
-			"🎯 $strategy"
+        val strategyString: String = if (UserConfig.config.strategy != "") {
+			"🎯 ${UserConfig.config.strategy}"
 		} else {
 			"⚠️ Please select one in the Select Race Strategy option"
 		}
 		
 		val settingsStatusTextView: TextView = homeFragmentView.findViewById(R.id.settings_status)
-		settingsStatusTextView.text = SettingsPrinter.getSettingsString(requireContext())
+		settingsStatusTextView.text = UserConfig.getConfigString()
 		
 		// Now construct the data files if this is the first time.
 		if (firstRun) {

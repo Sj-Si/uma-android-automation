@@ -1,6 +1,5 @@
 package com.steve1316.uma_android_automation.bot
 
-import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.data.CharacterData
@@ -8,15 +7,14 @@ import com.steve1316.uma_android_automation.data.SupportData
 import com.steve1316.uma_android_automation.utils.ImageUtils
 import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.MessageLog
+import com.steve1316.uma_android_automation.utils.UserConfig
 import net.ricecode.similarity.JaroWinklerStrategy
 import net.ricecode.similarity.StringSimilarityServiceImpl
 import android.content.Context
 
 class TextDetection(private val ctx: Context) {
 	private val TAG: String = "TextDetection"
-	
-	private var sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(ctx)
-	
+		
 	private var result = ""
 	private var confidence = 0.0
 	private var category = ""
@@ -24,14 +22,8 @@ class TextDetection(private val ctx: Context) {
 	private var supportCardTitle = ""
 	private var eventOptionRewards: ArrayList<String> = arrayListOf()
 	
-	private var character = sharedPreferences.getString("selectedCharacter", "")!!
-	private val supportCards: List<String> = sharedPreferences.getString("selectedSupportCards", "")!!.split("|")
-	private val hideComparisonResults: Boolean = sharedPreferences.getBoolean("hideComparisonResults", false)
-	private val selectAllCharacters: Boolean = sharedPreferences.getBoolean("selectAllCharacters", true)
-	private val selectAllSupportCards: Boolean = sharedPreferences.getBoolean("selectAllSupportCards", true)
-	private var minimumConfidence = sharedPreferences.getInt("ocrConfidence", 80).toDouble() / 100.0
-	private val threshold = sharedPreferences.getInt("threshold", 230).toDouble()
-	private val enableAutomaticRetry = sharedPreferences.getBoolean("enableAutomaticRetry", false)
+    private var character = UserConfig.config.events.selectedCharacter
+	private var minimumConfidence = UserConfig.config.ocr.ocrConfidence
 
 	/**
 	 * Fix incorrect characters determined by OCR by replacing them with their Japanese equivalents.
@@ -51,7 +43,7 @@ class TextDetection(private val ctx: Context) {
 	 * Attempt to find the most similar string from data compared to the string returned by OCR.
 	 */
 	private fun findMostSimilarString() {
-		if (!hideComparisonResults) {
+		if (!UserConfig.config.bHideComparisonResults) {
 			MessageLog.i(TAG, "[TEXT-DETECTION] Now starting process to find most similar string to: $result\n")
 		} else {
 			MessageLog.i(TAG, "[TEXT-DETECTION] Now starting process to find most similar string to: $result")
@@ -64,11 +56,11 @@ class TextDetection(private val ctx: Context) {
 		val service = StringSimilarityServiceImpl(JaroWinklerStrategy())
 		
 		// Attempt to find the most similar string inside the data classes starting with the Character-specific events.
-		if (selectAllCharacters) {
+		if (UserConfig.config.events.bSelectAllCharacters) {
 			CharacterData.characters.keys.forEach { characterKey ->
 				CharacterData.characters[characterKey]?.forEach { (eventName, eventOptions) ->
 					val score = service.score(result, eventName)
-					if (!hideComparisonResults) {
+					if (!UserConfig.config.bHideComparisonResults) {
 						MessageLog.i(TAG, "[CHARA] $characterKey \"${result}\" vs. \"${eventName}\" confidence: $score")
 					}
 					
@@ -84,7 +76,7 @@ class TextDetection(private val ctx: Context) {
 		} else {
 			CharacterData.characters[character]?.forEach { (eventName, eventOptions) ->
 				val score = service.score(result, eventName)
-				if (!hideComparisonResults) {
+				if (!UserConfig.config.bHideComparisonResults) {
 					MessageLog.i(TAG, "[CHARA] $character \"${result}\" vs. \"${eventName}\" confidence: $score")
 				}
 				
@@ -100,7 +92,7 @@ class TextDetection(private val ctx: Context) {
 		// Now move on to the Character-shared events.
 		CharacterData.characters["Shared"]?.forEach { (eventName, eventOptions) ->
 			val score = service.score(result, eventName)
-			if (!hideComparisonResults) {
+			if (!UserConfig.config.bHideComparisonResults) {
 				MessageLog.i(TAG, "[CHARA-SHARED] \"${result}\" vs. \"${eventName}\" confidence: $score")
 			}
 			
@@ -113,11 +105,11 @@ class TextDetection(private val ctx: Context) {
 		}
 		
 		// Finally, do the same with the user-selected Support Cards.
-		if (!selectAllSupportCards) {
-			supportCards.forEach { supportCardName ->
+		if (!UserConfig.config.events.bSelectAllSupportCards) {
+			UserConfig.config.events.selectedSupportCards.forEach { supportCardName ->
 				SupportData.supports[supportCardName]?.forEach { (eventName, eventOptions) ->
 					val score = service.score(result, eventName)
-					if (!hideComparisonResults) {
+					if (!UserConfig.config.bHideComparisonResults) {
 						MessageLog.i(TAG, "[SUPPORT] $supportCardName \"${result}\" vs. \"${eventName}\" confidence: $score")
 					}
 					
@@ -134,7 +126,7 @@ class TextDetection(private val ctx: Context) {
 			SupportData.supports.forEach { (supportName, support) ->
 				support.forEach { (eventName, eventOptions) ->
 					val score = service.score(result, eventName)
-					if (!hideComparisonResults) {
+					if (!UserConfig.config.bHideComparisonResults) {
 						MessageLog.i(TAG, "[SUPPORT] $supportName \"${result}\" vs. \"${eventName}\" confidence: $score")
 					}
 					
@@ -149,7 +141,7 @@ class TextDetection(private val ctx: Context) {
 			}
 		}
 		
-		if (!hideComparisonResults) {
+		if (!UserConfig.config.bHideComparisonResults) {
 			MessageLog.i(TAG, "[TEXT-DETECTION] Finished process to find similar string.")
 		} else {
 			MessageLog.i(TAG, "[TEXT-DETECTION] Finished process to find similar string.")
@@ -287,7 +279,7 @@ class TextDetection(private val ctx: Context) {
 		val startTime: Long = System.currentTimeMillis()
 		while (true) {
 			// Perform Tesseract OCR detection.
-			if ((255.0 - threshold - increment) > 0.0) {
+			if ((255.0 - UserConfig.config.ocr.ocrThreshold - increment) > 0.0) {
 				result = ImageUtils.findText(increment)
 			} else {
 				break
@@ -301,28 +293,28 @@ class TextDetection(private val ctx: Context) {
 				findMostSimilarString()
 				
 				when (category) {
-					"selectedCharacter" -> {
-						if (!hideComparisonResults) {
+					"character" -> {
+						if (!UserConfig.config.bHideComparisonResults) {
 							MessageLog.i(TAG, "[RESULT] Character $character Event Name = $eventTitle with confidence = $confidence")
 						}
 					}
 					"character-shared" -> {
-						if (!hideComparisonResults) {
+						if (!UserConfig.config.bHideComparisonResults) {
 							MessageLog.i(TAG, "[RESULT] Character Shared Event Name = $eventTitle with confidence = $confidence")
 						}
 					}
 					"support" -> {
-						if (!hideComparisonResults) {
+						if (!UserConfig.config.bHideComparisonResults) {
 							MessageLog.i(TAG, "[RESULT] Support $supportCardTitle Event Name = $eventTitle with confidence = $confidence")
 						}
 					}
 				}
 				
-				if (enableAutomaticRetry && !hideComparisonResults) {
+				if (UserConfig.config.ocr.bEnableOcrAutomaticRetry && !UserConfig.config.bHideComparisonResults) {
 					MessageLog.i(TAG, "[RESULT] Threshold incremented by $increment")
 				}
 				
-				if (confidence < minimumConfidence && enableAutomaticRetry) {
+				if (confidence < minimumConfidence && UserConfig.config.ocr.bEnableOcrAutomaticRetry) {
 					increment += 5.0
 				} else {
 					break

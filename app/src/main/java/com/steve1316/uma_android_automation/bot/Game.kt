@@ -2,8 +2,6 @@ package com.steve1316.uma_android_automation.bot
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.SharedPreferences
-import androidx.preference.PreferenceManager
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.campaigns.AoHaru
 import com.steve1316.uma_android_automation.utils.BotService
@@ -13,7 +11,7 @@ import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.ComponentDetection
 import com.steve1316.uma_android_automation.utils.MessageLog
 import com.steve1316.uma_android_automation.utils.MyAccessibilityService
-import com.steve1316.uma_android_automation.utils.SettingsPrinter
+import com.steve1316.uma_android_automation.utils.UserConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.opencv.core.Point
@@ -34,22 +32,6 @@ class Game(val ctx: Context) {
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
-	// SharedPreferences
-	private var sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(ctx)
-	private val campaign: String = sharedPreferences.getString("campaign", "")!!
-	private val strategy: String = sharedPreferences.getString("strategy", "")!!
-	private val strategyImageName: String = when (strategy) {
-		"Front Runner" -> "strategy_front"
-		"Pace Chaser" -> "strategy_pace"
-		"Late Surger" -> "strategy_late"
-		"End Closer" -> "strategy_end"
-		else -> "default"
-	}
-
-	private val debugMode: Boolean = sharedPreferences.getBoolean("debugMode", false)
-
-	////////////////////////////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////////
 	// Training
 	private val trainings: List<String> = listOf("Speed", "Stamina", "Power", "Guts", "Wit")
 	private val trainingMap: MutableMap<String, Training> = mutableMapOf()
@@ -65,19 +47,6 @@ class Game(val ctx: Context) {
 	private var currentConditions: MutableList<String> = mutableListOf()
 	private var currentFans: Int = 0
 	private var currentDistance: String = "Medium" // Default to Medium distance
-	private val blacklist: List<String> = sharedPreferences.getStringSet("trainingBlacklist", setOf())!!.toList()
-	private var statPrioritization: List<String> = sharedPreferences.getString("statPrioritization", "Speed|Stamina|Power|Guts|Wit")!!.split("|")
-	private val enablePrioritizeEnergyOptions: Boolean = sharedPreferences.getBoolean("enablePrioritizeEnergyOptions", false)
-    private val enableSkipCraneGame: Boolean = sharedPreferences.getBoolean("enableSkipCraneGame", false)
-	private val maximumFailureChance: Int = sharedPreferences.getInt("maximumFailureChance", 15)
-	private val disableTrainingOnMaxedStat: Boolean = sharedPreferences.getBoolean("disableTrainingOnMaxedStat", true)
-	private val focusOnSparkStatTarget: Boolean = sharedPreferences.getBoolean("focusOnSparkStatTarget", false)
-	private val statTargetsByDistance: MutableMap<String, IntArray> = mutableMapOf(
-		"Sprint" to intArrayOf(0, 0, 0, 0, 0),
-		"Mile" to intArrayOf(0, 0, 0, 0, 0),
-		"Medium" to intArrayOf(0, 0, 0, 0, 0),
-		"Long" to intArrayOf(0, 0, 0, 0, 0)
-	)
 	private var preferredDistance: String = ""
 	private var firstTrainingCheck = true
 	private val currentStatCap = 1200
@@ -86,10 +55,6 @@ class Game(val ctx: Context) {
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	// Racing
-	private val enableFarmingFans = sharedPreferences.getBoolean("enableFarmingFans", false)
-	private val daysToRunExtraRaces: Int = sharedPreferences.getInt("daysToRunExtraRaces", 4)
-	private val disableRaceRetries: Boolean = sharedPreferences.getBoolean("disableRaceRetries", false)
-	val enableForceRacing = sharedPreferences.getBoolean("enableForceRacing", false)
 	private var raceRetries = 3
 	private var raceRepeatWarningCheck = false
 	var encounteredRacingPopup = false
@@ -99,10 +64,6 @@ class Game(val ctx: Context) {
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	// Stops
-	val enableSkillPointCheck: Boolean = sharedPreferences.getBoolean("enableSkillPointCheck", false)
-	val skillPointsRequired: Int = sharedPreferences.getInt("skillPointCheck", 750)
-	private val enablePopupCheck: Boolean = sharedPreferences.getBoolean("enablePopupCheck", false)
-	private val enableStopOnMandatoryRace: Boolean = sharedPreferences.getBoolean("enableStopOnMandatoryRace", false)
 	var detectedMandatoryRaceCheck = false
 
 	////////////////////////////////////////////////////////////////////
@@ -150,56 +111,6 @@ class Game(val ctx: Context) {
 	////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Sets up stat targets for different race distances by reading values from SharedPreferences. These targets are used to determine training priorities based on the expected race distance.
-	 */
-	private fun setStatTargetsByDistances() {
-		val sprintSpeedTarget = sharedPreferences.getInt("trainingSprintStatTarget_speedStatTarget", 900)
-		val sprintStaminaTarget = sharedPreferences.getInt("trainingSprintStatTarget_staminaStatTarget", 300)
-		val sprintPowerTarget = sharedPreferences.getInt("trainingSprintStatTarget_powerStatTarget", 600)
-		val sprintGutsTarget = sharedPreferences.getInt("trainingSprintStatTarget_gutsStatTarget", 300)
-		val sprintWitTarget = sharedPreferences.getInt("trainingSprintStatTarget_witStatTarget", 300)
-
-		val mileSpeedTarget = sharedPreferences.getInt("trainingMileStatTarget_speedStatTarget", 900)
-		val mileStaminaTarget = sharedPreferences.getInt("trainingMileStatTarget_staminaStatTarget", 300)
-		val milePowerTarget = sharedPreferences.getInt("trainingMileStatTarget_powerStatTarget", 600)
-		val mileGutsTarget = sharedPreferences.getInt("trainingMileStatTarget_gutsStatTarget", 300)
-		val mileWitTarget = sharedPreferences.getInt("trainingMileStatTarget_witStatTarget", 300)
-
-		val mediumSpeedTarget = sharedPreferences.getInt("trainingMediumStatTarget_speedStatTarget", 800)
-		val mediumStaminaTarget = sharedPreferences.getInt("trainingMediumStatTarget_staminaStatTarget", 450)
-		val mediumPowerTarget = sharedPreferences.getInt("trainingMediumStatTarget_powerStatTarget", 550)
-		val mediumGutsTarget = sharedPreferences.getInt("trainingMediumStatTarget_gutsStatTarget", 300)
-		val mediumWitTarget = sharedPreferences.getInt("trainingMediumStatTarget_witStatTarget", 300)
-
-		val longSpeedTarget = sharedPreferences.getInt("trainingLongStatTarget_speedStatTarget", 700)
-		val longStaminaTarget = sharedPreferences.getInt("trainingLongStatTarget_staminaStatTarget", 600)
-		val longPowerTarget = sharedPreferences.getInt("trainingLongStatTarget_powerStatTarget", 450)
-		val longGutsTarget = sharedPreferences.getInt("trainingLongStatTarget_gutsStatTarget", 300)
-		val longWitTarget = sharedPreferences.getInt("trainingLongStatTarget_witStatTarget", 300)
-
-		// Set the stat targets for each distance type.
-		// Order: Speed, Stamina, Power, Guts, Wit
-		// If no custom targets are set, use optimal defaults from the guide
-		statTargetsByDistance["Sprint"] = if (sprintSpeedTarget == 0)
-			intArrayOf(1200, 400, 900, 400, 600) else
-			intArrayOf(sprintSpeedTarget, sprintStaminaTarget, sprintPowerTarget, sprintGutsTarget, sprintWitTarget)
-
-		statTargetsByDistance["Mile"] = if (mileSpeedTarget == 0)
-			intArrayOf(1100, 500, 800, 500, 600) else
-			intArrayOf(mileSpeedTarget, mileStaminaTarget, milePowerTarget, mileGutsTarget, mileWitTarget)
-
-		statTargetsByDistance["Medium"] = if (mediumSpeedTarget == 0)
-			intArrayOf(1000, 700, 700, 500, 600) else
-			intArrayOf(mediumSpeedTarget, mediumStaminaTarget, mediumPowerTarget, mediumGutsTarget, mediumWitTarget)
-
-		statTargetsByDistance["Long"] = if (longSpeedTarget == 0)
-			intArrayOf(800, 1000, 600, 600, 600) else
-			intArrayOf(longSpeedTarget, longStaminaTarget, longPowerTarget, longGutsTarget, longWitTarget)
-	}
-
-	
-
-	/**
 	 * Find and tap the specified image.
 	 *
 	 * @param imageName Name of the button image file in the /assets/images/ folder.
@@ -210,7 +121,7 @@ class Game(val ctx: Context) {
 	 * @return True if the button was found and clicked. False otherwise.
 	 */
 	fun findAndTapImage(imageName: String, tries: Int = 3, region: IntArray = intArrayOf(0, 0, 0, 0), taps: Int = 1, suppressError: Boolean = false): Boolean {
-		if (debugMode) {
+		if (UserConfig.config.bEnableDebugMode) {
 			MessageLog.d(TAG, "Now attempting to find and click the \"$imageName\" button.")
 		}
 
@@ -387,9 +298,9 @@ class Game(val ctx: Context) {
 		MessageLog.i(TAG, "Current remaining number of days before the next mandatory race: $dayNumber.")
 
 		// If the setting to force racing extra races is enabled, always return true.
-		if (enableForceRacing) return true
+		if (UserConfig.config.bEnableForceRacing) return true
 
-		return enableFarmingFans && dayNumber % daysToRunExtraRaces == 0 && !raceRepeatWarningCheck &&
+		return UserConfig.config.bEnableFarmingFans && dayNumber % UserConfig.config.daysToRunExtraRaces == 0 && !raceRepeatWarningCheck &&
 				ImageUtils.findImage("race_select_extra_locked_uma_finals", tries = 1, region = ScreenRegion.BOTTOM_HALF).first == null &&
 				ImageUtils.findImage("race_select_extra_locked", tries = 1, region = ScreenRegion.BOTTOM_HALF).first == null &&
 				ImageUtils.findImage("recover_energy_summer", tries = 1, region = ScreenRegion.BOTTOM_HALF).first == null
@@ -593,7 +504,7 @@ class Game(val ctx: Context) {
 
 		// Check if we've already reached Wit stat target
 		val currentWit = currentStatsMap.getOrDefault("Wit", 0)
-		val witTarget = statTargetsByDistance[preferredDistance]?.getOrNull(4) ?: 600
+		val witTarget = UserConfig.config.training.getTrainingStatTargets(preferredDistance).wit ?: 600
 		val witDeficit = witTarget - currentWit
 
 		// Get the actual Wit stat gain from the training
@@ -709,7 +620,7 @@ class Game(val ctx: Context) {
 		MessageLog.i(TAG, "[TRAINING] Now starting process to analyze all 5 Trainings.")
 
 		// Acquire the position of the speed stat text.
-		val (speedStatTextLocation, _) = if (campaign == "Ao Haru") {
+		val (speedStatTextLocation, _) = if (UserConfig.config.campaign == "Ao Haru") {
 			ImageUtils.findImage("aoharu_stat_speed", tries = 1, region = ScreenRegion.BOTTOM_HALF)
 		} else {
 			ImageUtils.findImage("stat_speed", tries = 1, region = ScreenRegion.BOTTOM_HALF)
@@ -745,7 +656,7 @@ class Game(val ctx: Context) {
 
 				// Iterate through every training that is not blacklisted.
 				trainings.forEachIndexed { index, training ->
-					if (blacklist.getOrElse(index) { "" } == training) {
+					if (UserConfig.config.training.trainingBlacklist.getOrElse(index) { "" } == training) {
 						MessageLog.i(TAG, "[TRAINING] Skipping $training training due to being blacklisted.")
 						return@forEachIndexed
 					}
@@ -987,18 +898,18 @@ class Game(val ctx: Context) {
 					// ENERGY-BASED ADJUSTMENTS
 					estimatedEnergy > 60 -> {
 						// High energy: can afford some risk
-						val threshold = minOf(20, maximumFailureChance + 5)
+						val threshold = minOf(20, UserConfig.config.training.maxFailChance + 5)
 						MessageLog.i(TAG, "[TRAINING] High energy (~${estimatedEnergy.toInt()}%) - accepting up to $threshold% failure risk")
 						threshold
 					}
 					estimatedEnergy > 40 -> {
 						// Moderate energy: standard threshold
-						MessageLog.i(TAG, "[TRAINING] Moderate energy (~${estimatedEnergy.toInt()}%) - standard ${maximumFailureChance}% failure risk")
-						maximumFailureChance
+						MessageLog.i(TAG, "[TRAINING] Moderate energy (~${estimatedEnergy.toInt()}%) - standard ${UserConfig.config.training.maxFailChance}% failure risk")
+						UserConfig.config.training.maxFailChance
 					}
 					estimatedEnergy > 25 -> {
 						// Low energy: be more conservative
-						val threshold = maxOf(10, maximumFailureChance - 5)
+						val threshold = maxOf(10, UserConfig.config.training.maxFailChance - 5)
 						MessageLog.i(TAG, "[TRAINING] Low energy (~${estimatedEnergy.toInt()}%) - reduced $threshold% failure risk")
 						threshold
 					}
@@ -1018,17 +929,13 @@ class Game(val ctx: Context) {
 					}
 					// If we have high stat deficits, accept more risk
 					else -> {
-						val targets = statTargetsByDistance[preferredDistance]
-						if (targets != null) {
-							val maxDeficit = trainings.withIndex().maxOfOrNull { (index, stat) ->
-								targets[index] - currentStatsMap.getOrDefault(stat, 0)
-							} ?: 0
-							if (maxDeficit > 300) {
-								MessageLog.i(TAG, "[TRAINING] High stat deficit ($maxDeficit) - increasing risk tolerance by 3%")
-								3
-							} else {
-								0
-							}
+						val targets = UserConfig.config.training.getTrainingStatTargets(preferredDistance)
+						val maxDeficit = trainings.withIndex().maxOfOrNull { (index, stat) ->
+							targets.get(stat) - currentStatsMap.getOrDefault(stat, 0)
+						} ?: 0
+						if (maxDeficit > 300) {
+							MessageLog.i(TAG, "[TRAINING] High stat deficit ($maxDeficit) - increasing risk tolerance by 3%")
+							3
 						} else {
 							0
 						}
@@ -1205,7 +1112,7 @@ class Game(val ctx: Context) {
 
 				if (statGain > 0) {
 					// Priority weight based on the current state of the game.
-					val priorityIndex = statPrioritization.indexOf(stat)
+					val priorityIndex = UserConfig.config.training.statPriority.indexOf(stat)
 					val priorityWeight = if (priorityIndex != -1) {
 						// Enhanced priority weighting for top 3 stats
 						val top3Bonus = when (priorityIndex) {
@@ -1216,9 +1123,9 @@ class Game(val ctx: Context) {
 						}
 
 						val baseWeight = when {
-							currentDate.year == 1 || currentDate.phase == "Pre-Debut" -> 1.0 + (0.1 * (statPrioritization.size - priorityIndex)) / statPrioritization.size
-							currentDate.year == 2 -> 1.0 + (0.3 * (statPrioritization.size - priorityIndex)) / statPrioritization.size
-							currentDate.year == 3 -> 1.0 + (0.5 * (statPrioritization.size - priorityIndex)) / statPrioritization.size
+							currentDate.year == 1 || currentDate.phase == "Pre-Debut" -> 1.0 + (0.1 * (UserConfig.config.training.statPriority.size - priorityIndex)) / UserConfig.config.training.statPriority.size
+							currentDate.year == 2 -> 1.0 + (0.3 * (UserConfig.config.training.statPriority.size - priorityIndex)) / UserConfig.config.training.statPriority.size
+							currentDate.year == 3 -> 1.0 + (0.5 * (UserConfig.config.training.statPriority.size - priorityIndex)) / UserConfig.config.training.statPriority.size
 							else -> 1.0
 						}
 
@@ -1264,7 +1171,7 @@ class Game(val ctx: Context) {
 					MessageLog.d(TAG, "Efficiency: $efficiency")
 
 					// Apply Spark stat target focus when enabled.
-					if (focusOnSparkStatTarget) {
+					if (UserConfig.config.training.bFocusSparks) {
 						val sparkTarget = 600
 						val sparkRemaining = sparkTarget - currentStat
 
@@ -1552,17 +1459,17 @@ class Game(val ctx: Context) {
 		 * @return A normalized score (1-1000) representing overall training value.
 		 */
 		fun scoreStatTraining(training: Training): Double {
-			if (training.name in blacklist) return 0.0
+			if (training.name in UserConfig.config.training.trainingBlacklist) return 0.0
 
 			// Don't score for stats that are maxed or would be maxed.
-			if ((disableTrainingOnMaxedStat && currentStatsMap[training.name]!! >= currentStatCap) ||
+			if ((!UserConfig.config.training.bEnableTrainMaxedStat && currentStatsMap[training.name]!! >= currentStatCap) ||
 				(currentStatsMap.getOrDefault(training.name, 0) + training.statGains[trainings.indexOf(training.name)] >= currentStatCap)) {
 				return 0.0
 			}
 
 			MessageLog.i(TAG, "[TRAINING] Starting scoring for ${training.name} Training.")
 
-			val target = statTargetsByDistance[preferredDistance] ?: intArrayOf(600, 600, 600, 300, 300)
+            val target = UserConfig.config.training.getTrainingStatTargets(preferredDistance).asIntArray()
 
 			var totalScore = 0.0
 			var maxPossibleScore = 0.0
@@ -1611,11 +1518,11 @@ class Game(val ctx: Context) {
 
 		// Filter trainings by acceptable failure chance first
 		val acceptableTrainings = trainingMap.values.filter {
-			it.failureChance >= 0 && it.failureChance <= maximumFailureChance && it.name !in blacklist
+			it.failureChance >= 0 && it.failureChance <= UserConfig.config.training.maxFailChance && it.name !in UserConfig.config.training.trainingBlacklist
 		}
 
 		if (acceptableTrainings.isEmpty()) {
-			MessageLog.i(TAG, "[TRAINING] No trainings within acceptable failure threshold (${maximumFailureChance}%)")
+			MessageLog.i(TAG, "[TRAINING] No trainings within acceptable failure threshold (${UserConfig.config.training.maxFailChance}%)")
 			return ""
 		}
 
@@ -1737,7 +1644,7 @@ class Game(val ctx: Context) {
 								formattedLine.toInt()
 							}
 
-							if (enablePrioritizeEnergyOptions) {
+							if (UserConfig.config.bEnablePrioritizeEnergy) {
 								energyValue * 100
 							} else {
 								energyValue * 3
@@ -1787,7 +1694,7 @@ class Game(val ctx: Context) {
 						selectionWeight[optionSelected] += finalSkillPoints
 					} else {
 						// Apply inflated weights to the prioritized stats based on their order.
-						statPrioritization.forEachIndexed { index, stat ->
+						UserConfig.config.training.statPriority.forEachIndexed { index, stat ->
 							if (line.contains(stat)) {
 								// Calculate weight bonus based on position (higher priority = higher bonus).
 								val priorityBonus = when (index) {
@@ -1881,8 +1788,7 @@ class Game(val ctx: Context) {
 				optionNumber += 1
 			}
 
-			val minimumConfidence = sharedPreferences.getInt("confidence", 80).toDouble() / 100.0
-			val resultString = if (confidence >= minimumConfidence) {
+			val resultString = if (confidence >= UserConfig.config.ocr.ocrConfidence) {
 				"[TRAINING-EVENT] For this Training Event consisting of:\n$eventRewardsString\nThe bot will select Option ${optionSelected + 1}: \"${eventRewards[optionSelected]}\" with a " +
 						"selection weight of $max."
 			} else {
@@ -1947,10 +1853,10 @@ class Game(val ctx: Context) {
 		if (findAndTapImage("race_select_mandatory", tries = 1, region = ScreenRegion.BOTTOM_HALF)) {
 			MessageLog.i(TAG, "[RACE] Starting process for handling a mandatory race.")
 
-			if (enableStopOnMandatoryRace) {
+			if (UserConfig.config.bEnableStopOnMandatoryRace) {
 				detectedMandatoryRaceCheck = true
 				return false
-			} else if (enableForceRacing) {
+			} else if (UserConfig.config.bEnableForceRacing) {
 				findAndTapImage("ok", tries = 1, region = ScreenRegion.MIDDLE)
 				GameUtils.wait(1.0)
 			}
@@ -1968,9 +1874,9 @@ class Game(val ctx: Context) {
 
 			// Select the preferred race strategy if it is not already selected.
 			if (strategySelected == false) {
-				if (strategyImageName != "default") {
+				if (UserConfig.config.strategyImageName != "default") {
 					findAndTapImage("race_change_strategy", tries = 10, region = ScreenRegion.BOTTOM_HALF)
-					findAndTapImage(strategyImageName + "_select", tries = 10, region = ScreenRegion.BOTTOM_HALF)
+					findAndTapImage(UserConfig.config.strategyImageName + "_select", tries = 10, region = ScreenRegion.BOTTOM_HALF)
 					findAndTapImage("confirm", tries = 10, region = ScreenRegion.BOTTOM_HALF)
 					GameUtils.wait(1.0)
 				}
@@ -1993,7 +1899,7 @@ class Game(val ctx: Context) {
 
 			// If there is a popup warning about repeating races 3+ times, stop the process and do something else other than racing.
 			if (ImageUtils.findImage("race_repeat_warning").first != null) {
-				if (!enableForceRacing) {
+				if (!UserConfig.config.bEnableForceRacing) {
 					raceRepeatWarningCheck = true
 					MessageLog.i(TAG, "[RACE] Closing popup warning of doing more than 3+ races and setting flag to prevent racing for now. Canceling the racing process and doing something else.")
 					findAndTapImage("cancel", region = ScreenRegion.BOTTOM_HALF)
@@ -2048,7 +1954,7 @@ class Game(val ctx: Context) {
 					extraRaceLocation.add(selectedExtraRace)
 
 					// Determine its fan gain and save it.
-					val raceDetails: ImageUtils.RaceDetails = ImageUtils.determineExtraRaceFans(extraRaceLocation[count], sourceBitmap, templateBitmap!!, forceRacing = enableForceRacing)
+					val raceDetails: ImageUtils.RaceDetails = ImageUtils.determineExtraRaceFans(extraRaceLocation[count], sourceBitmap, templateBitmap!!, forceRacing = UserConfig.config.bEnableForceRacing)
 					listOfRaces.add(raceDetails)
 					if (count == 0 && raceDetails.fans == -1) {
 						// If the fans were unable to be fetched or the race does not have double predictions for the first attempt, skip racing altogether.
@@ -2093,7 +1999,7 @@ class Game(val ctx: Context) {
 					}
 
 					// Get the index of the maximum fans or the one with the double predictions if available when force racing is enabled.
-					val index = if (!enableForceRacing) {
+					val index = if (!UserConfig.config.bEnableForceRacing) {
 						listOfFans.indexOf(maxFans)
 					} else {
 						// When force racing is enabled, prioritize races with double predictions.
@@ -2139,9 +2045,9 @@ class Game(val ctx: Context) {
 
 			// Select the preferred race strategy if it is not already selected.
 			if (strategySelected == false) {
-				if (strategyImageName != "default") {
+				if (UserConfig.config.strategyImageName != "default") {
 					findAndTapImage("race_change_strategy", tries = 10, region = ScreenRegion.BOTTOM_HALF)
-					findAndTapImage(strategyImageName + "_select", tries = 10, region = ScreenRegion.BOTTOM_HALF)
+					findAndTapImage(UserConfig.config.strategyImageName + "_select", tries = 10, region = ScreenRegion.BOTTOM_HALF)
 					findAndTapImage("confirm", tries = 10, region = ScreenRegion.BOTTOM_HALF)
 					GameUtils.wait(1.0)
 				}
@@ -2172,9 +2078,9 @@ class Game(val ctx: Context) {
 
 		// Select the preferred race strategy if it is not already selected.
 		if (strategySelected == false) {
-			if (strategyImageName != "default") {
+			if (UserConfig.config.strategyImageName != "default") {
 				findAndTapImage("race_change_strategy", tries = 10, region = ScreenRegion.BOTTOM_HALF)
-				findAndTapImage(strategyImageName + "_select", tries = 10, region = ScreenRegion.BOTTOM_HALF)
+				findAndTapImage(UserConfig.config.strategyImageName + "_select", tries = 10, region = ScreenRegion.BOTTOM_HALF)
 				findAndTapImage("confirm", tries = 10, region = ScreenRegion.BOTTOM_HALF)
 				GameUtils.wait(1.0)
 			}
@@ -2213,7 +2119,7 @@ class Game(val ctx: Context) {
 
 			// Check if the race needed to be retried.
 			if (ImageUtils.findImage("race_retry", tries = 5, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first != null) {
-				if (disableRaceRetries) {
+				if (!UserConfig.config.bEnableRaceRetries) {
 					MessageLog.i(TAG, "[END] Stopping the bot due to failing a mandatory race.")
 					notificationMessage = "Stopping the bot due to failing a mandatory race."
 					throw IllegalStateException()
@@ -2291,7 +2197,7 @@ class Game(val ctx: Context) {
 
 			// Check if the race needed to be retried.
 			if (ImageUtils.findImage("race_retry", tries = 5, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first != null) {
-				if (disableRaceRetries) {
+				if (!UserConfig.config.bEnableRaceRetries) {
 					MessageLog.i(TAG, "[END] Stopping the bot due to failing a mandatory race.")
 					notificationMessage = "Stopping the bot due to failing a mandatory race."
 					throw IllegalStateException()
@@ -2565,7 +2471,7 @@ class Game(val ctx: Context) {
 	fun performMiscChecks(): Boolean {
 		MessageLog.i(TAG, "Beginning check for misc cases...")
 
-		if (enablePopupCheck && ImageUtils.findImage("cancel", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null &&
+		if (UserConfig.config.bEnablePopupCheck && ImageUtils.findImage("cancel", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null &&
 			ImageUtils.findImage("recover_mood_date", tries = 1, region = ScreenRegion.MIDDLE).first == null) {
 			MessageLog.i(TAG, "[END] Bot may have encountered a warning popup. Exiting now...")
 			notificationMessage = "Bot may have encountered a warning popup"
@@ -2576,7 +2482,7 @@ class Game(val ctx: Context) {
 			findAndTapImage("next", tries = 1, region = ScreenRegion.BOTTOM_HALF)
 			GameUtils.wait(1.0)
 		} else if (ImageUtils.findImage("crane_game", tries = 1, region = ScreenRegion.BOTTOM_HALF).first != null) {
-            if (enableSkipCraneGame) {
+            if (UserConfig.config.bEnableSkipCraneGame) {
                 MessageLog.i(TAG, "Crane game event detected. Auto failing since skip crane game setting is enabled.")
                 findAndTapImage("crane_game", tries = 1, region = ScreenRegion.BOTTOM_HALF)
 			    GameUtils.wait(5.0)
@@ -2625,16 +2531,11 @@ class Game(val ctx: Context) {
 	 */
 	fun start(): Boolean {
 		// Print current app settings at the start of the run.
-		SettingsPrinter.printCurrentSettings(ctx) { message ->
-			MessageLog.i(TAG, message, newline=false)
-		}
-
-		// Update the stat targets by distances.
-		setStatTargetsByDistances()
+        UserConfig.printConfigToLog()
 
 		// If debug mode is off, then it is necessary to wait a few seconds for the Toast message to disappear from the screen to prevent it obstructing anything beneath it.
-		if (!debugMode) {
-			GameUtils.wait(5.0)
+		if (!UserConfig.config.bEnableDebugMode) {
+			wait(5.0)
 		}
 
 		// Print device and version information.
@@ -2642,11 +2543,11 @@ class Game(val ctx: Context) {
 		if (ScreenRegion.WIDTH != 1080) {
             MessageLog.w(TAG, "⚠️ Bot performance will be severely degraded since display width is not 1080p unless an appropriate scale is set for your device.")
         }
-		if (debugMode) {
+		if (UserConfig.config.bEnableDebugMode) {
             MessageLog.w(TAG, "⚠️ Debug Mode is enabled. All bot operations will be significantly slower as a result.")
         }
-		if (sharedPreferences.getInt("customScale", 100).toDouble() / 100.0 != 1.0) {
-            MessageLog.i(TAG, "Manual scale has been set to ${sharedPreferences.getInt("customScale", 100).toDouble() / 100.0}")
+		if (UserConfig.config.debugOcrScale != 1.0) {
+            MessageLog.i(TAG, "Manual scale has been set to ${UserConfig.config.debugOcrScale}")
         }
 		MessageLog.w(TAG, "⚠️ Note that certain Android notification styles (like banners) are big enough that they cover the area that contains the Mood which will interfere with mood recovery logic in the beginning.")
 		val packageInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -2665,15 +2566,15 @@ class Game(val ctx: Context) {
 		val startTime: Long = System.currentTimeMillis()
 
 		// Start debug tests here if enabled.
-		if (sharedPreferences.getBoolean("debugMode_startTemplateMatchingTest", false)) {
+		if (UserConfig.config.bRunTemplateMatchingTest) {
 			startTemplateMatchingTest()
-		} else if (sharedPreferences.getBoolean("debugMode_startSingleTrainingFailureOCRTest", false)) {
+		} else if (UserConfig.config.bRunSingleTrainingFailureOcrTest) {
 			startSingleTrainingFailureOCRTest()
-		} else if (sharedPreferences.getBoolean("debugMode_startComprehensiveTrainingFailureOCRTest", false)) {
+		} else if (UserConfig.config.bRunComprehensiveTrainingFailureOcrTest) {
 			startComprehensiveTrainingFailureOCRTest()
 		}
 		// Otherwise, proceed with regular bot operations.
-		else if (campaign == "Ao Haru") {
+		else if (UserConfig.config.campaign == "Ao Haru") {
 			val aoHaruCampaign = AoHaru(this)
 			aoHaruCampaign.start()
 		} else {

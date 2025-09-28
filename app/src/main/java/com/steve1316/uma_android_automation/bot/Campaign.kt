@@ -6,6 +6,7 @@ import com.steve1316.uma_android_automation.utils.ScreenRegion
 import com.steve1316.uma_android_automation.utils.ImageUtils
 import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.ComponentDetection
+import com.steve1316.uma_android_automation.utils.UserConfig
 
 /**
  * Base campaign class that contains all shared logic for campaign automation.
@@ -50,14 +51,14 @@ open class Campaign(val game: Game) {
 					game.updateStatValueMapping()
 
 					// If the required skill points has been reached, stop the bot.
-					if (game.enableSkillPointCheck && ImageUtils.determineSkillPoints() >= game.skillPointsRequired) {
+					if (UserConfig.config.bEnableSkillPointCheck && ImageUtils.determineSkillPoints() >= UserConfig.config.skillPointCheckThreshold) {
 						MessageLog.i(TAG, "[END] Bot has acquired the set amount of skill points. Exiting now...")
 						game.notificationMessage = "Bot has acquired the set amount of skill points."
 						break
 					}
 
 					// If force racing is enabled, skip all other activities and go straight to racing
-					if (game.enableForceRacing) {
+					if (UserConfig.config.bEnableForceRacing) {
 						MessageLog.i(TAG, "Force racing enabled - skipping all other activities and going straight to racing.")
 						needToRace = true
 					} else {
@@ -89,7 +90,7 @@ open class Campaign(val game: Game) {
 							break
 						}
 						game.findAndTapImage("back", tries = 1, region = ScreenRegion.BOTTOM_HALF)
-						game.skipRacing = !game.enableForceRacing
+						game.skipRacing = !UserConfig.config.bEnableForceRacing
 						game.handleTraining()
 					}
 				}

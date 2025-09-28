@@ -8,6 +8,7 @@ import androidx.preference.*
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.R
 import com.steve1316.uma_android_automation.utils.MessageLog
+import com.steve1316.uma_android_automation.utils.UserConfig
 
 class TrainingEventFragment : PreferenceFragmentCompat() {
 	private val TAG: String = "TrainingEventFragment"
@@ -23,8 +24,8 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 	// This listener is triggered whenever the user changes a Preference setting in the Training Event Settings Page.
 	private val onSharedPreferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
 		val characterPicker: ListPreference = findPreference("characterPicker")!!
-		val selectAllCharactersCheckBox: CheckBoxPreference = findPreference("selectAllCharactersCheckBox")!!
-		val selectAllSupportCardsCheckBox: CheckBoxPreference = findPreference("selectAllSupportCardsCheckBox")!!
+		val bSelectAllCharactersCheckBox: CheckBoxPreference = findPreference("bSelectAllCharactersCheckBox")!!
+		val bSelectAllSupportCardsCheckBox: CheckBoxPreference = findPreference("bSelectAllSupportCardsCheckBox")!!
 		
 		if (key != null) {
 			// Note that is no need to handle the Preference that allows multiple selection here as it is already handled in its own function.
@@ -37,12 +38,12 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 					
 					characterPicker.summary = "Covers all R, SR and SSR variants into one.\n\n${characterPicker.value}"
 				}
-				"selectAllCharactersCheckBox" -> {
+				"bSelectAllCharactersCheckBox" -> {
 					sharedPreferences.edit {
-						putBoolean("selectAllCharacters", selectAllCharactersCheckBox.isChecked)
+						putBoolean("bSelectAllCharacters", bSelectAllCharactersCheckBox.isChecked)
 					}
 					
-					characterPicker.isEnabled = !selectAllCharactersCheckBox.isChecked
+					characterPicker.isEnabled = !bSelectAllCharactersCheckBox.isChecked
 					characterPicker.value = ""
 					characterPicker.summary = "Covers all R, SR and SSR variants into one."
 					sharedPreferences.edit {
@@ -50,15 +51,15 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 						commit()
 					}
 				}
-				"selectAllSupportCardsCheckBox" -> {
+				"bSelectAllSupportCardsCheckBox" -> {
 					sharedPreferences.edit {
-						putBoolean("selectAllSupportCards", selectAllSupportCardsCheckBox.isChecked)
+						putBoolean("bSelectAllSupportCards", bSelectAllSupportCardsCheckBox.isChecked)
 					}
 					
 					// Grab the Support Card items array and then enable/disable the multi-picker.
 					items = resources.getStringArray(R.array.support_list)
 					val multiplePreference: Preference = findPreference("supportPicker")!!
-					multiplePreference.isEnabled = !selectAllSupportCardsCheckBox.isChecked
+					multiplePreference.isEnabled = !bSelectAllSupportCardsCheckBox.isChecked
 					
 					if (multiplePreference.isEnabled) {
 						// Repopulate the multi-picker for Support Cards.
@@ -75,6 +76,9 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 					}
 				}
 			}
+
+            // Re-initialize our UserConfig now that we have committed changes.
+            UserConfig.reloadPreferences()
 		}
 	}
 	
@@ -100,14 +104,14 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 		
 		// Grab the saved preferences from the previous time the user used the app.
 		val character = sharedPreferences.getString("character", "")
-		val selectAllCharacters = sharedPreferences.getBoolean("selectAllCharacters", true)
-		val selectAllSupportCards = sharedPreferences.getBoolean("selectAllSupportCards", true)
+		val bSelectAllCharacters = sharedPreferences.getBoolean("bSelectAllCharacters", true)
+		val bSelectAllSupportCards = sharedPreferences.getBoolean("bSelectAllSupportCards", true)
 		
 		// Get references to the Preference components.
 		val characterPicker: ListPreference = findPreference("characterPicker")!!
 		val multiplePreference: Preference = findPreference("supportPicker")!!
-		val selectAllCharactersCheckBox: CheckBoxPreference = findPreference("selectAllCharactersCheckBox")!!
-		val selectAllSupportCardsCheckBox: CheckBoxPreference = findPreference("selectAllSupportCardsCheckBox")!!
+		val bSelectAllCharactersCheckBox: CheckBoxPreference = findPreference("bSelectAllCharactersCheckBox")!!
+		val bSelectAllSupportCardsCheckBox: CheckBoxPreference = findPreference("bSelectAllSupportCardsCheckBox")!!
 		
 		// Now set the following values from the shared preferences.
 		
@@ -117,17 +121,17 @@ class TrainingEventFragment : PreferenceFragmentCompat() {
 		}
 		
 		// Populate the list in the multi-picker for Support Cards.
-		if (!selectAllSupportCards) {
+		if (!bSelectAllSupportCards) {
 			multiplePreference.isEnabled = true
 			createSupportCardPicker()
 		} else {
 			multiplePreference.isEnabled = false
 		}
 		
-		characterPicker.isEnabled = !selectAllCharactersCheckBox.isChecked
-		multiplePreference.isEnabled = !selectAllSupportCardsCheckBox.isChecked
-		selectAllCharactersCheckBox.isChecked = selectAllCharacters
-		selectAllSupportCardsCheckBox.isChecked = selectAllSupportCards
+		characterPicker.isEnabled = !bSelectAllCharactersCheckBox.isChecked
+		multiplePreference.isEnabled = !bSelectAllSupportCardsCheckBox.isChecked
+		bSelectAllCharactersCheckBox.isChecked = bSelectAllCharacters
+		bSelectAllSupportCardsCheckBox.isChecked = bSelectAllSupportCards
 		
 		MessageLog.d(TAG, "Training Event Preferences created successfully.")
 	}

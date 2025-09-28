@@ -6,7 +6,7 @@
 
         <CheckBoxPreference
             app:defaultValue="true"
-            app:key="selectAllCharactersCheckBox"
+            app:key="bSelectAllCharactersCheckBox"
             app:summary="Check this to select all Characters if you are too lazy to select a character."
             app:title="Select All Characters *" />
 
@@ -22,7 +22,7 @@
     <PreferenceCategory app:title="Support Card(s) Selection">
         <CheckBoxPreference
             app:defaultValue="true"
-            app:key="selectAllSupportCardsCheckBox"
+            app:key="bSelectAllSupportCardsCheckBox"
             app:summary="Check this to select all Support Cards if you are too lazy to select them one-by-one."
             app:title="Select All Support Cards" />
 

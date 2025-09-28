@@ -31,9 +31,10 @@
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <TextView
+            android:layout_height="wrap_content"
+            tools:context=".MainActivity"
+        >
+            <com.steve1316.uma_android_automation.ui.AlternatingColorTextView
                 android:id="@+id/settings_status"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -41,6 +42,8 @@
                 android:layout_marginTop="16dp"
                 android:layout_marginEnd="16dp"
                 android:layout_marginBottom="16dp"
+                android:textSize="12sp"
+                android:fontFamily="monospace"
                 app:layout_constraintBottom_toTopOf="@id/message_log" />
 
             <TextView
@@ -53,6 +56,7 @@
                 android:layout_marginEnd="16dp"
                 android:layout_marginBottom="16dp"
                 android:textSize="10sp"
+                android:fontFamily="monospace"
                 app:layout_constraintTop_toBottomOf="@id/settings_status"
                 tools:ignore="SmallSp" />
         </androidx.constraintlayout.widget.ConstraintLayout>

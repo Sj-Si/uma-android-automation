@@ -8,6 +8,7 @@ import androidx.preference.*
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.R
 import com.steve1316.uma_android_automation.utils.MessageLog
+import com.steve1316.uma_android_automation.utils.UserConfig
 
 class TrainingStatTargetFragment : PreferenceFragmentCompat() {
 	private val TAG: String = "TrainingStatTargetFragment"
@@ -54,6 +55,9 @@ class TrainingStatTargetFragment : PreferenceFragmentCompat() {
 					}
 				}
 			}
+
+            // Re-initialize our UserConfig now that we have committed changes.
+            UserConfig.reloadPreferences()
 		}
 	}
 	

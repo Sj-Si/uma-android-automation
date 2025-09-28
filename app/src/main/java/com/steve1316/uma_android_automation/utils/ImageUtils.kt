@@ -1,7 +1,6 @@
 package com.steve1316.uma_android_automation.utils
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.preference.PreferenceManager
@@ -32,6 +31,8 @@ import kotlin.math.sqrt
 import kotlin.text.replace
 
 import com.steve1316.uma_android_automation.utils.ScreenRegion
+import com.steve1316.uma_android_automation.utils.UserConfig
+
 
 /**
  * Utility functions for image processing via CV like OpenCV.
@@ -48,6 +49,7 @@ object ImageUtils {
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
+<<<<<<< HEAD
 	// SharedPreferences
 	private var sharedPreferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(ctx)
 	private val campaign: String = sharedPreferences.getString("campaign", "")!!
@@ -55,6 +57,9 @@ object ImageUtils {
 	private var confidence: Double = sharedPreferences.getInt("confidence", 80).toDouble() / 100.0
 	private var customScale: Double = sharedPreferences.getInt("customScale", 100).toDouble() / 100.0
 	private val debugMode: Boolean = sharedPreferences.getBoolean("debugMode", false)
+=======
+    private val bEnableDebugMode: Boolean = UserConfig.config.bEnableDebugMode
+>>>>>>> master
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
@@ -222,7 +227,7 @@ object ImageUtils {
 			MessageLog.i(TAG, "For detection of rainbow training, confidence will be forcibly set to 0.9 to avoid false positives.")
 			0.9
 		} else if (customConfidence == 0.0) {
-			confidence
+			UserConfig.config.ocr.ocrConfidence
 		} else {
 			customConfidence
 		}
@@ -232,11 +237,19 @@ object ImageUtils {
 			testScale != 0.0 -> {
 				mutableListOf(testScale)
 			}
-			customScale != 1.0 && !useSingleScale -> {
-				mutableListOf(customScale - 0.02, customScale - 0.01, customScale, customScale + 0.01, customScale + 0.02, customScale + 0.03, customScale + 0.04)
+			UserConfig.config.debugOcrScale != 1.0 && !useSingleScale -> {
+				mutableListOf(
+                    UserConfig.config.debugOcrScale - 0.02,
+                    UserConfig.config.debugOcrScale - 0.01,
+                    UserConfig.config.debugOcrScale,
+                    UserConfig.config.debugOcrScale + 0.01,
+                    UserConfig.config.debugOcrScale + 0.02,
+                    UserConfig.config.debugOcrScale + 0.03,
+                    UserConfig.config.debugOcrScale + 0.04,
+                )
 			}
-			customScale != 1.0 && useSingleScale -> {
-				mutableListOf(customScale)
+			UserConfig.config.debugOcrScale != 1.0 && useSingleScale -> {
+				mutableListOf(UserConfig.config.debugOcrScale)
 			}
 			isLowerEnd -> {
 				lowerEndScales.toMutableList()
@@ -308,17 +321,17 @@ object ImageUtils {
 			if ((matchMethod == Imgproc.TM_SQDIFF || matchMethod == Imgproc.TM_SQDIFF_NORMED) && mmr.minVal <= (1.0 - setConfidence)) {
 				matchLocation = mmr.minLoc
 				matchCheck = true
-				if (debugMode) {
+				if (bEnableDebugMode) {
 					MessageLog.d(TAG, "Match found for \"$templateName\" with $minVal <= ${1.0 - setConfidence} at Point $matchLocation using scale: $newScale.")
 				}
 			} else if ((matchMethod != Imgproc.TM_SQDIFF && matchMethod != Imgproc.TM_SQDIFF_NORMED) && mmr.maxVal >= setConfidence) {
 				matchLocation = mmr.maxLoc
 				matchCheck = true
-				if (debugMode) {
+				if (bEnableDebugMode) {
 					MessageLog.d(TAG, "Match found for \"$templateName\" with $maxVal >= $setConfidence at Point $matchLocation using scale: $newScale.")
 				}
 			} else {
-				if (debugMode) {
+				if (bEnableDebugMode) {
 					if ((matchMethod != Imgproc.TM_SQDIFF && matchMethod != Imgproc.TM_SQDIFF_NORMED)) {
 						MessageLog.d(TAG, "Match not found for \"$templateName\" with $maxVal not >= $setConfidence at Point ${mmr.maxLoc} using scale $newScale.")
 					} else {
@@ -328,7 +341,7 @@ object ImageUtils {
 			}
 
 			if (matchCheck) {
-				if (debugMode && matchFilePath != "") {
+				if (bEnableDebugMode && matchFilePath != "") {
 					// Draw a rectangle around the supposed best matching location and then save the match into a file in /files/temp/ directory. This is for debugging purposes to see if this
 					// algorithm found the match accurately or not.
 					Imgproc.rectangle(sourceMat, matchLocation, Point(matchLocation.x + templateMat.cols(), matchLocation.y + templateMat.rows()), Scalar(0.0, 0.0, 0.0), 10)
@@ -391,8 +404,16 @@ object ImageUtils {
 
 		// Scale images if the device is not 1080p which is supported by default.
 		val scales: MutableList<Double> = when {
-			customScale != 1.0 -> {
-				mutableListOf(customScale - 0.02, customScale - 0.01, customScale, customScale + 0.01, customScale + 0.02, customScale + 0.03, customScale + 0.04)
+			UserConfig.config.debugOcrScale != 1.0 -> {
+				mutableListOf(
+                    UserConfig.config.debugOcrScale - 0.02,
+                    UserConfig.config.debugOcrScale - 0.01,
+                    UserConfig.config.debugOcrScale,
+                    UserConfig.config.debugOcrScale + 0.01,
+                    UserConfig.config.debugOcrScale + 0.02,
+                    UserConfig.config.debugOcrScale + 0.03,
+                    UserConfig.config.debugOcrScale + 0.04,
+                )
 			}
 			isLowerEnd -> {
 				lowerEndScales.toMutableList()
@@ -415,7 +436,7 @@ object ImageUtils {
 		}
 
 		val setConfidence: Double = if (customConfidence == 0.0) {
-			confidence
+			UserConfig.config.ocr.ocrConfidence
 		} else {
 			customConfidence
 		}
@@ -529,7 +550,7 @@ object ImageUtils {
 				// Draw a rectangle around the match on the source Mat. This will prevent false positives and infinite looping on subsequent matches.
 				Imgproc.rectangle(sourceMat, tempMatchLocation, Point(tempMatchLocation.x + clampedTemplateMat.cols(), tempMatchLocation.y + clampedTemplateMat.rows()), Scalar(0.0, 0.0, 0.0), 20)
 
-				if (debugMode) {
+				if (bEnableDebugMode) {
 					MessageLog.d(TAG, "Match All found with $minVal <= ${1.0 - setConfidence} at Point $matchLocation with scale: $newScale.")
 					Imgcodecs.imwrite("$matchFilePath/matchAll.png", sourceMat)
 				}
@@ -554,7 +575,7 @@ object ImageUtils {
 				// Draw a rectangle around the match on the source Mat. This will prevent false positives and infinite looping on subsequent matches.
 				Imgproc.rectangle(sourceMat, tempMatchLocation, Point(tempMatchLocation.x + clampedTemplateMat.cols(), tempMatchLocation.y + clampedTemplateMat.rows()), Scalar(0.0, 0.0, 0.0), 20)
 
-				if (debugMode) {
+				if (bEnableDebugMode) {
 					MessageLog.d(TAG, "Match All found with $maxVal >= $setConfidence at Point $matchLocation with scale: $newScale.")
 					Imgcodecs.imwrite("$matchFilePath/matchAll.png", sourceMat)
 				}
@@ -653,7 +674,7 @@ object ImageUtils {
 		var sourceBitmap: Bitmap? = null
 
 		while (sourceBitmap == null) {
-			sourceBitmap = MediaProjectionService.takeScreenshotNow(saveImage = debugMode)
+			sourceBitmap = MediaProjectionService.takeScreenshotNow(saveImage = bEnableDebugMode)
 		}
 
 		var templateBitmap: Bitmap?
@@ -667,7 +688,7 @@ object ImageUtils {
 		return if (templateBitmap != null) {
 			Pair(sourceBitmap, templateBitmap)
 		} else {
-			if (debugMode) {
+			if (bEnableDebugMode) {
 				MessageLog.e(TAG, "The template Bitmap is null.")
 			}
 
@@ -683,7 +704,7 @@ object ImageUtils {
 	private fun getSourceBitmap(): Bitmap {
 		var sourceBitmap: Bitmap? = null
 		while (sourceBitmap == null) {
-			sourceBitmap = MediaProjectionService.takeScreenshotNow(saveImage = debugMode)
+			sourceBitmap = MediaProjectionService.takeScreenshotNow(saveImage = bEnableDebugMode)
 		}
 
 		return sourceBitmap
@@ -735,7 +756,7 @@ object ImageUtils {
 	fun findImage(templateName: String, tries: Int = 5, region: IntArray = intArrayOf(0, 0, 0, 0), suppressError: Boolean = false): Pair<Point?, Bitmap> {
 		var numberOfTries = tries
 
-		if (debugMode) {
+		if (bEnableDebugMode) {
 			MessageLog.d(TAG, "Starting process to find the ${templateName.uppercase()} button image...")
 		}
 
@@ -747,7 +768,7 @@ object ImageUtils {
 				if (!resultFlag) {
 					numberOfTries -= 1
 					if (numberOfTries <= 0) {
-						if (debugMode && !suppressError) {
+						if (bEnableDebugMode && !suppressError) {
 							MessageLog.w(TAG, "Failed to find the ${templateName.uppercase()} button.")
 						}
 
@@ -779,7 +800,7 @@ object ImageUtils {
 	fun confirmLocation(templateName: String, tries: Int = 5, region: IntArray = intArrayOf(0, 0, 0, 0), suppressError: Boolean = false): Boolean {
 		var numberOfTries = tries
 
-		if (debugMode) {
+		if (bEnableDebugMode) {
 			MessageLog.d(TAG, "Starting process to find the ${templateName.uppercase()} header image...")
 		}
 
@@ -805,7 +826,7 @@ object ImageUtils {
 			}
 		}
 
-		if (debugMode && !suppressError) {
+		if (bEnableDebugMode && !suppressError) {
 			MessageLog.w(TAG, "Failed to confirm the bot location at ${templateName.uppercase()}.")
 		}
 
@@ -829,7 +850,7 @@ object ImageUtils {
 			matchLocations.sortBy { it.x }
 			matchLocations.sortBy { it.y }
 
-			if (debugMode) {
+			if (bEnableDebugMode) {
 				MessageLog.d(TAG, "Found match locations for $templateName: $matchLocations.")
 			} else {
 				MessageLog.d(TAG, "[DEBUG] Found match locations for $templateName: $matchLocations.")
@@ -862,7 +883,7 @@ object ImageUtils {
 			matchLocations.sortBy { it.x }
 			matchLocations.sortBy { it.y }
 
-			if (debugMode) {
+			if (bEnableDebugMode) {
 				MessageLog.d(TAG, "Found match locations for $templateName: $matchLocations.")
 			} else {
 				MessageLog.d(TAG, "[DEBUG] Found match locations for $templateName: $matchLocations.")
@@ -888,7 +909,7 @@ object ImageUtils {
 
 		// Check if coordinates are within bounds.
 		if (x < 0 || y < 0 || x >= sourceBitmap.width || y >= sourceBitmap.height) {
-			if (debugMode) {
+			if (bEnableDebugMode) {
                 MessageLog.w(TAG, "Coordinates ($x, $y) are out of bounds for bitmap size ${sourceBitmap.width}x${sourceBitmap.height}")
             }
 			return false
@@ -907,7 +928,7 @@ object ImageUtils {
 		val greenMatch = kotlin.math.abs(actualGreen - rgb[1]) <= tolerance
 		val blueMatch = kotlin.math.abs(actualBlue - rgb[2]) <= tolerance
 
-		if (debugMode) {
+		if (bEnableDebugMode) {
 			MessageLog.d(TAG, "Color check at ($x, $y): Expected RGB(${rgb[0]}, ${rgb[1]}, ${rgb[2]}), Actual RGB($actualRed, $actualGreen, $actualBlue), Match: ${redMatch && greenMatch && blueMatch}")
 		}
 
@@ -953,7 +974,7 @@ object ImageUtils {
 
 		val tempImage = Mat()
 		Utils.bitmapToMat(croppedBitmap, tempImage)
-		if (debugMode) Imgcodecs.imwrite("$matchFilePath/debugEventTitleText.png", tempImage)
+		if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debugEventTitleText.png", tempImage)
 
 		// Now see if it is necessary to shift the cropped region over by 70 pixels or not to account for certain events.
 		val (shiftMatch, _) = match(croppedBitmap, templateBitmap!!, "shift")
@@ -971,13 +992,12 @@ object ImageUtils {
 		Imgproc.cvtColor(cvImage, cvImage, Imgproc.COLOR_BGR2GRAY)
 
 		// Save the cropped image before converting it to black and white in order to troubleshoot issues related to differing device sizes and cropping.
-		if (debugMode) Imgcodecs.imwrite("$matchFilePath/debugEventTitleText_afterCrop.png", cvImage)
+		if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debugEventTitleText_afterCrop.png", cvImage)
 
 		// Thresh the grayscale cropped image to make it black and white.
 		val bwImage = Mat()
-		val threshold = sharedPreferences.getInt("threshold", 230)
-		Imgproc.threshold(cvImage, bwImage, threshold.toDouble() + increment, 255.0, Imgproc.THRESH_BINARY)
-		if (debugMode) Imgcodecs.imwrite("$matchFilePath/debugEventTitleText_afterThreshold.png", bwImage)
+		Imgproc.threshold(cvImage, bwImage, UserConfig.config.ocr.ocrThreshold.toDouble() + increment, 255.0, Imgproc.THRESH_BINARY)
+		if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debugEventTitleText_afterThreshold.png", bwImage)
 
 		// Convert the Mat directly to Bitmap and then pass it to the text reader.
 		val resultBitmap = createBitmap(bwImage.cols(), bwImage.rows())
@@ -1042,7 +1062,7 @@ object ImageUtils {
 		val tempMat = Mat()
 		Utils.bitmapToMat(resizedBitmap, tempMat)
 		Imgproc.cvtColor(tempMat, tempMat, Imgproc.COLOR_BGR2GRAY)
-		if (debugMode) Imgcodecs.imwrite("$matchFilePath/debugTrainingFailureChance_afterCrop.png", tempMat)
+		if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debugTrainingFailureChance_afterCrop.png", tempMat)
 
 		// Create a InputImage object for Google's ML OCR.
 		val resultBitmap = createBitmap(tempMat.cols(), tempMat.rows())
@@ -1103,7 +1123,7 @@ object ImageUtils {
 			tessBaseAPI.clear()
 		}
 
-		if (debugMode) {
+		if (bEnableDebugMode) {
 			MessageLog.d(TAG, "Failure chance detected to be at $result%.")
 		} else {
 			MessageLog.d(TAG, "Failure chance detected to be at $result%.")
@@ -1125,7 +1145,7 @@ object ImageUtils {
 
 		if (energyTextLocation != null) {
 			// Crop the source screenshot to only contain the day number.
-			val croppedBitmap: Bitmap? = if (campaign == "Ao Haru") {
+			val croppedBitmap: Bitmap? = if (UserConfig.config.campaign == "Ao Haru") {
 				if (isTablet) {
 					createSafeBitmap(sourceBitmap, relX(energyTextLocation.x, -(260 * 1.32).toInt()), relY(energyTextLocation.y, -(140 * 1.32).toInt()), relWidth(135), relHeight(100), "determineDayForExtraRace Ao Haru tablet")
 				} else {
@@ -1149,13 +1169,12 @@ object ImageUtils {
 			val cvImage = Mat()
 			Utils.bitmapToMat(resizedBitmap, cvImage)
 			Imgproc.cvtColor(cvImage, cvImage, Imgproc.COLOR_BGR2GRAY)
-			if (debugMode) Imgcodecs.imwrite("$matchFilePath/debugDayForExtraRace_afterCrop.png", cvImage)
+			if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debugDayForExtraRace_afterCrop.png", cvImage)
 
 			// Thresh the grayscale cropped image to make it black and white.
 			val bwImage = Mat()
-			val threshold = sharedPreferences.getInt("threshold", 230)
-			Imgproc.threshold(cvImage, bwImage, threshold.toDouble(), 255.0, Imgproc.THRESH_BINARY)
-			if (debugMode) Imgcodecs.imwrite("$matchFilePath/debugDayForExtraRace_afterThreshold.png", bwImage)
+			Imgproc.threshold(cvImage, bwImage, UserConfig.config.ocr.ocrThreshold.toDouble(), 255.0, Imgproc.THRESH_BINARY)
+			if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debugDayForExtraRace_afterThreshold.png", bwImage)
 
 			// Create a InputImage object for Google's ML OCR.
 			val resultBitmap = createBitmap(bwImage.cols(), bwImage.rows())
@@ -1243,16 +1262,16 @@ object ImageUtils {
 
 		val cvImage = Mat()
 		Utils.bitmapToMat(croppedBitmap, cvImage)
-		if (debugMode) Imgcodecs.imwrite("$matchFilePath/debugExtraRacePrediction.png", cvImage)
+		if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debugExtraRacePrediction.png", cvImage)
 
 		// Determine if the extra race has double star prediction.
 		val (predictionCheck, _) = match(croppedBitmap, doubleStarPredictionBitmap, "race_extra_double_prediction")
 
 		return if (forceRacing || predictionCheck) {
-			if (debugMode && !forceRacing) {
+			if (bEnableDebugMode && !forceRacing) {
                 MessageLog.d(TAG, "This race has double predictions. Now checking how many fans this race gives.")
             }
-			else if (debugMode) {
+			else if (bEnableDebugMode) {
                 MessageLog.d(TAG, "Check for double predictions was skipped due to the force racing flag being enabled. Now checking how many fans this race gives.")
             }
 
@@ -1270,7 +1289,7 @@ object ImageUtils {
 			// Make the cropped screenshot grayscale.
 			Utils.bitmapToMat(croppedBitmap2, cvImage)
 			Imgproc.cvtColor(cvImage, cvImage, Imgproc.COLOR_BGR2GRAY)
-			if (debugMode) Imgcodecs.imwrite("$matchFilePath/debugExtraRaceFans_afterCrop.png", cvImage)
+			if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debugExtraRaceFans_afterCrop.png", cvImage)
 
 			// Convert the Mat directly to Bitmap and then pass it to the text reader.
 			var resultBitmap = createBitmap(cvImage.cols(), cvImage.rows())
@@ -1278,9 +1297,8 @@ object ImageUtils {
 
 			// Thresh the grayscale cropped image to make it black and white.
 			val bwImage = Mat()
-			val threshold = sharedPreferences.getInt("threshold", 230)
-			Imgproc.threshold(cvImage, bwImage, threshold.toDouble(), 255.0, Imgproc.THRESH_BINARY)
-			if (debugMode) Imgcodecs.imwrite("$matchFilePath/debugExtraRaceFans_afterThreshold.png", bwImage)
+			Imgproc.threshold(cvImage, bwImage, UserConfig.config.ocr.ocrThreshold.toDouble(), 255.0, Imgproc.THRESH_BINARY)
+			if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debugExtraRaceFans_afterThreshold.png", bwImage)
 
 			resultBitmap = createBitmap(bwImage.cols(), bwImage.rows())
 			Utils.matToBitmap(bwImage, resultBitmap)
@@ -1351,13 +1369,12 @@ object ImageUtils {
 			val cvImage = Mat()
 			Utils.bitmapToMat(croppedBitmap, cvImage)
 			Imgproc.cvtColor(cvImage, cvImage, Imgproc.COLOR_BGR2GRAY)
-			if (debugMode) Imgcodecs.imwrite("$matchFilePath/debugSkillPoints_afterCrop.png", cvImage)
+			if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debugSkillPoints_afterCrop.png", cvImage)
 
 			// Thresh the grayscale cropped image to make it black and white.
 			val bwImage = Mat()
-			val threshold = sharedPreferences.getInt("threshold", 230)
-			Imgproc.threshold(cvImage, bwImage, threshold.toDouble(), 255.0, Imgproc.THRESH_BINARY)
-			if (debugMode) Imgcodecs.imwrite("$matchFilePath/debugSkillPoints_afterThreshold.png", bwImage)
+			Imgproc.threshold(cvImage, bwImage, UserConfig.config.ocr.ocrThreshold.toDouble(), 255.0, Imgproc.THRESH_BINARY)
+			if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debugSkillPoints_afterThreshold.png", bwImage)
 
 			// Create a InputImage object for Google's ML OCR.
 			val resultBitmap = createBitmap(bwImage.cols(), bwImage.rows())
@@ -1514,7 +1531,7 @@ object ImageUtils {
 		val results = arrayListOf<BarFillResult>()
 
 		for ((index, statBlock) in allStatBlocks.withIndex()) {
-			if (debugMode) {
+			if (bEnableDebugMode) {
                 MessageLog.d(TAG, "Processing stat block #${index + 1} at position: (${statBlock.x}, ${statBlock.y})")
             }
 
@@ -1527,7 +1544,7 @@ object ImageUtils {
 			val (isMaxed, _) = match(croppedBitmap, maxedTemplateBitmap!!, "stat_maxed")
 			if (isMaxed) {
 				// Skip if the relationship bar is already maxed.
-				if (debugMode) {
+				if (bEnableDebugMode) {
                     MessageLog.d(TAG, "Relationship bar #${index + 1} is full.")
                 }
 				results.add(BarFillResult(100.0, 5, "orange"))
@@ -1540,7 +1557,7 @@ object ImageUtils {
 			// Convert to RGB and then to HSV for better color detection.
 			val rgbMat = Mat()
 			Imgproc.cvtColor(barMat, rgbMat, Imgproc.COLOR_BGR2RGB)
-			if (debugMode) Imgcodecs.imwrite("$matchFilePath/debug_relationshipBar${index + 1}AfterRGB.png", rgbMat)
+			if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debug_relationshipBar${index + 1}AfterRGB.png", rgbMat)
 			val hsvMat = Mat()
 			Imgproc.cvtColor(rgbMat, hsvMat, Imgproc.COLOR_RGB2HSV)
 
@@ -1581,7 +1598,7 @@ object ImageUtils {
 			hsvMat.release()
 			barMat.release()
 
-			if (debugMode) {
+			if (bEnableDebugMode) {
                 val msgString = "Relationship bar #${index + 1} is $fillPercent% filled with " +
                     "$filledSegments filled segments and the dominant color is $dominantColor"
                 MessageLog.d(TAG, msgString)
@@ -1681,7 +1698,7 @@ object ImageUtils {
 				val cvImage = Mat()
 				Utils.bitmapToMat(croppedBitmap, cvImage)
 				Imgproc.cvtColor(cvImage, cvImage, Imgproc.COLOR_BGR2GRAY)
-				if (debugMode) Imgcodecs.imwrite("$matchFilePath/debug${statName}StatValue_afterCrop.png", cvImage)
+				if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debug${statName}StatValue_afterCrop.png", cvImage)
 
 				val resultBitmap = createBitmap(cvImage.cols(), cvImage.rows())
 				Utils.matToBitmap(cvImage, resultBitmap)
@@ -1741,7 +1758,7 @@ object ImageUtils {
 			val cvImage = Mat()
 			Utils.bitmapToMat(croppedBitmap, cvImage)
 			Imgproc.cvtColor(cvImage, cvImage, Imgproc.COLOR_BGR2GRAY)
-			if (debugMode) Imgcodecs.imwrite("$matchFilePath/debug_dateString_afterCrop.png", cvImage)
+			if (bEnableDebugMode) Imgcodecs.imwrite("$matchFilePath/debug_dateString_afterCrop.png", cvImage)
 
 			// Create a InputImage object for Google's ML OCR.
 			val resultBitmap = createBitmap(cvImage.cols(), cvImage.rows())
@@ -1791,7 +1808,7 @@ object ImageUtils {
 				tessBaseAPI.clear()
 			}
 
-			if (debugMode) {
+			if (bEnableDebugMode) {
 				MessageLog.d(TAG, "Date string detected to be at \"$result\".")
 			} else {
 				MessageLog.d(TAG, "Date string detected to be at \"$result\".")
@@ -1949,7 +1966,7 @@ object ImageUtils {
 						MessageLog.i(TAG, "$statName region final constructed value: $finalValue.")
 
 						// Draw final visualization with all matches for this region.
-						if (debugMode) {
+						if (bEnableDebugMode) {
 							val resultMat = Mat()
 							Utils.bitmapToMat(croppedBitmap, resultMat)
 							templates.forEachIndexed { index, templateName ->
@@ -2224,7 +2241,7 @@ object ImageUtils {
 		}
 
 		if (allMatches.isEmpty()) {
-			if (debugMode) {
+			if (bEnableDebugMode) {
                 MessageLog.w(TAG, "No matches found to construct integer value.")
             }
 			return 0
@@ -2232,7 +2249,7 @@ object ImageUtils {
 
 		// Sort matches by x-coordinate (left to right).
 		allMatches.sortBy { it.second.x }
-		if (debugMode) {
+		if (bEnableDebugMode) {
             MessageLog.d(TAG, "Sorted matches: ${allMatches.map { "${it.first}@(${it.second.x}, ${it.second.y})" }}")
         }
 
@@ -2249,7 +2266,7 @@ object ImageUtils {
 			}
 
 			val result = numericPart.toInt()
-			if (debugMode) {
+			if (bEnableDebugMode) {
                 MessageLog.d(TAG, "Successfully constructed integer value: $result from \"$constructedString\".")
             }
 			result
