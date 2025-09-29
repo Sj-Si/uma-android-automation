@@ -5,6 +5,7 @@ import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.utils.MessageLog
 import org.opencv.core.Point
+import com.steve1316.uma_android_automation.utils.GameUtils
 
 class AoHaru(game: Game) : Campaign(game) {
 	override val TAG: String = "AoHaru"
@@ -64,7 +65,7 @@ class AoHaru(game: Game) : Campaign(game) {
 		
 		// Head to the next screen with the 3 racing options.
 		game.findAndTapImage("aoharu_race")
-		game.wait(7.0)
+		GameUtils.wait(7.0)
 		
 		if (game.findAndTapImage("aoharu_final_race", tries = 10)) {
 			MessageLog.i(TAG, "[AOHARU] Final race detected. Racing it now...")
@@ -75,7 +76,7 @@ class AoHaru(game: Game) : Campaign(game) {
 			game.gestureUtils.tap(racingOptions[0].x, racingOptions[0].y, "aoharu_race_option")
 			
 			game.findAndTapImage("aoharu_select_race", tries = 10)
-			game.wait(2.0)
+			GameUtils.wait(2.0)
 			
 			val doubleCircles = game.imageUtils.findAll("race_prediction_double_circle")
 			if (doubleCircles.size >= 3) {
@@ -84,7 +85,7 @@ class AoHaru(game: Game) : Campaign(game) {
 			} else {
 				MessageLog.i(TAG, "[AOHARU] First race did not have the sufficient double circle predictions. Selecting the 2nd race now...")
 				game.findAndTapImage("cancel", tries = 10)
-				game.wait(1.0)
+				GameUtils.wait(1.0)
 				
 				racingOptions = game.imageUtils.findAll("aoharu_race_option")
 				game.gestureUtils.tap(racingOptions[1].x, racingOptions[1].y, "aoharu_race_option")
@@ -95,16 +96,16 @@ class AoHaru(game: Game) : Campaign(game) {
 			}
 		}
 		
-		game.wait(7.0)
+		GameUtils.wait(7.0)
 		
 		// Now run the race and skip to the end.
 		game.findAndTapImage("aoharu_run_race", tries = 30)
-		game.wait(1.0)
+		GameUtils.wait(1.0)
 		game.findAndTapImage("race_skip_manual", tries = 30)
-		game.wait(3.0)
+		GameUtils.wait(3.0)
 		
 		game.findAndTapImage("race_end", tries = 30)
-		game.wait(1.0)
+		GameUtils.wait(1.0)
 		game.findAndTapImage("race_end", tries = 30)
 	}
 }

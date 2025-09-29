@@ -3,6 +3,7 @@ package com.steve1316.uma_android_automation.bot
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.utils.MessageLog
 import com.steve1316.uma_android_automation.utils.UserConfig
+import com.steve1316.uma_android_automation.utils.GameUtils
 
 /**
  * Base campaign class that contains all shared logic for campaign automation.
@@ -62,7 +63,7 @@ open class Campaign(val game: Game) {
 						if (game.checkInjury()) {
 							MessageLog.i(TAG, "A infirmary visit was attempted in order to heal an injury.")
 							game.findAndTapImage("ok", region = game.imageUtils.regionMiddle)
-							game.wait(3.0)
+							GameUtils.wait(3.0)
 							game.skipRacing = false
 						} else if (game.recoverMood()) {
 							MessageLog.i(TAG, "Mood has recovered.")

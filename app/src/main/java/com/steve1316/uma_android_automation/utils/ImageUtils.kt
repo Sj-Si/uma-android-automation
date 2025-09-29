@@ -31,12 +31,12 @@ import kotlin.math.sqrt
 import kotlin.text.replace
 
 import com.steve1316.uma_android_automation.utils.UserConfig
-
+import com.steve1316.uma_android_automation.utils.GameUtils
 
 /**
  * Utility functions for image processing via CV like OpenCV.
  */
-class ImageUtils(context: Context, private val game: Game) {
+class ImageUtils(context: Context) {
 	private val TAG: String = "ImageUtils"
 	private var myContext = context
 	private val matchMethod: Int = Imgproc.TM_CCOEFF_NORMED
@@ -771,7 +771,7 @@ class ImageUtils(context: Context, private val game: Game) {
 					}
 
 					MessageLog.d(TAG, "Failed to find the ${templateName.uppercase()} button. Trying again...")
-					game.wait(0.1)
+					GameUtils.wait(0.1)
 					sourceBitmap = getSourceBitmap()
 				} else {
 					MessageLog.i(TAG, "[SUCCESS] Found the ${templateName.uppercase()} at $location.")
@@ -810,7 +810,7 @@ class ImageUtils(context: Context, private val game: Game) {
 						break
 					}
 
-					game.wait(0.1)
+					GameUtils.wait(0.1)
 					sourceBitmap = getSourceBitmap()
 				} else {
 					MessageLog.i(TAG, "[SUCCESS] Current location confirmed to be at ${templateName.uppercase()}.")
