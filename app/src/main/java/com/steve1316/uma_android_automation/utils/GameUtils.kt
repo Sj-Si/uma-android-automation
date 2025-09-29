@@ -1,10 +1,9 @@
 package com.steve1316.uma_android_automation.utils
 
-import com.steve1316.uma_android_automation.utils.ScreenRegion
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import com.steve1316.uma_android_automation.utils.ImageUtils
-import com.steve1316.uma_android_automation.utils.ScreenRegion
+import com.steve1316.uma_android_automation.utils.Screen
 
 object GameUtils {
     private var TAG: String = "GameUtils"
@@ -65,10 +64,10 @@ object GameUtils {
     */
     fun checkLoading(tag: String = TAG): Boolean {
         MessageLog.i(tag, "Now checking if the game is still loading...")
-        return if (ImageUtils.findImage("connecting", tries = 1, region = ScreenRegion.TOP_HALF, suppressError = true).first != null) {
+        return if (ImageUtils.findImage("connecting", tries = 1, region = Screen.TOP_HALF, suppressError = true).first != null) {
             MessageLog.i(tag, "Detected that the game is awaiting a response from the server from the \"Connecting\" text at the top of the screen. Waiting...")
             true
-        } else if (ImageUtils.findImage("now_loading", tries = 1, region = ScreenRegion.BOTTOM_HALF, suppressError = true).first != null) {
+        } else if (ImageUtils.findImage("now_loading", tries = 1, region = Screen.BOTTOM_HALF, suppressError = true).first != null) {
             MessageLog.i(tag, "Detected that the game is still loading from the \"Now Loading\" text at the bottom of the screen. Waiting...")
             true
         } else {

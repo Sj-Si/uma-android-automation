@@ -32,6 +32,7 @@ import kotlin.text.replace
 
 import com.steve1316.uma_android_automation.utils.UserConfig
 import com.steve1316.uma_android_automation.utils.GameUtils
+import com.steve1316.uma_android_automation.utils.Screen
 
 /**
  * Utility functions for image processing via CV like OpenCV.
@@ -80,13 +81,6 @@ class ImageUtils(context: Context) {
 	private val tabletPortraitScales: MutableList<Double> = generateSequence(1.00) { it + 0.01 }
 		.takeWhile { it <= 2.00 }
 		.toMutableList()
-
-	// TODO: Separate tablet landscape scale to non-splitscreen and splitscreen scales.
-
-	// Define template matching regions of the screen.
-	val regionTopHalf: IntArray = intArrayOf(0, 0, displayWidth, displayHeight / 2)
-	val regionBottomHalf: IntArray = intArrayOf(0, displayHeight / 2, displayWidth, displayHeight / 2)
-	val regionMiddle: IntArray = intArrayOf(0, displayHeight / 4, displayWidth, displayHeight / 2)
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
@@ -1136,7 +1130,7 @@ class ImageUtils(context: Context) {
 	 */
 	fun determineDayForExtraRace(): Int {
 		var result = -1
-		val (energyTextLocation, sourceBitmap) = findImage("energy", tries = 1, region = regionTopHalf)
+		val (energyTextLocation, sourceBitmap) = findImage("energy", tries = 1, region = Screen.TOP_HALF)
 
 		if (energyTextLocation != null) {
 			// Crop the source screenshot to only contain the day number.
@@ -1615,7 +1609,7 @@ class ImageUtils(context: Context) {
 	 * @return The preferred distance (Sprint, Mile, Medium, or Long) or Medium as default if no aptitude is detected.
 	 */
 	fun determinePreferredDistance(): String {
-		val (distanceLocation, sourceBitmap) = findImage("stat_distance", tries = 1, region = regionMiddle)
+		val (distanceLocation, sourceBitmap) = findImage("stat_distance", tries = 1, region = Screen.MIDDLE)
 		if (distanceLocation == null) {
 			MessageLog.e(TAG, "Could not determine the preferred distance. Setting to Medium by default.")
 			return "Medium"
