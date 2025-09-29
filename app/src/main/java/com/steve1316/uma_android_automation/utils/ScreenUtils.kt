@@ -9,12 +9,12 @@ import com.steve1316.uma_android_automation.utils.MediaProjectionService
 object Screen {
     var WIDTH: Int = 0
         get() {
-            return MediaProjectionService.region.displayWidth
+            return MediaProjectionService.displayWidth
         }
 
     var HEIGHT: Int = 0
         get() {
-            return MediaProjectionService.region.displayHeight
+            return MediaProjectionService.displayHeight
         }
 
     // SCREEN REGIONS
