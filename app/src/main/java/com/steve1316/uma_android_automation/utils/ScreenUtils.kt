@@ -7,9 +7,6 @@ import com.steve1316.uma_android_automation.utils.MediaProjectionService
 * Uses the MediaProjectionService to retrieve display dimensions.
 */
 object Screen {
-    MIDDLE = intArrayOf(0, HEIGHT / 4, WIDTH, HEIGHT / 2)
-        BOTTOM_HALF = intArrayOf(0, HEIGHT / 2, WIDTH, HEIGHT / 2)
-
     var WIDTH: Int = 0
         get() {
             return MediaProjectionService.region.displayWidth
