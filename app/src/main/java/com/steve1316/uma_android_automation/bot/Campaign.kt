@@ -4,6 +4,7 @@ import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.utils.MessageLog
 import com.steve1316.uma_android_automation.utils.UserConfig
 import com.steve1316.uma_android_automation.utils.GameUtils
+import com.steve1316.uma_android_automation.utils.ImageUtils
 import com.steve1316.uma_android_automation.utils.Screen
 
 /**
@@ -49,7 +50,7 @@ open class Campaign(val game: Game) {
 					game.updateStatValueMapping()
 
 					// If the required skill points has been reached, stop the bot.
-					if (UserConfig.config.bEnableSkillPointCheck && game.imageUtils.determineSkillPoints() >= UserConfig.config.skillPointCheckThreshold) {
+					if (UserConfig.config.bEnableSkillPointCheck && ImageUtils.determineSkillPoints() >= UserConfig.config.skillPointCheckThreshold) {
 						MessageLog.i(TAG, "[END] Bot has acquired the set amount of skill points. Exiting now...")
 						game.notificationMessage = "Bot has acquired the set amount of skill points."
 						break

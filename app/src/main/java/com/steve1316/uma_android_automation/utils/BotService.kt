@@ -33,7 +33,7 @@ import kotlin.math.roundToInt
 class BotService : Service() {
 	private val TAG: String = "BotService"
 	private var appName: String = ""
-	private lateinit var myContext: Context
+	private lateinit var context: Context
 	private lateinit var overlayView: View
 	private lateinit var overlayButton: ImageButton
 
@@ -75,8 +75,9 @@ class BotService : Service() {
 	override fun onCreate() {
 		super.onCreate()
 		
-		myContext = this
-		appName = myContext.getString(R.string.app_name)
+		context = this
+        ImageUtils.initialize()
+		appName = context.getString(R.string.app_name)
 
 		// Initialize the animations for the floating overlay button.
 		initializeAnimations()
@@ -117,9 +118,9 @@ class BotService : Service() {
 						// Update both the Notification and the overlay button to reflect the current bot status.
 						if (!isRunning) {
 							MessageLog.i(TAG, "Bot Service for $appName is now running.")
-							Toast.makeText(myContext, "Bot Service for $appName is now running.", Toast.LENGTH_SHORT).show()
+							Toast.makeText(context, "Bot Service for $appName is now running.", Toast.LENGTH_SHORT).show()
 							isRunning = true
-							NotificationUtils.updateNotification(myContext, isRunning)
+							NotificationUtils.updateNotification(context, isRunning)
 							overlayButton.setImageResource(R.drawable.stop_circle_filled)
 
 							// Switch animations from the play to the stop button animations.
@@ -129,22 +130,22 @@ class BotService : Service() {
 
 							thread = thread {
 								try {
-									game = Game(myContext)
+									game = Game()
 									
 									// Clear the Message Log.
 									MessageLog.clearLog()
 									MessageLog.saveCheck = false
 									
 									// Start with the provided settings from SharedPreferences.
-									game.start()
+									game.start(context)
 
 									val notificationMessage = if (game.notificationMessage != "") game.notificationMessage else "Bot has completed successfully."
-									NotificationUtils.updateNotification(myContext, false, notificationMessage)
+									NotificationUtils.updateNotification(context, false, notificationMessage)
 								} catch (e: Exception) {
 									if (e.toString() == "java.lang.InterruptedException") {
-										NotificationUtils.updateNotification(myContext, false, "Bot was manually stopped.")
+										NotificationUtils.updateNotification(context, false, "Bot was manually stopped.")
 									} else {
-										NotificationUtils.updateNotification(myContext, false, "Encountered an Exception: $e.\nTap me to see more details.")
+										NotificationUtils.updateNotification(context, false, "Encountered an Exception: $e.\nTap me to see more details.")
                                         MessageLog.e(TAG, "$appName encountered an Exception: ${e.stackTraceToString()}")
 									}
 								} finally {
@@ -153,7 +154,7 @@ class BotService : Service() {
 							}
 						} else {
 							thread.interrupt()
-							NotificationUtils.updateNotification(myContext, false, "Bot was manually stopped.")
+							NotificationUtils.updateNotification(context, false, "Bot was manually stopped.")
 							performCleanUp()
 						}
 						
@@ -276,8 +277,8 @@ class BotService : Service() {
 		// Remove the overlay View that holds the overlay button.
 		windowManager.removeView(overlayView)
 		
-		val service = Intent(myContext, MyAccessibilityService::class.java)
-		myContext.stopService(service)
+		val service = Intent(context, MyAccessibilityService::class.java)
+		context.stopService(service)
 	}
 	
 	/**
@@ -286,7 +287,7 @@ class BotService : Service() {
 	private fun performCleanUp() {
 		MessageLog.d(TAG, "Bot Service for $appName is now stopped.")
         // Save the message log.
-		MessageLog.saveLogToFile(myContext)
+		MessageLog.saveLogToFile(context)
 		isRunning = false
 
 		// Reset the overlay button's image and animation on a separate UI thread.

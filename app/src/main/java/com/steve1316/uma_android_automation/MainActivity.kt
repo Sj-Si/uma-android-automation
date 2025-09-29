@@ -19,6 +19,7 @@ import org.opencv.android.OpenCVLoader
 import java.util.Locale
 
 import com.steve1316.uma_android_automation.utils.UserConfig
+import com.steve1316.uma_android_automation.utils.ImageUtils
 
 val START_TIME_MS = System.currentTimeMillis()
 

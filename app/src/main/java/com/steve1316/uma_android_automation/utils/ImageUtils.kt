@@ -11,6 +11,7 @@ import com.googlecode.tesseract.android.TessBaseAPI
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.utils.MessageLog
+import com.steve1316.uma_android_automation.MainApplication
 import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgcodecs.Imgcodecs
@@ -33,35 +34,39 @@ import kotlin.text.replace
 import com.steve1316.uma_android_automation.utils.UserConfig
 import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.Screen
+import java.io.InputStream
 
-/**
- * Utility functions for image processing via CV like OpenCV.
- */
-class ImageUtils(context: Context) {
-	private val TAG: String = "ImageUtils"
-	private var myContext = context
+/** Utility functions for image processing via CV like OpenCV. */
+object ImageUtils {
+    private val TAG: String = "ImageUtils"
 	private val matchMethod: Int = Imgproc.TM_CCOEFF_NORMED
 	private val decimalFormat = DecimalFormat("#.###")
 	private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-	private val tessBaseAPI: TessBaseAPI
+	private lateinit var tessBaseAPI: TessBaseAPI
 	private val tesseractLanguages = arrayListOf("eng")
+
+    // Root directory of external files.
+    private var externalFilesPath: String? = ""
+    // Stores the file path to the saved match image file for debugging purposes.
+    private var matchFilePath: String = ""
+    private var tesseractFilePath: String = ""
+    private var tesseractTempDataFilePath: String = ""
+    
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
     private val bEnableDebugMode: Boolean = UserConfig.config.bEnableDebugMode
 
-	////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	// Device configuration
-	private val displayWidth: Int = MediaProjectionService.displayWidth
-	private val displayHeight: Int = MediaProjectionService.displayHeight
-	private val isLowerEnd: Boolean = (displayWidth == 720)
-	private val isDefault: Boolean = (displayWidth == 1080)
-	val isTablet: Boolean = (displayWidth == 1600 && displayHeight == 2560) || (displayWidth == 2560 && displayHeight == 1600) // Galaxy Tab S7 1600x2560 Portrait Mode
-	private val isLandscape: Boolean = (displayWidth == 2560 && displayHeight == 1600) // Galaxy Tab S7 1600x2560 Landscape Mode
+	private val isLowerEnd: Boolean = (Screen.WIDTH == 720)
+	private val isDefault: Boolean = (Screen.WIDTH == 1080)
+	val isTablet: Boolean = (Screen.WIDTH == 1600 && Screen.HEIGHT == 2560) || (Screen.WIDTH == 2560 && Screen.HEIGHT == 1600) // Galaxy Tab S7 1600x2560 Portrait Mode
+	private val isLandscape: Boolean = (Screen.WIDTH == 2560 && Screen.HEIGHT == 1600) // Galaxy Tab S7 1600x2560 Landscape Mode
 	private val isSplitScreen: Boolean = false // Uma Musume Pretty Derby is only playable in Portrait mode.
 
-	// Scales
+    // Scales
 	private val lowerEndScales: MutableList<Double> = generateSequence(0.50) { it + 0.01 }
 		.takeWhile { it <= 0.70 }
 		.toMutableList()
@@ -82,111 +87,235 @@ class ImageUtils(context: Context) {
 		.takeWhile { it <= 2.00 }
 		.toMutableList()
 
-	////////////////////////////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////////
+    data class RaceDetails (
+        val fans: Int,
+        val hasDoublePredictions: Boolean,
+    )
 
-	companion object {
-		private var matchFilePath: String = ""
+    data class ScaleConfidenceResult(
+        val scale: Double,
+        val confidence: Double,
+    )
 
-		/**
-		 * Saves the file path to the saved match image file for debugging purposes.
-		 *
-		 * @param filePath File path to where to store the image containing the location of where the match was found.
-		 */
-		private fun updateMatchFilePath(filePath: String) {
-			matchFilePath = filePath
-		}
-	}
-
-	init {
-		// Set the file path to the /files/temp/ folder.
-		val matchFilePath: String = myContext.getExternalFilesDir(null)?.absolutePath + "/temp"
-		updateMatchFilePath(matchFilePath)
-
+    data class BarFillResult(
+        val fillPercent: Double,
+        val filledSegments: Int,
+        val dominantColor: String,
+    )
+    
+    fun initialize() {
+        externalFilesPath = MainApplication.getApplicationContext().getExternalFilesDir(null)?.absolutePath
+        matchFilePath = "$externalFilesPath/temp"
+        tesseractFilePath = "$externalFilesPath/tesseract"
+        tesseractTempDataFilePath = "$tesseractFilePath/tessdata"
+	
 		// Initialize Tesseract with the traineddata model.
 		initTesseract()
 		tessBaseAPI = TessBaseAPI()
 
 		// Start up Tesseract.
-		tessBaseAPI.init(myContext.getExternalFilesDir(null)?.absolutePath + "/tesseract/", "eng")
+        
+		tessBaseAPI.init(tesseractFilePath, "eng")
 		MessageLog.i(TAG, "Training file loaded.")
-	}
+    }
 
-	data class RaceDetails (
-		val fans: Int,
-		val hasDoublePredictions: Boolean
-	)
+    private fun openAsset(relPath: String): InputStream? {
+        return MainApplication.getApplicationContext().assets?.open(relPath)
+    }
 
-	data class ScaleConfidenceResult(
-		val scale: Double,
-		val confidence: Double
-	)
+    /**
+    * Initialize Tesseract for future OCR operations. Make sure to put your .traineddata inside the root of the /assets/ folder.
+    */
+	private fun initTesseract() {
+		val newTempDirectory = File(tesseractTempDataFilePath)
 
-	data class BarFillResult(
-		val fillPercent: Double,
-		val filledSegments: Int,
-		val dominantColor: String
-	)
+		// If the /files/temp/ folder does not exist, create it.
+		if (!newTempDirectory.exists()) {
+			val successfullyCreated: Boolean = newTempDirectory.mkdirs()
 
-	////////////////////////////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////////
-
-	/**
-	 * Starts a test to determine what scales are working on this device by looping through some template images.
-	 *
-	 * @return A mapping of template image names used to test and their lists of working scales.
-	 */
-	fun startTemplateMatchingTest(): MutableMap<String, MutableList<ScaleConfidenceResult>> {
-		val results = mutableMapOf<String, MutableList<ScaleConfidenceResult>>(
-			"energy" to mutableListOf(),
-			"tazuna" to mutableListOf(),
-			"skill_points" to mutableListOf()
-		)
-
-		val defaultConfidence = 0.8
-		val testScaleDecimalFormat = DecimalFormat("#.##")
-		val testConfidenceDecimalFormat = DecimalFormat("#.##")
-
-		for (key in results.keys) {
-			val (sourceBitmap, templateBitmap) = getBitmaps(key)
-
-			// First, try the default values of 1.0 for scale and 0.8 for confidence.
-			val (success, _) = match(sourceBitmap, templateBitmap!!, key, useSingleScale = true, customConfidence = defaultConfidence, testScale = 1.0)
-			if (success) {
-				MessageLog.i(TAG, "[TEST] Initial test for $key succeeded at the default values.")
-				results[key]?.add(ScaleConfidenceResult(1.0, defaultConfidence))
-				continue // If it works, skip to the next template.
+			// If the folder was not able to be created for some reason, log the error and stop the MediaProjection Service.
+			if (!successfullyCreated) {
+				MessageLog.e(TAG, "Failed to create the /files/tesseract/tessdata/ folder.")
+			} else {
+				MessageLog.i(TAG, "Successfully created /files/tesseract/tessdata/ folder.")
 			}
+		} else {
+			MessageLog.i(TAG, "/files/tesseract/tessdata/ folder already exists.")
+		}
 
-			// If not, try all scale/confidence combinations.
-			val scalesToTest = mutableListOf<Double>()
-			var scale = 0.5
-			while (scale <= 3.0) {
-				scalesToTest.add(testScaleDecimalFormat.format(scale).toDouble())
-				scale += 0.1
-			}
+		// If the traineddata is not in the application folder, copy it there from assets.
+		tesseractLanguages.forEach { lang ->
+			val trainedDataPath = File(tesseractTempDataFilePath, "$lang.traineddata")
+			if (!trainedDataPath.exists()) {
+				try {
+					MessageLog.i(TAG, "Starting Tesseract initialization.")
+					val input = openAsset("$lang.traineddata")
+                    if (input == null) {
+                        throw IOException("Failed to open asset: $lang.traineddata")
+                    }
 
-			for (testScale in scalesToTest) {
-				var confidence = 0.6
-				while (confidence <= 1.0) {
-					val formattedConfidence = testConfidenceDecimalFormat.format(confidence).toDouble()
-					val (testSuccess, _) = match(sourceBitmap, templateBitmap, key, useSingleScale = true, customConfidence = formattedConfidence, testScale = testScale)
-					if (testSuccess) {
-						MessageLog.i(TAG, "[TEST] Test for $key succeeded at scale $testScale and confidence $formattedConfidence.")
-						results[key]?.add(ScaleConfidenceResult(testScale, formattedConfidence))
+					val output = FileOutputStream("$tesseractTempDataFilePath/$lang.traineddata")
+
+					val buffer = ByteArray(1024)
+					var read: Int
+					while (input.read(buffer).also { read = it } != -1) {
+						output.write(buffer, 0, read)
 					}
-					confidence += 0.1
+
+					input.close()
+					output.flush()
+					output.close()
+					MessageLog.i(TAG, "Finished Tesseract initialization.")
+				} catch (e: IOException) {
+					MessageLog.e(TAG, "IO EXCEPTION: ${e.stackTraceToString()}")
 				}
 			}
 		}
-
-		return results
 	}
 
-	////////////////////////////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////////
+    // ===========================================================================
+    // UTILITY FUNCTIONS
+    // ===========================================================================
+
+    /**
+	 * Convert absolute x-coordinate on 1080p to relative coordinate on different resolutions for the width.
+	 *
+	 * @param oldX The old absolute x-coordinate based off of the 1080p resolution.
+	 * @return The new relative x-coordinate based off of the current resolution.
+	 */
+	fun relWidth(oldX: Int): Int {
+		return if (isDefault) {
+			oldX
+		} else {
+			(oldX.toDouble() * (Screen.WIDTH.toDouble() / 1080.0)).toInt()
+		}
+	}
 
 	/**
+	 * Convert absolute y-coordinate on 1080p to relative coordinate on different resolutions for the height.
+	 *
+	 * @param oldY The old absolute y-coordinate based off of the 1080p resolution.
+	 * @return The new relative y-coordinate based off of the current resolution.
+	 */
+	fun relHeight(oldY: Int): Int {
+		return if (isDefault) {
+			oldY
+		} else {
+			(oldY.toDouble() * (Screen.HEIGHT.toDouble() / 2340.0)).toInt()
+		}
+	}
+
+	/**
+	 * Helper function to calculate the x-coordinate with relative offset.
+	 *
+	 * @param baseX The base x-coordinate.
+	 * @param offset The offset to add/subtract from the base coordinate and to make relative to.
+	 * @return The calculated relative x-coordinate.
+	 */
+	fun relX(baseX: Double, offset: Int): Int {
+		return baseX.toInt() + relWidth(offset)
+	}
+
+	/**
+	 * Helper function to calculate relative y-coordinate with relative offset.
+	 *
+	 * @param baseY The base y-coordinate.
+	 * @param offset The offset to add/subtract from the base coordinate and to make relative to.
+	 * @return The calculated relative y-coordinate.
+	 */
+	fun relY(baseY: Double, offset: Int): Int {
+		return baseY.toInt() + relHeight(offset)
+	}
+
+    // ===========================================================================
+    // BITMAP OPERATIONS
+    // ===========================================================================
+
+    /**
+	 * Open the source and template image files and return Bitmaps for them.
+	 *
+	 * @param templateName File name of the template image.
+	 * @return A Pair of source and template Bitmaps.
+	 */
+	fun getBitmaps(templateName: String): Pair<Bitmap, Bitmap?> {
+		var sourceBitmap: Bitmap? = null
+
+		while (sourceBitmap == null) {
+			sourceBitmap = MediaProjectionService.takeScreenshotNow(saveImage = bEnableDebugMode)
+		}
+
+		var templateBitmap: Bitmap?
+
+		// Get the Bitmap from the template image file inside the specified folder.
+		openAsset("images/$templateName.png").use { inputStream ->
+			// Get the Bitmap from the template image file and then start matching.
+			templateBitmap = BitmapFactory.decodeStream(inputStream)
+		}
+
+		return if (templateBitmap != null) {
+			Pair(sourceBitmap, templateBitmap)
+		} else {
+			if (bEnableDebugMode) {
+				MessageLog.e(TAG, "The template Bitmap is null.")
+			}
+
+			Pair(sourceBitmap, templateBitmap)
+		}
+	}
+
+	/**
+	 * Acquire the Bitmap for only the source screenshot.
+	 *
+	 * @return Bitmap of the source screenshot.
+	 */
+	private fun getSourceBitmap(): Bitmap {
+		var sourceBitmap: Bitmap? = null
+		while (sourceBitmap == null) {
+			sourceBitmap = MediaProjectionService.takeScreenshotNow(saveImage = bEnableDebugMode)
+		}
+
+		return sourceBitmap
+	}
+
+    /**
+	 * Safely creates a bitmap with bounds checking to prevent IllegalArgumentException.
+	 * Clamps individual dimensions to source bitmap bounds if they exceed limits.
+	 *
+	 * @param sourceBitmap The source bitmap to crop from.
+	 * @param x The x coordinate for the crop.
+	 * @param y The y coordinate for the crop.
+	 * @param width The width of the crop.
+	 * @param height The height of the crop.
+	 * @param description String description used for logging purposes.
+	 * @return The cropped bitmap or null if bounds are still invalid after clamping.
+	 */
+	private fun createSafeBitmap(sourceBitmap: Bitmap, x: Int, y: Int, width: Int, height: Int, description: String): Bitmap? {
+		// Clamp individual dimensions to source bitmap bounds.
+		val clampedX = x.coerceIn(0, sourceBitmap.width)
+		val clampedY = y.coerceIn(0, sourceBitmap.height)
+		val clampedWidth = width.coerceIn(1, sourceBitmap.width - clampedX)
+		val clampedHeight = height.coerceIn(1, sourceBitmap.height - clampedY)
+
+		// Check if any dimensions were clamped and log a warning.
+		if (x != clampedX || y != clampedY || width != clampedWidth || height != clampedHeight) {
+			MessageLog.w(TAG, "Clamped bounds for $description: original(x=$x, y=$y, width=$width, height=$height) -> clamped(x=$clampedX, y=$clampedY, width=$clampedWidth, height=$clampedHeight), sourceBitmap=${sourceBitmap.width}x${sourceBitmap.height}")
+		}
+
+		// Final validation to ensure the clamped dimensions are still valid.
+		if (clampedX < 0 || clampedY < 0 || clampedWidth <= 0 || clampedHeight <= 0 ||
+			clampedX + clampedWidth > sourceBitmap.width || clampedY + clampedHeight > sourceBitmap.height) {
+			MessageLog.e(TAG, "Invalid bounds for $description after clamping: x=$clampedX, y=$clampedY, width=$clampedWidth, height=$clampedHeight, sourceBitmap=${sourceBitmap.width}x${sourceBitmap.height}")
+			return null
+		}
+
+		return Bitmap.createBitmap(sourceBitmap, clampedX, clampedY, clampedWidth, clampedHeight)
+	}
+
+    // ===========================================================================
+    // MATCHING FUNCTIONS
+    // ===========================================================================
+
+    /**
 	 * Match between the source Bitmap from /files/temp/ and the template Bitmap from the assets folder.
 	 *
 	 * @param sourceBitmap Bitmap from the /files/temp/ folder.
@@ -198,7 +327,15 @@ class ImageUtils(context: Context) {
 	 * @param testScale Scale used by testing. Defaults to 0.0 which will fallback to the other scale conditions.
 	 * @return Pair of (success: Boolean, location: Point?) where success indicates if a match was found and location contains the match coordinates if found.
 	 */
-	private fun match(sourceBitmap: Bitmap, templateBitmap: Bitmap, templateName: String, region: IntArray = Screen.FULL, useSingleScale: Boolean = false, customConfidence: Double = 0.0, testScale: Double = 0.0): Pair<Boolean, Point?> {
+	private fun match(
+        sourceBitmap: Bitmap,
+        templateBitmap: Bitmap,
+        templateName: String,
+        region: IntArray = Screen.FULL,
+        useSingleScale: Boolean = false,
+        customConfidence: Double = 0.0,
+        testScale: Double = 0.0,
+    ): Pair<Boolean, Point?> {
 		// If a custom region was specified, crop the source screenshot.
 		val srcBitmap = if (!region.contentEquals(Screen.FULL)) {
 			// Validate region bounds to prevent IllegalArgumentException with creating a crop area that goes beyond the source Bitmap.
@@ -364,7 +501,7 @@ class ImageUtils(context: Context) {
 		return Pair(false, null)
 	}
 
-	/**
+    /**
 	 * Search through the whole source screenshot for all matches to the template image.
 	 *
 	 * @param sourceBitmap Bitmap from the /files/temp/ folder.
@@ -600,140 +737,11 @@ class ImageUtils(context: Context) {
 		return matchLocations
 	}
 
-	/**
-	 * Convert absolute x-coordinate on 1080p to relative coordinate on different resolutions for the width.
-	 *
-	 * @param oldX The old absolute x-coordinate based off of the 1080p resolution.
-	 * @return The new relative x-coordinate based off of the current resolution.
-	 */
-	fun relWidth(oldX: Int): Int {
-		return if (isDefault) {
-			oldX
-		} else {
-			(oldX.toDouble() * (displayWidth.toDouble() / 1080.0)).toInt()
-		}
-	}
+    // ===========================================================================
+    // IMAGE DETECTION
+    // ===========================================================================
 
-	/**
-	 * Convert absolute y-coordinate on 1080p to relative coordinate on different resolutions for the height.
-	 *
-	 * @param oldY The old absolute y-coordinate based off of the 1080p resolution.
-	 * @return The new relative y-coordinate based off of the current resolution.
-	 */
-	fun relHeight(oldY: Int): Int {
-		return if (isDefault) {
-			oldY
-		} else {
-			(oldY.toDouble() * (displayHeight.toDouble() / 2340.0)).toInt()
-		}
-	}
-
-	/**
-	 * Helper function to calculate the x-coordinate with relative offset.
-	 *
-	 * @param baseX The base x-coordinate.
-	 * @param offset The offset to add/subtract from the base coordinate and to make relative to.
-	 * @return The calculated relative x-coordinate.
-	 */
-	fun relX(baseX: Double, offset: Int): Int {
-		return baseX.toInt() + relWidth(offset)
-	}
-
-	/**
-	 * Helper function to calculate relative y-coordinate with relative offset.
-	 *
-	 * @param baseY The base y-coordinate.
-	 * @param offset The offset to add/subtract from the base coordinate and to make relative to.
-	 * @return The calculated relative y-coordinate.
-	 */
-	fun relY(baseY: Double, offset: Int): Int {
-		return baseY.toInt() + relHeight(offset)
-	}
-
-	////////////////////////////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////////
-
-	/**
-	 * Open the source and template image files and return Bitmaps for them.
-	 *
-	 * @param templateName File name of the template image.
-	 * @return A Pair of source and template Bitmaps.
-	 */
-	fun getBitmaps(templateName: String): Pair<Bitmap, Bitmap?> {
-		var sourceBitmap: Bitmap? = null
-
-		while (sourceBitmap == null) {
-			sourceBitmap = MediaProjectionService.takeScreenshotNow(saveImage = bEnableDebugMode)
-		}
-
-		var templateBitmap: Bitmap?
-
-		// Get the Bitmap from the template image file inside the specified folder.
-		myContext.assets?.open("images/$templateName.png").use { inputStream ->
-			// Get the Bitmap from the template image file and then start matching.
-			templateBitmap = BitmapFactory.decodeStream(inputStream)
-		}
-
-		return if (templateBitmap != null) {
-			Pair(sourceBitmap, templateBitmap)
-		} else {
-			if (bEnableDebugMode) {
-				MessageLog.e(TAG, "The template Bitmap is null.")
-			}
-
-			Pair(sourceBitmap, templateBitmap)
-		}
-	}
-
-	/**
-	 * Acquire the Bitmap for only the source screenshot.
-	 *
-	 * @return Bitmap of the source screenshot.
-	 */
-	private fun getSourceBitmap(): Bitmap {
-		var sourceBitmap: Bitmap? = null
-		while (sourceBitmap == null) {
-			sourceBitmap = MediaProjectionService.takeScreenshotNow(saveImage = bEnableDebugMode)
-		}
-
-		return sourceBitmap
-	}
-
-	/**
-	 * Safely creates a bitmap with bounds checking to prevent IllegalArgumentException.
-	 * Clamps individual dimensions to source bitmap bounds if they exceed limits.
-	 *
-	 * @param sourceBitmap The source bitmap to crop from.
-	 * @param x The x coordinate for the crop.
-	 * @param y The y coordinate for the crop.
-	 * @param width The width of the crop.
-	 * @param height The height of the crop.
-	 * @param context String describing the context for error logging.
-	 * @return The cropped bitmap or null if bounds are still invalid after clamping.
-	 */
-	private fun createSafeBitmap(sourceBitmap: Bitmap, x: Int, y: Int, width: Int, height: Int, context: String): Bitmap? {
-		// Clamp individual dimensions to source bitmap bounds.
-		val clampedX = x.coerceIn(0, sourceBitmap.width)
-		val clampedY = y.coerceIn(0, sourceBitmap.height)
-		val clampedWidth = width.coerceIn(1, sourceBitmap.width - clampedX)
-		val clampedHeight = height.coerceIn(1, sourceBitmap.height - clampedY)
-
-		// Check if any dimensions were clamped and log a warning.
-		if (x != clampedX || y != clampedY || width != clampedWidth || height != clampedHeight) {
-			MessageLog.w(TAG, "Clamped bounds for $context: original(x=$x, y=$y, width=$width, height=$height) -> clamped(x=$clampedX, y=$clampedY, width=$clampedWidth, height=$clampedHeight), sourceBitmap=${sourceBitmap.width}x${sourceBitmap.height}")
-		}
-
-		// Final validation to ensure the clamped dimensions are still valid.
-		if (clampedX < 0 || clampedY < 0 || clampedWidth <= 0 || clampedHeight <= 0 ||
-			clampedX + clampedWidth > sourceBitmap.width || clampedY + clampedHeight > sourceBitmap.height) {
-			MessageLog.e(TAG, "Invalid bounds for $context after clamping: x=$clampedX, y=$clampedY, width=$clampedWidth, height=$clampedHeight, sourceBitmap=${sourceBitmap.width}x${sourceBitmap.height}")
-			return null
-		}
-
-		return Bitmap.createBitmap(sourceBitmap, clampedX, clampedY, clampedWidth, clampedHeight)
-	}
-
-	/**
+    /**
 	 * Finds the location of the specified image from the /images/ folder inside assets.
 	 *
 	 * @param templateName File name of the template image.
@@ -742,7 +750,12 @@ class ImageUtils(context: Context) {
 	 * @param suppressError Whether or not to suppress saving error messages to the log. Defaults to false.
 	 * @return Pair object consisting of the Point object containing the location of the match and the source screenshot. Can be null.
 	 */
-	fun findImage(templateName: String, tries: Int = 5, region: IntArray = Screen.FULL, suppressError: Boolean = false): Pair<Point?, Bitmap> {
+	fun findImage(
+        templateName: String,
+        tries: Int = 5,
+        region: IntArray = Screen.FULL,
+        suppressError: Boolean = false,
+    ): Pair<Point?, Bitmap> {
 		var numberOfTries = tries
 
 		if (bEnableDebugMode) {
@@ -777,7 +790,7 @@ class ImageUtils(context: Context) {
 		return Pair(null, sourceBitmap)
 	}
 
-	/**
+    /**
 	 * Confirms whether or not the bot is at the specified location from the /headers/ folder inside assets.
 	 *
 	 * @param templateName File name of the template image.
@@ -822,7 +835,7 @@ class ImageUtils(context: Context) {
 		return false
 	}
 
-	/**
+    /**
 	 * Finds all occurrences of the specified image in the images folder.
 	 *
 	 * @param templateName File name of the template image.
@@ -861,7 +874,7 @@ class ImageUtils(context: Context) {
 	 */
 	private fun findAllWithBitmap(templateName: String, sourceBitmap: Bitmap, region: IntArray = Screen.FULL): ArrayList<Point> {
 		var templateBitmap: Bitmap?
-		myContext.assets?.open("images/$templateName.png").use { inputStream ->
+		openAsset("images/$templateName.png").use { inputStream ->
 			templateBitmap = BitmapFactory.decodeStream(inputStream)
 		}
 
@@ -884,7 +897,7 @@ class ImageUtils(context: Context) {
 		return arrayListOf()
 	}
 
-	/**
+    /**
 	 * Check if the color at the specified coordinates matches the given RGB value.
 	 *
 	 * @param x X coordinate to check.
@@ -924,10 +937,100 @@ class ImageUtils(context: Context) {
 		return redMatch && greenMatch && blueMatch
 	}
 
-	////////////////////////////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////////
+    // ===========================================================================
+    // TEXT-BASED UTILITIES
+    // ===========================================================================
+
+    /**
+	 * Constructs the final integer value from matched template locations of numbers by analyzing spatial arrangement.
+	 *
+	 * The function is designed for OCR-like scenarios where individual character templates
+	 * are matched separately and need to be reconstructed into a complete number.
+	 *
+	 * If matchResults contains: {"+" -> [(10, 20)], "1" -> [(15, 20)], "2" -> [(20, 20)]}, it returns: 12 (from string "+12").
+	 *
+	 * @param matchResults Map of template names (e.g., "0", "1", "2", "+") to their match locations.
+	 *
+	 * @return The constructed integer value or -1 if it failed.
+	 */
+	private fun constructIntegerFromMatches(matchResults: Map<String, MutableList<Point>>): Int {
+		// Collect all matches with their template names.
+		val allMatches = mutableListOf<Pair<String, Point>>()
+		matchResults.forEach { (templateName, points) ->
+			points.forEach { point ->
+				allMatches.add(Pair(templateName, point))
+			}
+		}
+
+		if (allMatches.isEmpty()) {
+			if (bEnableDebugMode) {
+                MessageLog.w(TAG, "No matches found to construct integer value.")
+            }
+			return 0
+		}
+
+		// Sort matches by x-coordinate (left to right).
+		allMatches.sortBy { it.second.x }
+		if (bEnableDebugMode) {
+            MessageLog.d(TAG, "Sorted matches: ${allMatches.map { "${it.first}@(${it.second.x}, ${it.second.y})" }}")
+        }
+
+		// Construct the string representation and then validate the format: start with + and contain only digits after.
+		val constructedString = allMatches.joinToString("") { it.first }
+		MessageLog.i(TAG, "Constructed string: \"$constructedString\".")
+
+		// Extract the numeric part and convert to integer.
+		return try {
+			val numericPart = if (constructedString.startsWith("+") && constructedString.substring(1).isNotEmpty()) {
+				constructedString.substring(1)
+			} else {
+				constructedString
+			}
+
+			val result = numericPart.toInt()
+			if (bEnableDebugMode) {
+                MessageLog.d(TAG, "Successfully constructed integer value: $result from \"$constructedString\".")
+            }
+			result
+		} catch (e: NumberFormatException) {
+			MessageLog.e(TAG, "Could not convert \"$constructedString\" to integer: ${e.stackTraceToString()}")
+			0
+		}
+	}
 
 	/**
+	 * Calculates the Pearson correlation coefficient between two arrays of pixel values.
+	 *
+	 * The Pearson correlation coefficient measures the linear correlation between two variables,
+	 * ranging from -1 (perfect negative correlation) to +1 (perfect positive correlation).
+	 * A value of 0 indicates no linear correlation.
+	 *
+	 * @param array1 First array of pixel values from the template image.
+	 * @param array2 Second array of pixel values from the matched region.
+	 * @return Correlation coefficient between -1.0 and +1.0, or 0.0 if arrays are invalid
+	 */
+	private fun calculateCorrelation(array1: DoubleArray, array2: DoubleArray): Double {
+		if (array1.size != array2.size || array1.isEmpty()) {
+			return 0.0
+		}
+
+		val n = array1.size
+		val sum1 = array1.sum()
+		val sum2 = array2.sum()
+		val sum1Sq = array1.sumOf { it * it }
+		val sum2Sq = array2.sumOf { it * it }
+		val pSum = array1.zip(array2).sumOf { it.first * it.second }
+
+		// Calculate the numerator: n*Σ(xy) - Σx*Σy
+		val num = pSum - (sum1 * sum2 / n)
+		// Calculate the denominator: sqrt((n*Σx² - (Σx)²) * (n*Σy² - (Σy)²))
+		val den = sqrt((sum1Sq - sum1 * sum1 / n) * (sum2Sq - sum2 * sum2 / n))
+
+		// Return the correlation coefficient, handling division by zero.
+		return if (den == 0.0) 0.0 else num / den
+	}
+
+    /**
 	 * Perform OCR text detection using Tesseract along with some image manipulation via thresholding to make the cropped screenshot black and white using OpenCV.
 	 *
 	 * @param increment Increments the threshold by this value. Defaults to 0.0.
@@ -1012,6 +1115,10 @@ class ImageUtils(context: Context) {
 
 		return result
 	}
+
+    // ===========================================================================
+    // COMPLEX GAME-SPECIFIC UTILITIES
+    // ===========================================================================
 
 	/**
 	 * Find the failure percentage chance on the currently selected stat.
@@ -1431,7 +1538,7 @@ class ImageUtils(context: Context) {
 		}
 	}
 
-	/**
+    /**
 	 * Analyze the relationship bars on the Training screen for the currently selected training. Parameter is optional to allow for thread-safe operations.
 	 *
 	 * @param sourceBitmap Bitmap of the source image separately taken. Defaults to null.
@@ -1439,7 +1546,7 @@ class ImageUtils(context: Context) {
 	 * @return A list of the results for each relationship bar.
 	 */
 	fun analyzeRelationshipBars(sourceBitmap: Bitmap? = null): ArrayList<BarFillResult> {
-		val customRegion = intArrayOf(displayWidth - (displayWidth / 3), 0, (displayWidth / 3), displayHeight - (displayHeight / 3))
+		val customRegion = intArrayOf(Screen.WIDTH - (Screen.WIDTH / 3), 0, (Screen.WIDTH / 3), Screen.HEIGHT - (Screen.HEIGHT / 3))
 
 		// Take a single screenshot first to avoid buffer overflow.
 		val sourceBitmap = sourceBitmap ?: getSourceBitmap()
@@ -1809,56 +1916,7 @@ class ImageUtils(context: Context) {
 		return result
 	}
 
-	/**
-	 * Initialize Tesseract for future OCR operations. Make sure to put your .traineddata inside the root of the /assets/ folder.
-	 */
-	private fun initTesseract() {
-		val externalFilesDir: File? = myContext.getExternalFilesDir(null)
-		val tempDirectory: String = externalFilesDir?.absolutePath + "/tesseract/tessdata/"
-		val newTempDirectory = File(tempDirectory)
-
-		// If the /files/temp/ folder does not exist, create it.
-		if (!newTempDirectory.exists()) {
-			val successfullyCreated: Boolean = newTempDirectory.mkdirs()
-
-			// If the folder was not able to be created for some reason, log the error and stop the MediaProjection Service.
-			if (!successfullyCreated) {
-				MessageLog.e(TAG, "Failed to create the /files/tesseract/tessdata/ folder.")
-			} else {
-				MessageLog.i(TAG, "Successfully created /files/tesseract/tessdata/ folder.")
-			}
-		} else {
-			MessageLog.i(TAG, "/files/tesseract/tessdata/ folder already exists.")
-		}
-
-		// If the traineddata is not in the application folder, copy it there from assets.
-		tesseractLanguages.forEach { lang ->
-			val trainedDataPath = File(tempDirectory, "$lang.traineddata")
-			if (!trainedDataPath.exists()) {
-				try {
-					MessageLog.i(TAG, "Starting Tesseract initialization.")
-					val input = myContext.assets.open("$lang.traineddata")
-
-					val output = FileOutputStream("$tempDirectory/$lang.traineddata")
-
-					val buffer = ByteArray(1024)
-					var read: Int
-					while (input.read(buffer).also { read = it } != -1) {
-						output.write(buffer, 0, read)
-					}
-
-					input.close()
-					output.flush()
-					output.close()
-					MessageLog.i(TAG, "Finished Tesseract initialization.")
-				} catch (e: IOException) {
-					MessageLog.e(TAG, "IO EXCEPTION: ${e.stackTraceToString()}")
-				}
-			}
-		}
-	}
-
-	/**
+    /**
 	 * Determines the stat gain values from training. Parameters are optional to allow for thread-safe operations.
 	 *
 	 * This function uses template matching to find individual digits and the "+" symbol in the
@@ -1896,7 +1954,7 @@ class ImageUtils(context: Context) {
 			// Pre-load all template bitmaps to avoid thread contention
 			val templateBitmaps = mutableMapOf<String, Bitmap?>()
 			for (templateName in templates) {
-				myContext.assets?.open("images/$templateName.png").use { inputStream ->
+				openAsset("images/$templateName.png").use { inputStream ->
 					templateBitmaps[templateName] = BitmapFactory.decodeStream(inputStream)
 				}
 			}
@@ -2208,92 +2266,69 @@ class ImageUtils(context: Context) {
 		return matchResults
 	}
 
-	/**
-	 * Constructs the final integer value from matched template locations of numbers by analyzing spatial arrangement.
-	 *
-	 * The function is designed for OCR-like scenarios where individual character templates
-	 * are matched separately and need to be reconstructed into a complete number.
-	 *
-	 * If matchResults contains: {"+" -> [(10, 20)], "1" -> [(15, 20)], "2" -> [(20, 20)]}, it returns: 12 (from string "+12").
-	 *
-	 * @param matchResults Map of template names (e.g., "0", "1", "2", "+") to their match locations.
-	 *
-	 * @return The constructed integer value or -1 if it failed.
-	 */
-	private fun constructIntegerFromMatches(matchResults: Map<String, MutableList<Point>>): Int {
-		// Collect all matches with their template names.
-		val allMatches = mutableListOf<Pair<String, Point>>()
-		matchResults.forEach { (templateName, points) ->
-			points.forEach { point ->
-				allMatches.add(Pair(templateName, point))
-			}
-		}
+    /**
+    * Starts a test to determine what scales are working on this device by looping through some template images.
+    *
+    * @return A mapping of template image names used to test and their lists of working scales.
+    */
+    fun startTemplateMatchingTest(): MutableMap<String, MutableList<ScaleConfidenceResult>> {
+        val results = mutableMapOf<String, MutableList<ScaleConfidenceResult>>(
+            "energy" to mutableListOf(),
+            "tazuna" to mutableListOf(),
+            "skill_points" to mutableListOf()
+        )
 
-		if (allMatches.isEmpty()) {
-			if (bEnableDebugMode) {
-                MessageLog.w(TAG, "No matches found to construct integer value.")
+        val defaultConfidence = 0.8
+        val testScaleDecimalFormat = DecimalFormat("#.##")
+        val testConfidenceDecimalFormat = DecimalFormat("#.##")
+
+        for (key in results.keys) {
+            val (sourceBitmap, templateBitmap) = getBitmaps(key)
+
+            // First, try the default values of 1.0 for scale and 0.8 for confidence.
+            val (success, _) = match(
+                sourceBitmap,
+                templateBitmap!!,
+                key,
+                useSingleScale = true,
+                customConfidence = defaultConfidence,
+                testScale = 1.0,
+            )
+            if (success) {
+                MessageLog.i(TAG, "[TEST] Initial test for $key succeeded at the default values.")
+                results[key]?.add(ScaleConfidenceResult(1.0, defaultConfidence))
+                continue // If it works, skip to the next template.
             }
-			return 0
-		}
 
-		// Sort matches by x-coordinate (left to right).
-		allMatches.sortBy { it.second.x }
-		if (bEnableDebugMode) {
-            MessageLog.d(TAG, "Sorted matches: ${allMatches.map { "${it.first}@(${it.second.x}, ${it.second.y})" }}")
+            // If not, try all scale/confidence combinations.
+            val scalesToTest = mutableListOf<Double>()
+            var scale = 0.5
+            while (scale <= 3.0) {
+                scalesToTest.add(testScaleDecimalFormat.format(scale).toDouble())
+                scale += 0.1
+            }
+
+            for (testScale in scalesToTest) {
+                var confidence = 0.6
+                while (confidence <= 1.0) {
+                    val formattedConfidence = testConfidenceDecimalFormat.format(confidence).toDouble()
+                    val (testSuccess, _) = match(
+                        sourceBitmap,
+                        templateBitmap,
+                        key,
+                        useSingleScale = true,
+                        customConfidence = formattedConfidence,
+                        testScale = testScale,
+                    )
+                    if (testSuccess) {
+                        MessageLog.i(TAG, "[TEST] Test for $key succeeded at scale $testScale and confidence $formattedConfidence.")
+                        results[key]?.add(ScaleConfidenceResult(testScale, formattedConfidence))
+                    }
+                    confidence += 0.1
+                }
+            }
         }
 
-		// Construct the string representation and then validate the format: start with + and contain only digits after.
-		val constructedString = allMatches.joinToString("") { it.first }
-		MessageLog.i(TAG, "Constructed string: \"$constructedString\".")
-
-		// Extract the numeric part and convert to integer.
-		return try {
-			val numericPart = if (constructedString.startsWith("+") && constructedString.substring(1).isNotEmpty()) {
-				constructedString.substring(1)
-			} else {
-				constructedString
-			}
-
-			val result = numericPart.toInt()
-			if (bEnableDebugMode) {
-                MessageLog.d(TAG, "Successfully constructed integer value: $result from \"$constructedString\".")
-            }
-			result
-		} catch (e: NumberFormatException) {
-			MessageLog.e(TAG, "Could not convert \"$constructedString\" to integer: ${e.stackTraceToString()}")
-			0
-		}
-	}
-
-	/**
-	 * Calculates the Pearson correlation coefficient between two arrays of pixel values.
-	 *
-	 * The Pearson correlation coefficient measures the linear correlation between two variables,
-	 * ranging from -1 (perfect negative correlation) to +1 (perfect positive correlation).
-	 * A value of 0 indicates no linear correlation.
-	 *
-	 * @param array1 First array of pixel values from the template image.
-	 * @param array2 Second array of pixel values from the matched region.
-	 * @return Correlation coefficient between -1.0 and +1.0, or 0.0 if arrays are invalid
-	 */
-	private fun calculateCorrelation(array1: DoubleArray, array2: DoubleArray): Double {
-		if (array1.size != array2.size || array1.isEmpty()) {
-			return 0.0
-		}
-
-		val n = array1.size
-		val sum1 = array1.sum()
-		val sum2 = array2.sum()
-		val sum1Sq = array1.sumOf { it * it }
-		val sum2Sq = array2.sumOf { it * it }
-		val pSum = array1.zip(array2).sumOf { it.first * it.second }
-
-		// Calculate the numerator: n*Σ(xy) - Σx*Σy
-		val num = pSum - (sum1 * sum2 / n)
-		// Calculate the denominator: sqrt((n*Σx² - (Σx)²) * (n*Σy² - (Σy)²))
-		val den = sqrt((sum1Sq - sum1 * sum1 / n) * (sum2Sq - sum2 * sum2 / n))
-
-		// Return the correlation coefficient, handling division by zero.
-		return if (den == 0.0) 0.0 else num / den
-	}
+        return results
+    }
 }

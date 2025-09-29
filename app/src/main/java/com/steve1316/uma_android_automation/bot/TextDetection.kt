@@ -10,7 +10,7 @@ import com.steve1316.uma_android_automation.utils.UserConfig
 import net.ricecode.similarity.JaroWinklerStrategy
 import net.ricecode.similarity.StringSimilarityServiceImpl
 
-class TextDetection(private val game: Game, private val imageUtils: ImageUtils) {
+class TextDetection(private val game: Game) {
 	private val TAG: String = "TextDetection"
 		
 	private var result = ""
@@ -169,7 +169,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 			return Game.Date(3, "Early", 1, 49)
 		} else if (dateString.lowercase().contains("debut")) {
 			// Special handling for the Pre-Debut phase.
-			val turnsRemaining = imageUtils.determineDayForExtraRace()
+			val turnsRemaining = ImageUtils.determineDayForExtraRace()
 
 			// Pre-Debut ends on Early July (turn 13), so we calculate backwards.
 			// This includes the Race day.
@@ -278,7 +278,7 @@ class TextDetection(private val game: Game, private val imageUtils: ImageUtils) 
 		while (true) {
 			// Perform Tesseract OCR detection.
 			if ((255.0 - UserConfig.config.ocr.ocrThreshold - increment) > 0.0) {
-				result = imageUtils.findText(increment)
+				result = ImageUtils.findText(increment)
 			} else {
 				break
 			}
