@@ -198,9 +198,9 @@ class ImageUtils(context: Context) {
 	 * @param testScale Scale used by testing. Defaults to 0.0 which will fallback to the other scale conditions.
 	 * @return Pair of (success: Boolean, location: Point?) where success indicates if a match was found and location contains the match coordinates if found.
 	 */
-	private fun match(sourceBitmap: Bitmap, templateBitmap: Bitmap, templateName: String, region: IntArray = intArrayOf(0, 0, 0, 0), useSingleScale: Boolean = false, customConfidence: Double = 0.0, testScale: Double = 0.0): Pair<Boolean, Point?> {
+	private fun match(sourceBitmap: Bitmap, templateBitmap: Bitmap, templateName: String, region: IntArray = Screen.FULL, useSingleScale: Boolean = false, customConfidence: Double = 0.0, testScale: Double = 0.0): Pair<Boolean, Point?> {
 		// If a custom region was specified, crop the source screenshot.
-		val srcBitmap = if (!region.contentEquals(intArrayOf(0, 0, 0, 0))) {
+		val srcBitmap = if (!region.contentEquals(Screen.FULL)) {
 			// Validate region bounds to prevent IllegalArgumentException with creating a crop area that goes beyond the source Bitmap.
 			val x = max(0, region[0].coerceAtMost(sourceBitmap.width))
 			val y = max(0, region[1].coerceAtMost(sourceBitmap.height))
@@ -343,7 +343,7 @@ class ImageUtils(context: Context) {
 				matchLocation.y += (templateMat.rows() / 2)
 
 				// If a custom region was specified, readjust the coordinates to reflect the fullscreen source screenshot.
-				if (!region.contentEquals(intArrayOf(0, 0, 0, 0))) {
+				if (!region.contentEquals(Screen.FULL)) {
 					matchLocation.x = sourceBitmap.width - (sourceBitmap.width - (region[0] + matchLocation.x))
 					matchLocation.y = sourceBitmap.height - (sourceBitmap.height - (region[1] + matchLocation.y))
 				}
@@ -373,13 +373,13 @@ class ImageUtils(context: Context) {
 	 * @param customConfidence Specify a custom confidence. Defaults to the confidence set in the app's settings.
 	 * @return ArrayList of Point objects that represents the matches found on the source screenshot.
 	 */
-	private fun matchAll(sourceBitmap: Bitmap, templateBitmap: Bitmap, region: IntArray = intArrayOf(0, 0, 0, 0), customConfidence: Double = 0.0): java.util.ArrayList<Point> {
+	private fun matchAll(sourceBitmap: Bitmap, templateBitmap: Bitmap, region: IntArray = Screen.FULL, customConfidence: Double = 0.0): java.util.ArrayList<Point> {
 		// Create a local matchLocations list for this method
 		var matchLocation = Point()
 		val matchLocations = arrayListOf<Point>()
 		
 		// If a custom region was specified, crop the source screenshot.
-		val srcBitmap = if (!region.contentEquals(intArrayOf(0, 0, 0, 0))) {
+		val srcBitmap = if (!region.contentEquals(Screen.FULL)) {
 			// Validate region bounds to prevent IllegalArgumentException with creating a crop area that goes beyond the source Bitmap.
 			val x = max(0, region[0].coerceAtMost(sourceBitmap.width))
 			val y = max(0, region[1].coerceAtMost(sourceBitmap.height))
@@ -492,7 +492,7 @@ class ImageUtils(context: Context) {
 				matchLocation.y += (clampedTemplateMat.rows() / 2)
 
 				// If a custom region was specified, readjust the coordinates to reflect the fullscreen source screenshot.
-				if (!region.contentEquals(intArrayOf(0, 0, 0, 0))) {
+				if (!region.contentEquals(Screen.FULL)) {
 					matchLocation.x = sourceBitmap.width - (sourceBitmap.width - (region[0] + matchLocation.x))
 					matchLocation.y = sourceBitmap.height - (sourceBitmap.height - (region[1] + matchLocation.y))
 				}
@@ -510,7 +510,7 @@ class ImageUtils(context: Context) {
 				matchLocation.y += (clampedTemplateMat.rows() / 2)
 
 				// If a custom region was specified, readjust the coordinates to reflect the fullscreen source screenshot.
-				if (!region.contentEquals(intArrayOf(0, 0, 0, 0))) {
+				if (!region.contentEquals(Screen.FULL)) {
 					matchLocation.x = sourceBitmap.width - (sourceBitmap.width - (region[0] + matchLocation.x))
 					matchLocation.y = sourceBitmap.height - (sourceBitmap.height - (region[1] + matchLocation.y))
 				}
@@ -549,7 +549,7 @@ class ImageUtils(context: Context) {
 				tempMatchLocation.y += (clampedTemplateMat.rows() / 2)
 
 				// If a custom region was specified, readjust the coordinates to reflect the fullscreen source screenshot.
-				if (!region.contentEquals(intArrayOf(0, 0, 0, 0))) {
+				if (!region.contentEquals(Screen.FULL)) {
 					tempMatchLocation.x = sourceBitmap.width - (sourceBitmap.width - (region[0] + tempMatchLocation.x))
 					tempMatchLocation.y = sourceBitmap.height - (sourceBitmap.height - (region[1] + tempMatchLocation.y))
 				}
@@ -574,7 +574,7 @@ class ImageUtils(context: Context) {
 				tempMatchLocation.y += (clampedTemplateMat.rows() / 2)
 
 				// If a custom region was specified, readjust the coordinates to reflect the fullscreen source screenshot.
-				if (!region.contentEquals(intArrayOf(0, 0, 0, 0))) {
+				if (!region.contentEquals(Screen.FULL)) {
 					tempMatchLocation.x = sourceBitmap.width - (sourceBitmap.width - (region[0] + tempMatchLocation.x))
 					tempMatchLocation.y = sourceBitmap.height - (sourceBitmap.height - (region[1] + tempMatchLocation.y))
 				}
@@ -742,7 +742,7 @@ class ImageUtils(context: Context) {
 	 * @param suppressError Whether or not to suppress saving error messages to the log. Defaults to false.
 	 * @return Pair object consisting of the Point object containing the location of the match and the source screenshot. Can be null.
 	 */
-	fun findImage(templateName: String, tries: Int = 5, region: IntArray = intArrayOf(0, 0, 0, 0), suppressError: Boolean = false): Pair<Point?, Bitmap> {
+	fun findImage(templateName: String, tries: Int = 5, region: IntArray = Screen.FULL, suppressError: Boolean = false): Pair<Point?, Bitmap> {
 		var numberOfTries = tries
 
 		if (bEnableDebugMode) {
@@ -786,7 +786,7 @@ class ImageUtils(context: Context) {
 	 * @param suppressError Whether or not to suppress saving error messages to the log.
 	 * @return True if the current location is at the specified location. False otherwise.
 	 */
-	fun confirmLocation(templateName: String, tries: Int = 5, region: IntArray = intArrayOf(0, 0, 0, 0), suppressError: Boolean = false): Boolean {
+	fun confirmLocation(templateName: String, tries: Int = 5, region: IntArray = Screen.FULL, suppressError: Boolean = false): Boolean {
 		var numberOfTries = tries
 
 		if (bEnableDebugMode) {
@@ -829,7 +829,7 @@ class ImageUtils(context: Context) {
 	 * @param region Specify the region consisting of (x, y, width, height) of the source screenshot to template match. Defaults to (0, 0, 0, 0) which is equivalent to searching the full image.
 	 * @return An ArrayList of Point objects containing all the occurrences of the specified image or null if not found.
 	 */
-	fun findAll(templateName: String, region: IntArray = intArrayOf(0, 0, 0, 0)): ArrayList<Point> {
+	fun findAll(templateName: String, region: IntArray = Screen.FULL): ArrayList<Point> {
 		val (sourceBitmap, templateBitmap) = getBitmaps(templateName)
 
 		if (templateBitmap != null) {
@@ -859,7 +859,7 @@ class ImageUtils(context: Context) {
 	 * @param region Specify the region consisting of (x, y, width, height) of the source screenshot to template match. Defaults to (0, 0, 0, 0) which is equivalent to searching the full image.
 	 * @return An ArrayList of Point objects containing all the occurrences of the specified image or null if not found.
 	 */
-	private fun findAllWithBitmap(templateName: String, sourceBitmap: Bitmap, region: IntArray = intArrayOf(0, 0, 0, 0)): ArrayList<Point> {
+	private fun findAllWithBitmap(templateName: String, sourceBitmap: Bitmap, region: IntArray = Screen.FULL): ArrayList<Point> {
 		var templateBitmap: Bitmap?
 		myContext.assets?.open("images/$templateName.png").use { inputStream ->
 			templateBitmap = BitmapFactory.decodeStream(inputStream)
