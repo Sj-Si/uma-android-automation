@@ -77,9 +77,9 @@ class MyAccessibilityService : AccessibilityService() {
 	/**
 	 * This receiver will wait the specified seconds to account for ping or loading.
 	 */
-	private fun Double.wait() {
+	private fun wait(seconds: Double) {
 		runBlocking {
-			delay((this@wait * 1000).toLong())
+			delay((seconds * 1000).toLong())
 		}
 	}
 	
@@ -174,14 +174,14 @@ class MyAccessibilityService : AccessibilityService() {
 		while (tries > 0) {
 			dispatchGesture(gesture, null, null)
 			if (!ignoreWait) {
-				0.5.wait()
+				wait(0.5)
 			}
 			
 			tries -= 1
 		}
 		
 		if (!ignoreWait) {
-			0.5.wait()
+			wait(0.5)
 		}
 		
 		return dispatchResult
@@ -243,7 +243,7 @@ class MyAccessibilityService : AccessibilityService() {
 		
 		val dispatchResult = dispatchGesture(gesture, null, null)
 		if (!ignoreWait) {
-			0.5.wait()
+			wait(0.5)
 		}
 		
 		if (!dispatchResult) {
@@ -284,7 +284,7 @@ class MyAccessibilityService : AccessibilityService() {
 		
 		val dispatchResult = dispatchGesture(gesture, null, null)
 		if (!ignoreWait) {
-			0.5.wait()
+			wait(0.5)
 		}
 		
 		return dispatchResult
