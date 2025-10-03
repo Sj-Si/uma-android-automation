@@ -34,6 +34,7 @@ import kotlin.text.replace
 import com.steve1316.uma_android_automation.utils.UserConfig
 import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.Screen
+import com.steve1316.uma_android_automation.components.*
 import java.io.InputStream
 
 /** Utility functions for image processing via CV like OpenCV. */
@@ -289,7 +290,11 @@ object ImageUtils {
 	 * @param description String description used for logging purposes.
 	 * @return The cropped bitmap or null if bounds are still invalid after clamping.
 	 */
-	private fun createSafeBitmap(sourceBitmap: Bitmap, x: Int, y: Int, width: Int, height: Int, description: String): Bitmap? {
+	private fun createSafeBitmap(sourceBitmap: Bitmap?, x: Int, y: Int, width: Int, height: Int, description: String): Bitmap? {
+		if (sourceBitmap == null) {
+			MessageLog.d("ImageUtils::createSafeBitmap()", "sourceBitmap is NULL.")
+			return null
+		}
 		// Clamp individual dimensions to source bitmap bounds.
 		val clampedX = x.coerceIn(0, sourceBitmap.width)
 		val clampedY = y.coerceIn(0, sourceBitmap.height)
@@ -806,7 +811,7 @@ object ImageUtils {
 			MessageLog.d(TAG, "Starting process to find the ${templateName.uppercase()} header image...")
 		}
 
-		var (sourceBitmap, templateBitmap) = getBitmaps(templateName + "_header")
+		var (sourceBitmap, templateBitmap) = getBitmaps(templateName)
 
 		while (numberOfTries > 0) {
 			if (templateBitmap != null) {
@@ -1040,8 +1045,8 @@ object ImageUtils {
 		val (sourceBitmap, templateBitmap) = getBitmaps("shift")
 
 		// Acquire the location of the energy text image.
-		val (_, energyTemplateBitmap) = getBitmaps("energy")
-		val (_, matchLocation) = match(sourceBitmap, energyTemplateBitmap!!, "energy")
+		val (_, energyTemplateBitmap) = getBitmaps("career/energy")
+		val (_, matchLocation) = match(sourceBitmap, energyTemplateBitmap!!, "career/energy")
 		if (matchLocation == null) {
 			MessageLog.w(TAG, "Could not proceed with OCR text detection due to not being able to find the energy template on the source image.")
 			return "empty!"
@@ -1133,7 +1138,7 @@ object ImageUtils {
 	fun findTrainingFailureChance(sourceBitmap: Bitmap? = null, trainingSelectionLocation: Point? = null): Int {
 		// Crop the source screenshot to hold the success percentage only.
 		val (trainingSelectionLocation, sourceBitmap) = if (sourceBitmap == null && trainingSelectionLocation == null) {
-			findImage("training_failure_chance")
+			TrainingFailureChance.find()
 		} else {
 			Pair(trainingSelectionLocation, sourceBitmap)
 		}
@@ -1237,7 +1242,7 @@ object ImageUtils {
 	 */
 	fun determineDayForExtraRace(): Int {
 		var result = -1
-		val (energyTextLocation, sourceBitmap) = findImage("energy", tries = 1, region = Screen.TOP_HALF)
+		val (energyTextLocation, sourceBitmap) = LabelEnergy.find()
 
 		if (energyTextLocation != null) {
 			// Crop the source screenshot to only contain the day number.
@@ -1448,7 +1453,7 @@ object ImageUtils {
 	 * @return Number of skill points or -1 if not found.
 	 */
 	fun determineSkillPoints(): Int {
-		val (skillPointLocation, sourceBitmap) = findImage("skill_points", tries = 1)
+		val (skillPointLocation, sourceBitmap) = StatTableHeaderSkillPoints.find()
 
 		return if (skillPointLocation != null) {
 			val croppedBitmap = if (isTablet) {
@@ -1716,7 +1721,7 @@ object ImageUtils {
 	 * @return The preferred distance (Sprint, Mile, Medium, or Long) or Medium as default if no aptitude is detected.
 	 */
 	fun determinePreferredDistance(): String {
-		val (distanceLocation, sourceBitmap) = findImage("stat_distance", tries = 1, region = Screen.MIDDLE)
+		val (distanceLocation, sourceBitmap) = LabelStatDistance.find()
 		if (distanceLocation == null) {
 			MessageLog.e(TAG, "Could not determine the preferred distance. Setting to Medium by default.")
 			return "Medium"
@@ -1768,7 +1773,7 @@ object ImageUtils {
 	 * @return The mapping of all 5 stats names to their respective integer values.
 	 */
 	fun determineStatValues(statValueMapping: MutableMap<String, Int>): MutableMap<String, Int> {
-		val (skillPointsLocation, sourceBitmap) = findImage("skill_points")
+		val (skillPointsLocation, sourceBitmap) = StatTableHeaderSkillPoints.find()
 
 		if (skillPointsLocation != null) {
 			// Process all stats at once using the mapping
@@ -1841,7 +1846,7 @@ object ImageUtils {
 	 * @return The detected date string from the game screen, or empty string if detection fails.
 	 */
 	fun determineDayNumber(): String {
-		val (energyLocation, sourceBitmap) = findImage("energy")
+		val (energyLocation, sourceBitmap) = LabelEnergy.find()
 		var result = ""
 		if (energyLocation != null) {
 			val croppedBitmap = createSafeBitmap(sourceBitmap, relX(energyLocation.x, -268), relY(energyLocation.y, -180), relWidth(308), relHeight(35), "determineDayNumber")
@@ -1943,7 +1948,7 @@ object ImageUtils {
 		)
 
 		val (skillPointsLocation, sourceBitmap) = if (sourceBitmap == null && skillPointsLocation == null) {
-			findImage("skill_points")
+			StatTableHeaderSkillPoints.find()
 		} else {
 			Pair(skillPointsLocation, sourceBitmap)
 		}
@@ -2273,9 +2278,9 @@ object ImageUtils {
     */
     fun startTemplateMatchingTest(): MutableMap<String, MutableList<ScaleConfidenceResult>> {
         val results = mutableMapOf<String, MutableList<ScaleConfidenceResult>>(
-            "energy" to mutableListOf(),
-            "tazuna" to mutableListOf(),
-            "skill_points" to mutableListOf()
+            "career/energy" to mutableListOf(),
+            "career/tazuna" to mutableListOf(),
+            "career/skill_points" to mutableListOf()
         )
 
         val defaultConfidence = 0.8

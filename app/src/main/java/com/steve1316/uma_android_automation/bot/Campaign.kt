@@ -6,6 +6,7 @@ import com.steve1316.uma_android_automation.utils.UserConfig
 import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.ImageUtils
 import com.steve1316.uma_android_automation.utils.Screen
+import com.steve1316.uma_android_automation.components.*
 
 /**
  * Base campaign class that contains all shared logic for campaign automation.
@@ -64,7 +65,7 @@ open class Campaign(val game: Game) {
 						// If the bot detected a injury, then rest.
 						if (game.checkInjury()) {
 							MessageLog.i(TAG, "A infirmary visit was attempted in order to heal an injury.")
-							game.findAndTapImage("ok", region = Screen.MIDDLE)
+							ButtonOk.click()
 							GameUtils.wait(3.0)
 							game.skipRacing = false
 						} else if (game.recoverMood()) {
@@ -88,12 +89,12 @@ open class Campaign(val game: Game) {
 							game.notificationMessage = "Stopping bot due to detection of Mandatory Race."
 							break
 						}
-						game.findAndTapImage("back", tries = 1, region = Screen.BOTTOM_HALF)
+						ButtonBack.click()
 						game.skipRacing = !UserConfig.config.bEnableForceRacing
 						game.handleTraining()
 					}
 				}
-			} else if (game.checkTrainingEventScreen()) {
+			} else if (ScreenCareerTrainingEvent.check()) {
 				// If the bot is at the Training Event screen, that means there are selectable options for rewards.
 				MessageLog.i(TAG, "Detected a Training Event on screen.")
 				handleTrainingEvent()
@@ -110,12 +111,12 @@ open class Campaign(val game: Game) {
 					game.notificationMessage = "Stopping bot due to detection of Mandatory Race."
 					break
 				}
-			} else if (game.checkRacingScreen()) {
+			} else if (ScreenRace.check()) {
 				// If the bot is already at the Racing screen, then complete this standalone race.
 				MessageLog.i(TAG, "There is a standalone race ready to be run.")
 				game.handleStandaloneRace()
 				game.skipRacing = false
-			} else if (game.checkEndScreen()) {
+			} else if (ButtonCompleteCareer.check()) {
 				// Stop when the bot has reached the screen where it details the overall result of the run.
 				MessageLog.i(TAG, "[END] Bot has reached the end of the run. Exiting now...")
 				game.notificationMessage = "Bot has reached the end of the run"
