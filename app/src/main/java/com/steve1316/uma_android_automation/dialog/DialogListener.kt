@@ -1,9 +1,11 @@
-package com.steve1316.uma_android_automation.bot.dialog
+package com.steve1316.uma_android_automation.dialog
 
 import com.steve1316.uma_android_automation.utils.AppEvent
 import com.steve1316.uma_android_automation.utils.EventBus
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.utils.MessageLog
+import com.steve1316.uma_android_automation.utils.ImageUtils
+import com.steve1316.uma_android_automation.utils.Screen
 import com.steve1316.uma_android_automation.dialog.DialogInterface
 import com.steve1316.uma_android_automation.dialog.DialogObjects
 
@@ -15,12 +17,12 @@ import kotlinx.coroutines.*
 
 import org.opencv.core.Point
 
-class DialogEventProducer(private val coroutineScope: CoroutineScope, private val eventBus: EventBus) {
+class DialogEventProducer(private val coroutineScope: CoroutineScope) {
     private val TAG: String = "DialogEventProducer"
     private var job: Job? = null
 
-    fun check(): Boolean {
-        return ImageUtils.findImage("dialog_title_gradient", tries=tries, region=Screen.TOP_HALF)
+    fun check(tries: Int = 1): Boolean {
+        return ImageUtils.findImage("dialog/dialog_title_gradient", tries=tries, region=Screen.TOP_HALF).first != null
     }
 
     fun checkDialogTitle(): String? {
@@ -44,7 +46,7 @@ class DialogEventProducer(private val coroutineScope: CoroutineScope, private va
                 MessageLog.d(TAG, "Listening for dialog. Loop: ${counter}")
                 if (check()) {
                     val event = AppEvent.DialogEvent(checkDialogTitle())
-                    eventBus.post(event)
+                    EventBus.post(event)
                 }
             }
         }

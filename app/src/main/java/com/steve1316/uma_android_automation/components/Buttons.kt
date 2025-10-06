@@ -48,7 +48,6 @@ object ButtonCollectAll : ComponentInterface {
 }
 
 
-
 object ButtonConfirm : ComponentInterface {
     override val TAG: String = "ButtonConfirm"
     override val templates: List<Template> = listOf<Template>(
@@ -56,6 +55,12 @@ object ButtonConfirm : ComponentInterface {
     )
 }
 
+object ButtonConfirmExclamation : ComponentInterface {
+    override val TAG: String = "ButtonConfirmExclamation"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/confirm_exclamation")
+    )
+}
 
 
 object ButtonDailyRaces : ComponentInterface {
@@ -86,6 +91,27 @@ object ButtonDailyRacesMoonlightSho : ComponentInterface {
     )
 }
 
+object ButtonEditTeam : ComponentInterface {
+    override val TAG: String = "ButtonEditTeam"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/edit_team")
+    )
+}
+
+object ButtonFollow : ComponentInterface {
+    override val TAG: String = "ButtonFollow"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/follow")
+    )
+}
+
+object ButtonToHome : ComponentInterface {
+    override val TAG: String = "ButtonToHome"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/to_home")
+    )
+}
+
 object RadioPortrait : ComponentInterface {
     override val TAG: String = "RadioPortrait"
     override val templates: List<Template> = listOf<Template>(
@@ -113,8 +139,6 @@ object ButtonHomeSpecialMissions : ComponentInterface {
         Template("buttons/home_special_missions")
     )
 }
-
-
 
 object ButtonLegendRace : ComponentInterface {
     override val TAG: String = "ButtonLegendRace"

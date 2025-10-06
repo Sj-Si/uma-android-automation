@@ -10,7 +10,9 @@ import com.steve1316.uma_android_automation.utils.ImageUtils
 import com.steve1316.uma_android_automation.components.*
 import com.steve1316.uma_android_automation.components.ComponentUtils
 
-class AoHaru(game: Game) : Campaign(game) {
+import kotlinx.coroutines.*
+
+class AoHaru(game: Game, coroutineScope: CoroutineScope) : Campaign(game, coroutineScope) {
 	override val TAG: String = "AoHaru"
 	private var tutorialChances = 3
 	private var aoHaruRaceFirstTime: Boolean = true
