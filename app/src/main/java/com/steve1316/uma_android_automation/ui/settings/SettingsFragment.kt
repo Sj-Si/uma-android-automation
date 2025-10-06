@@ -29,7 +29,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 				}
 				"strategy" -> {
 					val strategyListPreference = findPreference<ListPreference>("strategy")!!
-					strategyListPreference.summary = "Selected ${strategyListPreference.value}"
+					strategyListPreference.summary = "Selected: ${strategyListPreference.value}"
 					sharedPreferences.edit {
 						putString("strategy", strategyListPreference.value)
 						commit()
@@ -120,6 +120,23 @@ class SettingsFragment : PreferenceFragmentCompat() {
 						commit()
 					}
 				}
+                "logLevel" -> {
+                    val logLevelPreference = findPreference<ListPreference>("logLevel")!!
+
+                    logLevelPreference.summary = "Selected: ${logLevelPreference.value.uppercase()}"
+                    sharedPreferences.edit {
+                        putString("logLevel", logLevelPreference.value)
+                        commit()
+                    }
+                }
+                "maxLogLines" -> {
+                    val maxLogLinesPreference = findPreference<SeekBarPreference>("maxLogLines")!!
+
+                    sharedPreferences.edit {
+                        putInt("maxLogLines", maxLogLinesPreference.value)
+                        commit()
+                    }
+                }
 				"bEnableDebugMode" -> {
 					val bEnableDebugModePreference = findPreference<CheckBoxPreference>("bEnableDebugMode")!!
 					
@@ -215,6 +232,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
 		val bEnablePrioritizeEnergy: Boolean = sharedPreferences.getBoolean("bEnablePrioritizeEnergy", false)
         val bEnableSkipCraneGame: Boolean = sharedPreferences.getBoolean("bEnableSkipCraneGame", false)
 		val bEnableForceRacing: Boolean = sharedPreferences.getBoolean("bEnableForceRacing", false)
+        val logLevel: String = sharedPreferences.getString("logLevel", "Info")!!
+        val maxLogLines: Int = sharedPreferences.getInt("maxLogLines", 50)
 		val bEnableDebugMode: Boolean = sharedPreferences.getBoolean("bEnableDebugMode", false)
 		val debugOcrConfidence: Int = sharedPreferences.getInt("debugOcrConfidence", 80)
 		val debugOcrScale: Int = sharedPreferences.getInt("debugOcrScale", 100)
@@ -236,6 +255,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
 		val bEnablePrioritizeEnergyPreference = findPreference<CheckBoxPreference>("bEnablePrioritizeEnergy")!!
         val bEnableSkipCraneGamePreference = findPreference<CheckBoxPreference>("bEnableSkipCraneGame")!!
 		val bEnableForceRacingPreference = findPreference<CheckBoxPreference>("bEnableForceRacing")!!
+        val logLevelPreference = findPreference<ListPreference>("logLevel")!!
+        val maxLogLinesPreference = findPreference<SeekBarPreference>("maxLogLines")!!
 		val bEnableDebugModePreference = findPreference<CheckBoxPreference>("bEnableDebugMode")!!
 		val debugOcrConfidencePreference = findPreference<SeekBarPreference>("debugOcrConfidence")!!
 		val debugOcrScalePreference = findPreference<SeekBarPreference>("debugOcrScale")!!
@@ -264,6 +285,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
 		bEnablePrioritizeEnergyPreference.isChecked = bEnablePrioritizeEnergy
         bEnableSkipCraneGamePreference.isChecked = bEnableSkipCraneGame
 		bEnableForceRacingPreference.isChecked = bEnableForceRacing
+        logLevelPreference.value = logLevel
+        maxLogLinesPreference.value = maxLogLines
 		bEnableDebugModePreference.isChecked = bEnableDebugMode
 		debugOcrConfidencePreference.value = debugOcrConfidence
 		debugOcrScalePreference.value = debugOcrScale

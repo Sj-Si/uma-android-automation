@@ -9,6 +9,13 @@ val DEFAULT_STAT_TARGETS_MILE = intArrayOf(1100, 500, 800, 500, 600)
 val DEFAULT_STAT_TARGETS_MEDIUM = intArrayOf(1000, 700, 700, 500, 600)
 val DEFAULT_STAT_TARGETS_LONG = intArrayOf(800, 1000, 600, 600, 600)
 
+enum class LogLevels {
+    DEBUG,  // ordinal 0
+    INFO,
+    WARNING,
+    ERROR,
+}
+
 data class TrainingStatTargets(
     private val preferences: SharedPreferences,
     private val prefix: String,
@@ -136,6 +143,8 @@ data class Config(
     var bEnablePrioritizeEnergy: Boolean
     var bEnableSkipCraneGame: Boolean
     // DEBUG
+    var logLevel: String
+    var maxLogLines: Int
     var bEnableDebugMode: Boolean
     var debugOcrConfidencePercent: Int
     var debugOcrConfidence: Double
@@ -146,6 +155,7 @@ data class Config(
     var bHideComparisonResults: Boolean
 
     var strategyImageName: String
+    var logLevelIndex: Int
 
     init {
         // Options
@@ -180,6 +190,8 @@ data class Config(
         bEnableSkipCraneGame = preferences.getBoolean("bEnableSkipCraneGame", false)
         
         // Debug Options
+        logLevel = preferences.getString("logLevel", "Info")!!
+        maxLogLines = preferences.getInt("maxLogLines", 50)
         bEnableDebugMode = preferences.getBoolean("bEnableDebugMode", false)
         debugOcrConfidencePercent = preferences.getInt("debugOcrConfidence", 80)
         debugOcrConfidence = debugOcrConfidencePercent.toDouble() / 100.0
@@ -189,6 +201,7 @@ data class Config(
         bRunComprehensiveTrainingFailureOcrTest = preferences.getBoolean("bRunComprehensiveTrainingFailureOcrTest", false)
         bHideComparisonResults = preferences.getBoolean("bHideComparisonResults", true)
 
+        logLevelIndex = LogLevels.valueOf(logLevel.uppercase()).ordinal
 
         // When debug mode is enabled, we need to override some settings.
         if (bEnableDebugMode) {
@@ -323,6 +336,8 @@ object UserConfig {
             appendLine("Skip Crane Game:                    ${if (config.bEnableSkipCraneGame) "✅" else "❌"}")
             appendLine()
             appendLine(" Debug Options ".center(80))
+            appendLine("Log Level:                          ${config.logLevel}")
+            appendLine("Max Log Lines:                      ${config.maxLogLines}")
             appendLine("Debug Mode:                         ${if (config.bEnableDebugMode) "✅" else "❌"}")
             appendLine("Min Template Match Confidence:      ${config.debugOcrConfidence}")
             appendLine("Template Scale:                     ${config.debugOcrScale}")

@@ -106,6 +106,24 @@
 
     <PreferenceCategory app:title="Debug Options">
 
+        <ListPreference
+            android:entries="@array/logLevels"
+            android:entryValues="@array/logLevels"
+            android:summary="Select the logging level to display in the app."
+            app:key="logLevel"
+            app:defaultValue="Info"
+            app:title="Select Log Level" />
+
+        <SeekBarPreference
+            android:defaultValue="50"
+            android:max="500"
+            app:key="maxLogLines"
+            app:min="50"
+            app:showSeekBarValue="true"
+            app:seekBarIncrement="1"
+            app:summary="Set the max number of lines from the log to display in the app."
+            app:title="Log Lines to Show" />
+
         <CheckBoxPreference
             app:key="bEnableDebugMode"
             app:summary="Allows debugging messages in the log and test images to be created in the /temp/ folder.\n\nIncreases the average runtime of the bot due to constant IO operations."
