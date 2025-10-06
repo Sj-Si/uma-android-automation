@@ -22,7 +22,7 @@ open class Campaign(val game: Game, val coroutineScope: CoroutineScope) {
 
     init {
         EventBus.subscribe<AppEvent.DialogEvent>(coroutineScope) { event ->
-            MessageLog.d(TAG, "DialogEvent (${event.name})")
+            MessageLog.d(TAG, "DialogEvent (${event.dialog.name})")
         }
     }
 

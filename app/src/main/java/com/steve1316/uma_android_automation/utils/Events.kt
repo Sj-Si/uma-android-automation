@@ -7,8 +7,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+import com.steve1316.uma_android_automation.dialog.DialogInterface
+
 sealed class AppEvent {
-    data class DialogEvent(val name: String?) : AppEvent()
+    data class DialogEvent(val dialog: DialogInterface?) : AppEvent()
 }
 
 object EventBus {

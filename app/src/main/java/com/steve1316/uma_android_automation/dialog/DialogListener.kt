@@ -25,10 +25,10 @@ class DialogEventProducer(private val coroutineScope: CoroutineScope) {
         return ImageUtils.findImage("dialog/dialog_title_gradient", tries=tries, region=Screen.TOP_HALF).first != null
     }
 
-    fun checkDialogTitle(): String? {
+    fun checkDialogTitle(): DialogInterface? {
         for (obj in DialogObjects.items) {
             if (obj.check()) {
-                return obj.name
+                return obj
             }
         }
 
@@ -44,7 +44,7 @@ class DialogEventProducer(private val coroutineScope: CoroutineScope) {
             while (isActive) {
                 counter++
                 if (check()) {
-                    val dialog = checkDialogTitle()
+                    val dialog: DialogInterface? = checkDialogTitle()
                     if (dialog != null) {
                         val event = AppEvent.DialogEvent(dialog)
                         EventBus.post(event)
