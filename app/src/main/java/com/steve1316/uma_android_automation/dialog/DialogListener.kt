@@ -38,12 +38,11 @@ class DialogEventProducer(private val coroutineScope: CoroutineScope) {
     // Run this dialog item as an event producer.
     fun start() {
         job?.cancel()
-        MessageLog.d(TAG, "Listening for dialog.")
+        MessageLog.d(TAG, "Starting...")
         job = coroutineScope.launch(Dispatchers.Default) {
             var counter = 0
             while (isActive) {
                 counter++
-                MessageLog.d(TAG, "Listening for dialog. Loop: ${counter}")
                 if (check()) {
                     val event = AppEvent.DialogEvent(checkDialogTitle())
                     EventBus.post(event)
@@ -54,5 +53,6 @@ class DialogEventProducer(private val coroutineScope: CoroutineScope) {
 
     fun stop() {
         job?.cancel()
+        MessageLog.d(TAG, "Stopped.")
     }
 }
