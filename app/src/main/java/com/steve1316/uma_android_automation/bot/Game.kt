@@ -227,6 +227,11 @@ class Game() {
 		}
 	}
 
+    fun checkMandatoryRaceDay(): Boolean {
+        MessageLog.i(TAG, "Checking if at home screen and it is a mandatory race day.")
+        return ButtonCareerHomeRaceDayRace.check(tries=10)
+    }
+
 	/**
 	 * Checks if the bot is at the preparation screen with a mandatory race needing to be completed.
 	 *
@@ -234,10 +239,7 @@ class Game() {
 	 */
 	fun checkMandatoryRacePrepScreen(): Boolean {
 		MessageLog.i(TAG, "Checking if the bot is sitting on the Race Preparation screen.")
-		return if (ButtonCareerHomeRaceSelectMandatory.check()) {
-			MessageLog.i(TAG, "Current bot location is at the preparation screen with a mandatory race ready to be completed.")
-			true
-		} else if (ScreenCareerHomeRaceSelectMandatoryGoal.check()) {
+		return if (ScreenCareerRaceSelectMandatoryGoal.check()) {
 			// Most likely the user started the bot here so a delay will need to be placed to allow the start banner of the Service to disappear.
 			GameUtils.wait(2.0)
 			MessageLog.i(TAG, "Current bot location is at the Race Selection screen with a mandatory race needing to be selected.")
@@ -1801,7 +1803,7 @@ class Game() {
 		// First, check if there is a mandatory or a extra race available. If so, head into the Race Selection screen.
 		// Note: If there is a mandatory race, the bot would be on the Home screen.
 		// Otherwise, it would have found itself at the Race Selection screen already (by way of the insufficient fans popup).
-		if (ButtonCareerHomeRaceSelectMandatory.click()) {
+		if (ButtonCareerHomeRaceDayRace.click()) {
 			MessageLog.i(TAG, "[RACE] Starting process for handling a mandatory race.")
 
 			if (UserConfig.config.bEnableStopOnMandatoryRace) {
@@ -1830,7 +1832,7 @@ class Game() {
 			}
 
 			// Skip the race if possible, otherwise run it manually.
-			val resultCheck: Boolean = if (!RaceSkipLocked.check()) {
+			val resultCheck: Boolean = if (!ButtonViewResultsLocked.check()) {
 				skipRace()
 			} else {
 				manualRace()
@@ -1999,7 +2001,7 @@ class Game() {
 			}
 
 			// Skip the race if possible, otherwise run it manually.
-			val resultCheck: Boolean = if (!RaceSkipLocked.check(tries=5)) {
+			val resultCheck: Boolean = if (!ButtonViewResultsLocked.check(tries=5)) {
 				skipRace()
 			} else {
 				manualRace()
@@ -2027,7 +2029,7 @@ class Game() {
 		}
 
 		// Skip the race if possible, otherwise run it manually.
-		val resultCheck: Boolean = if (!RaceSkipLocked.check(tries=5)) {
+		val resultCheck: Boolean = if (!ButtonViewResultsLocked.check(tries=5)) {
 			skipRace()
 		} else {
 			manualRace()

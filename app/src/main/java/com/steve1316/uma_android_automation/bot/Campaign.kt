@@ -57,6 +57,17 @@ open class Campaign(val game: Game) {
 						break
 					}
 
+                    // If it is a mandatory race day, handle it.
+                    if (game.checkMandatoryRaceDay()) {
+                        MessageLog.i(TAG, "There is a mandatory race to be run.")
+                        // If the bot is at the Main screen with the button to select a race visible, that means the bot needs to handle a mandatory race.
+                        if (!handleRaceEvents() && game.detectedMandatoryRaceCheck) {
+                            MessageLog.i(TAG, "[END] Stopping bot due to detection of Mandatory Race.")
+                            game.notificationMessage = "Stopping bot due to detection of Mandatory Race."
+                            break
+                        }
+                    }
+
 					// If force racing is enabled, skip all other activities and go straight to racing
 					if (UserConfig.config.bEnableForceRacing) {
 						MessageLog.i(TAG, "Force racing enabled - skipping all other activities and going straight to racing.")
@@ -103,7 +114,7 @@ open class Campaign(val game: Game) {
 				// If the bot is at the Inheritance screen, then accept the inheritance.
 				MessageLog.i(TAG, "Accepted the Inheritance.")
 				game.skipRacing = false
-			} else if (game.checkMandatoryRacePrepScreen()) {
+            } else if (game.checkMandatoryRacePrepScreen()) {
 				MessageLog.i(TAG, "There is a Mandatory race to be run.")
 				// If the bot is at the Main screen with the button to select a race visible, that means the bot needs to handle a mandatory race.
 				if (!handleRaceEvents() && game.detectedMandatoryRaceCheck) {

@@ -304,3 +304,10 @@ object ButtonRaceStrategyEnd : ComponentInterface {
         Template("buttons/strategy_end_select", Screen.BOTTOM_HALF)
     )
 }
+
+object Checkbox : ComponentInterface {
+    override val TAG: String = "Checkbox"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/checkbox")
+    )
+}

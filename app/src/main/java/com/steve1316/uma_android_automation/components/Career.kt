@@ -24,15 +24,22 @@ object ScreenCareerTrainingEvent : ScreenInterface {
     )
 }
 
-object ButtonCareerHomeRaceSelectMandatory : ComponentInterface {
-    override val TAG: String = "ButtonCareerHomeRaceSelectMandatory"
+object LabelCareerHomeRaceDay : ComponentInterface {
+    override val TAG: String = "LabelCareerHomeRaceDay"
     override val templates: List<Template> = listOf<Template>(
-        Template("career/race_select_mandatory", Screen.BOTTOM_HALF),
+        Template("career/race_day", Screen.BOTTOM_HALF),
     )
 }
 
-object ScreenCareerHomeRaceSelectMandatoryGoal : ScreenInterface {
-    override val TAG: String = "ScreenRaceSelectMandatoryGoal"
+object ButtonCareerHomeRaceDayRace : ComponentInterface {
+    override val TAG: String = "ButtonCareerHomeRaceDayRace"
+    override val templates: List<Template> = listOf<Template>(
+        Template("career/race_day_race", Screen.BOTTOM_HALF),
+    )
+}
+
+object ScreenCareerRaceSelectMandatoryGoal : ScreenInterface {
+    override val TAG: String = "ScreenCareerRaceSelectMandatoryGoal"
     override val templates: List<Template> = listOf<Template>(
         Template("career/race_select_mandatory_goal", Screen.MIDDLE),
     )
@@ -210,6 +217,20 @@ object RaceSkipLocked : ComponentInterface {
     override val TAG: String = "RaceSkipLocked"
     override val templates: List<Template> = listOf<Template>(
         Template("career/race_skip_locked", Screen.BOTTOM_HALF)
+    )
+}
+
+object ButtonViewResultsLocked : ComponentInterface {
+    override val TAG: String = "ButtonViewResultsLocked"
+    override val templates: List<Template> = listOf<Template>(
+        Template("career/view_results_locked", Screen.BOTTOM_HALF)
+    )
+}
+
+object ButtonEndCareer : ComponentInterface {
+    override val TAG: String = "ButtonEndCareer"
+    override val templates: List<Template> = listOf<Template>(
+        Template("career/end_career", Screen.BOTTOM_HALF)
     )
 }
 
