@@ -86,14 +86,21 @@ object ButtonDailyRacesMoonlightSho : ComponentInterface {
     )
 }
 
-object ButtonDialogViewStoryRadioScreenOrientationPortrait : ComponentInterface {
-    override val TAG: String = "ButtonDialogViewStoryRadioScreenOrientationPortrait"
+object RadioPortrait : ComponentInterface {
+    override val TAG: String = "RadioPortrait"
     override val templates: List<Template> = listOf<Template>(
-        Template("buttons/dialog_view_story_radio_screen_orientation_portrait")
+        Template("buttons/radio_portrait")
     )
 }
 
-object ButtonDialogViewStoryRadioVoiceOff : ComponentInterface {
+object RadioLandscape : ComponentInterface {
+    override val TAG: String = "RadioLandscape"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/radio_landscape")
+    )
+}
+
+object RadioVoiceOff : ComponentInterface {
     override val TAG: String = "ButtonDialogViewStoryRadioVoiceOff"
     override val templates: List<Template> = listOf<Template>(
         Template("buttons/dialog_view_story_radio_voice_off")
@@ -214,17 +221,31 @@ object ButtonRaceManual : ComponentInterface {
     )
 }
 
+object ButtonRaceRecommendationsCenterStage : ComponentInterface {
+    override val TAG: String = "ButtonRaceRecommendationsCenterStage"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/race_recommendations_center_stage")
+    )
+}
+
+object ButtonRaceRecommendationsPathToFame : ComponentInterface {
+    override val TAG: String = "ButtonRaceRecommendationsPathToFame"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/race_recommendations_path_to_fame")
+    )
+}
+
+object ButtonRaceRecommendationsForgeYourOwnPath : ComponentInterface {
+    override val TAG: String = "ButtonRaceRecommendationsForgeYourOwnPath"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/race_recommendations_forge_your_own_path")
+    )
+}
+
 object ButtonRaceResults : ComponentInterface {
     override val TAG: String = "ButtonRaceResults"
     override val templates: List<Template> = listOf<Template>(
         Template("buttons/race_results")
-    )
-}
-
-object ButtonTryAgain : ComponentInterface {
-    override val TAG: String = "ButtonTryAgain"
-    override val templates: List<Template> = listOf<Template>(
-        Template("buttons/try_again", Screen.BOTTOM_HALF)
     )
 }
 
@@ -270,6 +291,20 @@ object ButtonTeamTrials : ComponentInterface {
     )
 }
 
+object ButtonTitleScreen : ComponentInterface {
+    override val TAG: String = "ButtonTitleScreen"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/title_screen", Screen.BOTTOM_HALF)
+    )
+}
+
+object ButtonTryAgain : ComponentInterface {
+    override val TAG: String = "ButtonTryAgain"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/try_again", Screen.BOTTOM_HALF)
+    )
+}
+
 object ButtonViewResults : ComponentInterface {
     override val TAG: String = "ButtonViewResults"
     override val templates: List<Template> = listOf<Template>(
@@ -309,5 +344,12 @@ object Checkbox : ComponentInterface {
     override val TAG: String = "Checkbox"
     override val templates: List<Template> = listOf<Template>(
         Template("buttons/checkbox")
+    )
+}
+
+object CheckboxDoNotShowAgain : ComponentInterface {
+    override val TAG: String = "CheckboxDoNotShowAgain"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/checkbox_do_not_show_again")
     )
 }

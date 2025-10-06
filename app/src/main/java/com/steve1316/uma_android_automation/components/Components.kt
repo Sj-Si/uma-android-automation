@@ -1,6 +1,5 @@
 package com.steve1316.uma_android_automation.components
 
-import com.steve1316.uma_android_automation.components.Template
 import com.steve1316.uma_android_automation.components.ComponentUtils
 import com.steve1316.uma_android_automation.utils.ImageUtils
 import com.steve1316.uma_android_automation.utils.MessageLog
