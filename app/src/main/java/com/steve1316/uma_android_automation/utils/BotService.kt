@@ -21,8 +21,11 @@ import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.R
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.utils.MessageLog
+import com.steve1316.uma_android_automation.dialog.DialogEventProducer
 import kotlin.concurrent.thread
 import kotlin.math.roundToInt
+
+import kotlinx.coroutines.*
 
 /**
  * This Service will allow starting and stopping the automation workflow on a Thread based on the chosen preference settings.
@@ -53,6 +56,9 @@ class BotService : Service() {
 	companion object {
 		private lateinit var thread: Thread
 		private lateinit var windowManager: WindowManager
+
+        private lateinit var dialogEventProducer: DialogEventProducer
+        private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 		
 		// Create the LayoutParams for the floating overlay START/STOP button.
 		private val overlayLayoutParams = WindowManager.LayoutParams().apply {
@@ -130,14 +136,18 @@ class BotService : Service() {
 
 							thread = thread {
 								try {
+                                    dialogEventProducer = DialogEventProducer(coroutineScope)
 									game = Game()
 									
 									// Clear the Message Log.
 									MessageLog.clearLog()
 									MessageLog.saveCheck = false
+
+                                    // Must come before game.start() since game.start() is blocking.
+                                    dialogEventProducer.start()
 									
 									// Start with the provided settings from SharedPreferences.
-									game.start(context)
+									game.start(context, coroutineScope)
 
 									val notificationMessage = if (game.notificationMessage != "") game.notificationMessage else "Bot has completed successfully."
 									NotificationUtils.updateNotification(context, false, notificationMessage)

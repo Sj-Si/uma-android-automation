@@ -5,6 +5,13 @@
 <!--        <item>Ao Haru</item>-->
     </string-array>
 
+    <string-array name="logLevels">
+        <item>Debug</item>
+        <item>Info</item>
+        <item>Warning</item>
+        <item>Error</item>
+    </string-array>
+
     <string-array name="strategies">
         <item>Default</item>
         <item>Front Runner</item>

@@ -33,6 +33,7 @@ import java.io.StringReader
 import androidx.core.net.toUri
 import com.steve1316.uma_android_automation.utils.UserConfig
 
+
 class HomeFragment : Fragment() {
 	private val TAG: String = "HomeFragment"
 	private var firstBoot = false
@@ -170,8 +171,29 @@ class HomeFragment : Fragment() {
 		messageLogTextView.text = ""
 
 		// Get a thread-safe copy of the message log.
-		val messageLog = MessageLog.getMessageLogCopy()
-		messageLog.forEach { message ->
+		val messageLog: List<String> = MessageLog.getMessageLogCopy()
+
+        var filteredLog: List<String> = messageLog.filter {
+            val logLevel = if (it.contains("[DEBUG]")) {
+                0
+            } else if (it.contains("[INFO]")) {
+                1
+            } else if (it.contains("[WARN]")) {
+                2
+            } else if (it.contains("[ERROR]")) {
+                3
+            } else {
+                0
+            }
+
+            logLevel >= UserConfig.config.logLevelIndex
+        }
+
+        if (filteredLog.size > UserConfig.config.maxLogLines) {
+            messageLogTextView.append("\n${filteredLog.size - UserConfig.config.maxLogLines} lines omitted.")
+            messageLogTextView.append("\nPlease see the main log file for entire log contents.")
+        }
+		filteredLog.takeLast(UserConfig.config.maxLogLines).forEach { message ->
 			messageLogTextView.append("\n$message")
 		}
 		

@@ -2,19 +2,29 @@ package com.steve1316.uma_android_automation.bot
 
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.utils.MessageLog
+import com.steve1316.uma_android_automation.utils.EventBus
 import com.steve1316.uma_android_automation.utils.UserConfig
 import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.ImageUtils
+import com.steve1316.uma_android_automation.utils.AppEvent
 import com.steve1316.uma_android_automation.utils.Screen
 import com.steve1316.uma_android_automation.components.*
+
+import kotlinx.coroutines.*
 
 /**
  * Base campaign class that contains all shared logic for campaign automation.
  * Campaign-specific logic should be implemented in subclasses by overriding the appropriate methods.
  * By default, URA Finale is handled by this base class.
  */
-open class Campaign(val game: Game) {
+open class Campaign(val game: Game, val coroutineScope: CoroutineScope) {
 	protected open val TAG: String = "Normal"
+
+    init {
+        EventBus.subscribe<AppEvent.DialogEvent>(coroutineScope) { event ->
+            MessageLog.d(TAG, "DialogEvent (${event.name})")
+        }
+    }
 
 	/**
 	 * Campaign-specific training event handling.

@@ -22,6 +22,7 @@ import java.text.DecimalFormat
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.intArrayOf
+import kotlinx.coroutines.*
 
 /**
  * Main driver for bot activity and navigation.
@@ -2463,7 +2464,7 @@ class Game() {
 	 *
 	 * @return True if all automation goals have been met. False otherwise.
 	 */
-	fun start(context: Context): Boolean {
+	fun start(context: Context, coroutineScope: CoroutineScope): Boolean {
 		// Print current app settings at the start of the run.
         UserConfig.printConfigToLog()
 
@@ -2509,10 +2510,10 @@ class Game() {
 		}
 		// Otherwise, proceed with regular bot operations.
 		else if (UserConfig.config.campaign == "Ao Haru") {
-			val aoHaruCampaign = AoHaru(this)
+			val aoHaruCampaign = AoHaru(this, coroutineScope)
 			aoHaruCampaign.start()
 		} else {
-			val uraFinaleCampaign = Campaign(this)
+			val uraFinaleCampaign = Campaign(this, coroutineScope)
 			uraFinaleCampaign.start()
 		}
 
