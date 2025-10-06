@@ -53,6 +53,9 @@ class BotService : Service() {
 	companion object {
 		private lateinit var thread: Thread
 		private lateinit var windowManager: WindowManager
+
+        private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+		private val eventBus = EventBus()
 		
 		// Create the LayoutParams for the floating overlay START/STOP button.
 		private val overlayLayoutParams = WindowManager.LayoutParams().apply {
