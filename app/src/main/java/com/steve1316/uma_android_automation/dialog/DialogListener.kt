@@ -44,8 +44,11 @@ class DialogEventProducer(private val coroutineScope: CoroutineScope) {
             while (isActive) {
                 counter++
                 if (check()) {
-                    val event = AppEvent.DialogEvent(checkDialogTitle())
-                    EventBus.post(event)
+                    val dialog = checkDialogTitle()
+                    if (dialog != null) {
+                        val event = AppEvent.DialogEvent(dialog)
+                        EventBus.post(event)
+                    }
                 }
             }
         }
