@@ -79,6 +79,7 @@ object DialogObjects {
         DialogStoryUnlocked,
         DialogTrophyWon,
         DialogTryAgain,
+        DialogUmamusumeDetails,
         DialogViewStory,
     )
 }
@@ -417,6 +418,16 @@ object DialogTryAgain : DialogInterface {
     override val buttons: List<ComponentInterface> = listOf<ComponentInterface>(
         ButtonEndCareer,
         ButtonTryAgain,
+    )
+}
+
+object DialogUmamusumeDetails : DialogInterface {
+    override val TAG: String = "DialogUmamusumeDetails"
+    override val name: String = "umamusume_details"
+    override val closeButton = null
+    override val okButton: null
+    override val buttons: List<ComponentInterface> = listOf<ComponentInterface>(
+        ButtonClose,
     )
 }
 
