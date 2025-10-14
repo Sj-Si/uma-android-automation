@@ -696,6 +696,7 @@ class ImageUtils() {
         tries: Int = 5,
         region: IntArray = Screen.FULL,
         suppressError: Boolean = false,
+        customConfidence: Double = 0.0,
     ): Pair<Point?, Bitmap> = runBlocking {
 		var numberOfTries = tries
 
@@ -707,7 +708,7 @@ class ImageUtils() {
 
 		while (numberOfTries > 0) {
 			if (templateBitmap != null) {
-				val (resultFlag, location) = match(sourceBitmap, templateBitmap, templateName, region)
+				val (resultFlag, location) = match(sourceBitmap, templateBitmap, templateName, region, customConfidence=customConfidence)
 				if (!resultFlag) {
 					numberOfTries -= 1
 					if (numberOfTries <= 0) {
