@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -17,15 +18,78 @@ import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.ImageButton
 import android.widget.Toast
-import com.steve1316.uma_android_automation.MainActivity
+import androidx.core.graphics.toColorInt
 import com.steve1316.uma_android_automation.R
 import com.steve1316.uma_android_automation.bot.Game
-import com.steve1316.uma_android_automation.utils.MessageLog
-import com.steve1316.uma_android_automation.dialog.DialogEventProducer
+import com.steve1316.uma_android_automation.utils.GameUtils
+import com.steve1316.uma_android_automation.dialog.DialogListener
 import kotlin.concurrent.thread
 import kotlin.math.roundToInt
 
 import kotlinx.coroutines.*
+
+/**
+ * Enum to track which button animation is currently active.
+ */
+enum class AnimationType {
+	PULSE_FADE,
+	BOUNCE_FADE
+}
+
+data class Button(
+	val imageButton: ImageButton,
+	val layoutParams: WindowManager.LayoutParams,
+	var animationMap: MutableMap<String, Animation>,
+	val onClick: ((MotionEvent) -> Unit),
+	val onMove: ((WindowManager.LayoutParams) -> Unit),
+	var animationType: AnimationType = AnimationType.PULSE_FADE,
+) {
+	init {
+		imageButton.setOnTouchListener(object : View.OnTouchListener {
+			private var initialX: Int = 0
+			private var initialY: Int = 0
+			private var initialTouchX: Float = 0F
+			private var initialTouchY: Float = 0F
+
+			override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+				val action = event?.action
+
+				if (action == MotionEvent.ACTION_DOWN) {
+					// Get the initial position.
+					initialX = layoutParams.x
+					initialY = layoutParams.y
+
+					// Now get the new position.
+					initialTouchX = event.rawX
+					initialTouchY = event.rawY
+
+					return false
+				} else if (action == MotionEvent.ACTION_UP) {
+					val elapsedTime: Long = event.eventTime - event.downTime
+					if (elapsedTime < 100L) {
+						onClick?.invoke(event)
+						// Returning true here freezes the animation of the click on the button.
+						return false
+					}
+				} else if (action == MotionEvent.ACTION_MOVE) {
+					val xDiff = (event.rawX - initialTouchX).roundToInt()
+					val yDiff = (event.rawY - initialTouchY).roundToInt()
+
+					// Calculate the X and Y coordinates of the view.
+					layoutParams.x = initialX + xDiff
+					layoutParams.y = initialY + yDiff
+
+					// Now update the layout.
+					onMove?.invoke(layoutParams)
+
+					return false
+				}
+
+				return false
+			}
+		})
+	}
+}
 
 /**
  * This Service will allow starting and stopping the automation workflow on a Thread based on the chosen preference settings.
@@ -38,30 +102,21 @@ class BotService : Service() {
 	private var appName: String = ""
 	private lateinit var context: Context
 	private lateinit var overlayView: View
-	private lateinit var overlayButton: ImageButton
 
-	private lateinit var playButtonAnimation: Animation
-	private lateinit var playButtonAnimationAlt: Animation
-	private lateinit var stopButtonAnimation: Animation
-	private var currentPlayButtonAnimationType = PlayButtonAnimationType.PULSE_FADE
+	private lateinit var buttonPlay: Button
+	private lateinit var buttonStop: Button
+	private lateinit var buttonCalendar: Button
 
-	/**
-	 * Enum to track which play button animation is currently active.
-	 */
-	private enum class PlayButtonAnimationType {
-		PULSE_FADE,
-		BOUNCE_FADE
-	}
+    private lateinit var game: Game
+
+    private val serviceScope = CoroutineScope(Dispatchers.IO + Job())
 
 	companion object {
 		private lateinit var thread: Thread
 		private lateinit var windowManager: WindowManager
-
-        private lateinit var dialogEventProducer: DialogEventProducer
-        private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 		
 		// Create the LayoutParams for the floating overlay START/STOP button.
-		private val overlayLayoutParams = WindowManager.LayoutParams().apply {
+		private val layoutParams = WindowManager.LayoutParams().apply {
 			type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 				WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
 			} else {
@@ -76,197 +131,125 @@ class BotService : Service() {
 		
 		var isRunning = false
 	}
+
+    fun onClickPlay(event: MotionEvent) {
+		// Update both the Notification and the overlay button to reflect the current bot status.
+		if (!isRunning) {
+			Log.d(TAG, "Bot Service for $appName is now running.")
+			Toast.makeText(context, "Bot Service for $appName is now running.", Toast.LENGTH_SHORT).show()
+			isRunning = true
+			NotificationUtils.updateNotification(context, isRunning)
+			buttonPlay.imageButton.setImageResource(R.drawable.stop_circle_filled)
+
+			thread = thread {
+				try {
+                    game = Game(context, serviceScope)
+
+					// Clear the Message Log.
+					MessageLog.clearLog()
+					MessageLog.saveCheck = false
+
+					// Start with the provided settings from SharedPreferences.
+                    game.start()
+
+					val notificationMessage = if (game.notificationMessage != "") game.notificationMessage else "Bot has completed successfully."
+					NotificationUtils.updateNotification(context, false, notificationMessage)
+				} catch (e: Exception) {
+					if (e.toString() == "java.lang.InterruptedException") {
+						NotificationUtils.updateNotification(context, false, "Bot was manually stopped.")
+					} else {
+						NotificationUtils.updateNotification(context, false, "Encountered an Exception: $e.\nTap me to see more details.")
+						MessageLog.e(TAG, "$appName encountered an Exception: ${e.stackTraceToString()}")
+					}
+				} finally {
+					performCleanUp()
+				}
+			}
+		} else {
+			thread.interrupt()
+			NotificationUtils.updateNotification(context, false, "Bot was manually stopped.")
+			performCleanUp()
+		}
+	}
+
+	fun onClickCalendar(event: MotionEvent) {
+		// Update both the Notification and the overlay button to reflect the current bot status.
+		if (!isRunning) {
+			Log.d(TAG, "Bot Service for $appName is now running.")
+			Toast.makeText(context, "Bot Service for $appName is now running.", Toast.LENGTH_SHORT).show()
+			isRunning = true
+			NotificationUtils.updateNotification(context, isRunning)
+			buttonCalendar.imageButton.setImageResource(R.drawable.stop_circle_filled)
+
+			thread = thread {
+				try {
+                    game = Game(context, serviceScope)
+
+					// Clear the Message Log.
+					MessageLog.clearLog()
+					MessageLog.saveCheck = false
+
+                    // Start with the provided settings from SharedPreferences.
+                    game.start("Daily Tasks")
+
+					val notificationMessage = if (game.notificationMessage != "") game.notificationMessage else "Bot has completed successfully."
+					NotificationUtils.updateNotification(context, false, notificationMessage)
+				} catch (e: Exception) {
+					if (e.toString() == "java.lang.InterruptedException") {
+						NotificationUtils.updateNotification(context, false, "Bot was manually stopped.")
+					} else {
+						NotificationUtils.updateNotification(context, false, "Encountered an Exception: $e.\nTap me to see more details.")
+                        MessageLog.e(TAG, "$appName encountered an Exception: ${e.stackTraceToString()}")
+					}
+				} finally {
+					performCleanUp()
+				}
+			}
+		} else {
+			thread.interrupt()
+			NotificationUtils.updateNotification(context, false, "Bot was manually stopped.")
+			performCleanUp()
+		}
+	}
+
+	fun onMove(layoutParams: WindowManager.LayoutParams) {
+		// Now update the layout.
+		windowManager.updateViewLayout(overlayView, layoutParams)
+	}
 	
 	@SuppressLint("ClickableViewAccessibility", "InflateParams")
 	override fun onCreate() {
 		super.onCreate()
-		
-		context = this
-        ImageUtils.initialize()
-		appName = context.getString(R.string.app_name)
 
-		// Initialize the animations for the floating overlay button.
-		initializeAnimations()
+        context = this
+
+		appName = context.getString(R.string.app_name)
 
 		// Display the overlay view layout on the screen.
 		overlayView = LayoutInflater.from(this).inflate(R.layout.bot_actions, null)
 		windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-		windowManager.addView(overlayView, overlayLayoutParams)
-		
-		// This button is able to be moved around the screen and clicking it will start/stop the game automation.
-		overlayButton = overlayView.findViewById(R.id.bot_actions_overlay_button)
+		windowManager.addView(overlayView, layoutParams)
 
-		// Start the initial animations for the floating overlay button.
-		startAnimations()
+        // This button is able to be moved around the screen and clicking it will start/stop the game automation.
+		buttonPlay = Button(
+			imageButton = overlayView.findViewById(R.id.bot_actions_overlay_button_play),
+			layoutParams = layoutParams,
+			animationMap = mutableMapOf<String, Animation>(
+				"play" to AnimationUtils.loadAnimation(this, R.anim.play_button_animation),
+				"alt" to AnimationUtils.loadAnimation(this, R.anim.play_button_animation_alt),
+				"stop" to AnimationUtils.loadAnimation(this, R.anim.stop_button_animation)
+			),
+			onClick = ::onClickPlay,
+			onMove = ::onMove,
+		)
 
-		overlayButton.setOnTouchListener(object : View.OnTouchListener {
-			private var initialX: Int = 0
-			private var initialY: Int = 0
-			private var initialTouchX: Float = 0F
-			private var initialTouchY: Float = 0F
-			
-			override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-				val action = event?.action
-				
-				if (action == MotionEvent.ACTION_DOWN) {
-					// Get the initial position.
-					initialX = overlayLayoutParams.x
-					initialY = overlayLayoutParams.y
-					
-					// Now get the new position.
-					initialTouchX = event.rawX
-					initialTouchY = event.rawY
-					
-					return false
-				} else if (action == MotionEvent.ACTION_UP) {
-					val elapsedTime: Long = event.eventTime - event.downTime
-					if (elapsedTime < 100L) {
-						// Update both the Notification and the overlay button to reflect the current bot status.
-						if (!isRunning) {
-							MessageLog.i(TAG, "Bot Service for $appName is now running.")
-							Toast.makeText(context, "Bot Service for $appName is now running.", Toast.LENGTH_SHORT).show()
-							isRunning = true
-							NotificationUtils.updateNotification(context, isRunning)
-							overlayButton.setImageResource(R.drawable.stop_circle_filled)
-
-							// Switch animations from the play to the stop button animations.
-							startAnimations()
-
-							var game: Game? = null
-
-							thread = thread {
-								try {
-                                    dialogEventProducer = DialogEventProducer(coroutineScope)
-									game = Game()
-									
-									// Clear the Message Log.
-									MessageLog.clearLog()
-									MessageLog.saveCheck = false
-
-                                    // Must come before game.start() since game.start() is blocking.
-                                    dialogEventProducer.start()
-									
-									// Start with the provided settings from SharedPreferences.
-									game.start(context, coroutineScope)
-
-									val notificationMessage = if (game.notificationMessage != "") game.notificationMessage else "Bot has completed successfully."
-									NotificationUtils.updateNotification(context, false, notificationMessage)
-								} catch (e: Exception) {
-									if (e.toString() == "java.lang.InterruptedException") {
-										NotificationUtils.updateNotification(context, false, "Bot was manually stopped.")
-									} else {
-										NotificationUtils.updateNotification(context, false, "Encountered an Exception: $e.\nTap me to see more details.")
-                                        MessageLog.e(TAG, "$appName encountered an Exception: ${e.stackTraceToString()}")
-									}
-								} finally {
-									performCleanUp()
-								}
-							}
-						} else {
-							thread.interrupt()
-							NotificationUtils.updateNotification(context, false, "Bot was manually stopped.")
-							performCleanUp()
-						}
-						
-						// Returning true here freezes the animation of the click on the button.
-						return false
-					}
-				} else if (action == MotionEvent.ACTION_MOVE) {
-					val xDiff = (event.rawX - initialTouchX).roundToInt()
-					val yDiff = (event.rawY - initialTouchY).roundToInt()
-					
-					// Calculate the X and Y coordinates of the view.
-					overlayLayoutParams.x = initialX + xDiff
-					overlayLayoutParams.y = initialY + yDiff
-					
-					// Now update the layout.
-					windowManager.updateViewLayout(overlayView, overlayLayoutParams)
-					return false
-				}
-				
-				return false
-			}
-		})
-	}
-
-	/**
-	 * Initialize the animations for the floating overlay button.
-	 */
-	private fun initializeAnimations() {
-		playButtonAnimation = AnimationUtils.loadAnimation(this, R.anim.play_button_animation)
-		playButtonAnimationAlt = AnimationUtils.loadAnimation(this, R.anim.play_button_animation_alt)
-		stopButtonAnimation = AnimationUtils.loadAnimation(this, R.anim.stop_button_animation)
-
-		// Set up animation listeners for continuous cycling.
-		setupPlayButtonAnimationListener()
-		setupPlayButtonAltAnimationListener()
-		setupStopButtonAnimationListener()
-	}
-
-	/**
-	 * Set up the initial animation listener for the play button animation.
-	 */
-	private fun setupPlayButtonAnimationListener() {
-		playButtonAnimation.setAnimationListener(object : Animation.AnimationListener {
-			override fun onAnimationStart(animation: Animation?) {}
-			override fun onAnimationEnd(animation: Animation?) {
-				if (!isRunning) {
-					// Switch animations.
-					currentPlayButtonAnimationType = PlayButtonAnimationType.BOUNCE_FADE
-					overlayButton.startAnimation(playButtonAnimation)
-				}
-			}
-			override fun onAnimationRepeat(animation: Animation?) {}
-		})
-	}
-
-	/**
-	 * Set up the other animation listener for the play button animation.
-	 */
-	private fun setupPlayButtonAltAnimationListener() {
-		playButtonAnimationAlt.setAnimationListener(object : Animation.AnimationListener {
-			override fun onAnimationStart(animation: Animation?) {}
-			override fun onAnimationEnd(animation: Animation?) {
-				if (!isRunning) {
-					// Switch animations.
-					currentPlayButtonAnimationType = PlayButtonAnimationType.PULSE_FADE
-					overlayButton.startAnimation(playButtonAnimationAlt)
-				}
-			}
-			override fun onAnimationRepeat(animation: Animation?) {}
-		})
-	}
-
-	/**
-	 * Set up the animation listener for the stop button animation.
-	 */
-	private fun setupStopButtonAnimationListener() {
-		stopButtonAnimation.setAnimationListener(object : Animation.AnimationListener {
-			override fun onAnimationStart(animation: Animation?) {}
-			override fun onAnimationEnd(animation: Animation?) {
-				if (isRunning) {
-					// Restart the animation.
-					overlayButton.startAnimation(stopButtonAnimation)
-				}
-			}
-			override fun onAnimationRepeat(animation: Animation?) {}
-		})
-	}
-
-	/**
-	 * Start the appropriate animations for the floating overlay button based on the bot state.
-	 */
-	private fun startAnimations() {
-		// Clear any existing animation.
-		overlayButton.clearAnimation()
-
-		// Start the appropriate animation based on bot state.
-		if (isRunning) {
-			overlayButton.startAnimation(stopButtonAnimation)
-		} else {
-			currentPlayButtonAnimationType = PlayButtonAnimationType.PULSE_FADE
-			overlayButton.startAnimation(playButtonAnimationAlt)
-		}
+        buttonCalendar = Button(
+			imageButton = overlayView.findViewById(R.id.bot_actions_overlay_button_calendar_event),
+			layoutParams = layoutParams,
+			animationMap = mutableMapOf<String, Animation>(),
+			onClick = ::onClickCalendar,
+			onMove = ::onMove,
+		)
 	}
 
 	override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -281,8 +264,10 @@ class BotService : Service() {
 	override fun onDestroy() {
 		super.onDestroy()
 
+        serviceScope.cancel()
+
 		// Stop animations before removing the view.
-		overlayButton.clearAnimation()
+		buttonPlay.imageButton.clearAnimation()
 
 		// Remove the overlay View that holds the overlay button.
 		windowManager.removeView(overlayView)
@@ -296,14 +281,15 @@ class BotService : Service() {
 	 */
 	private fun performCleanUp() {
 		MessageLog.d(TAG, "Bot Service for $appName is now stopped.")
+        serviceScope.cancel()
         // Save the message log.
 		MessageLog.saveLogToFile(context)
 		isRunning = false
 
 		// Reset the overlay button's image and animation on a separate UI thread.
 		Handler(Looper.getMainLooper()).post {
-			overlayButton.setImageResource(R.drawable.play_circle_filled)
-			startAnimations()
+			buttonPlay.imageButton.setImageResource(R.drawable.play_circle_filled)
+			buttonCalendar.imageButton.setImageResource(R.drawable.calendar_event)
 		}
 	}
 }
