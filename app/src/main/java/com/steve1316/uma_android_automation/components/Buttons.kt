@@ -105,6 +105,13 @@ object ButtonFollow : ComponentInterface {
     )
 }
 
+object ButtonGiveUp : ComponentInterface {
+    override val TAG: String = "ButtonGiveUp"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/give_up", Screen.TOP_HALF)
+    )
+}
+
 object ButtonToHome : ComponentInterface {
     override val TAG: String = "ButtonToHome"
     override val templates: List<Template> = listOf<Template>(
@@ -140,6 +147,41 @@ object ButtonHomeSpecialMissions : ComponentInterface {
     )
 }
 
+object ButtonHomePresents : ComponentInterface {
+    override val TAG: String = "ButtonHomePresents"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/home_presents")
+    )
+}
+
+object ButtonSpecialMissionsTabDaily : ComponentInterface {
+    override val TAG: String = "ButtonSpecialMissionsTabDaily"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/special_missions_tab_daily")
+    )
+}
+
+object ButtonSpecialMissionsTabMain : ComponentInterface {
+    override val TAG: String = "ButtonSpecialMissionsTabMain"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/special_missions_tab_main")
+    )
+}
+
+object ButtonSpecialMissionsTabTitles : ComponentInterface {
+    override val TAG: String = "ButtonSpecialMissionsTabTitles"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/special_missions_tab_titles")
+    )
+}
+
+object ButtonSpecialMissionsTabSpecial : ComponentInterface {
+    override val TAG: String = "ButtonSpecialMissionsTabSpecial"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/special_missions_tab_special")
+    )
+}
+
 object ButtonLegendRace : ComponentInterface {
     override val TAG: String = "ButtonLegendRace"
     override val templates: List<Template> = listOf<Template>(
@@ -154,8 +196,22 @@ object ButtonLegendRaceDisabled : ComponentInterface {
     )
 }
 
-object ButtonLegendRaceSpecialMissions : ComponentInterface {
-    override val TAG: String = "ButtonLegendRaceSpecialMissions"
+object ButtonRaceHardInactive : ComponentInterface {
+    override val TAG: String = "ButtonRaceHardInactive"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/race_hard_inactive")
+    )
+}
+
+object ButtonRaceHardActive : ComponentInterface {
+    override val TAG: String = "ButtonRaceHardActive"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/race_hard_active")
+    )
+}
+
+object ButtonLegendRaceHomeSpecialMissions : ComponentInterface {
+    override val TAG: String = "ButtonLegendRaceHomeSpecialMissions"
     override val templates: List<Template> = listOf<Template>(
         Template("buttons/legend_race_special_missions")
     )
@@ -186,6 +242,13 @@ object ButtonOk : ComponentInterface {
     override val TAG: String = "ButtonOk"
     override val templates: List<Template> = listOf<Template>(
         Template("buttons/ok")
+    )
+}
+
+object ButtonOptions : ComponentInterface {
+    override val TAG: String = "ButtonOptions"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/options")
     )
 }
 
@@ -277,6 +340,13 @@ object ButtonRestore : ComponentInterface {
     override val TAG: String = "ButtonRestore"
     override val templates: List<Template> = listOf<Template>(
         Template("buttons/restore")
+    )
+}
+
+object ButtonSaveAndExit : ComponentInterface {
+    override val TAG: String = "ButtonSaveAndExit"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/save_and_exit", Screen.TOP_HALF)
     )
 }
 
@@ -375,5 +445,51 @@ object CheckboxDoNotShowAgain : ComponentInterface {
     override val TAG: String = "CheckboxDoNotShowAgain"
     override val templates: List<Template> = listOf<Template>(
         Template("buttons/checkbox_do_not_show_again")
+    )
+}
+
+// More complex buttons
+
+object ButtonMenuBarHomeSelected : ComponentInterface {
+    override val TAG: String = "ButtonMenuBarHomeSelected"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/menu_bar_home_selected", Screen.BOTTOM_HALF)
+    )
+}
+
+object ButtonMenuBarHomeUnselected : ComponentInterface {
+    override val TAG: String = "ButtonMenuBarHomeUnselected"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/menu_bar_home_unselected", Screen.BOTTOM_HALF)
+    )
+}
+
+object ButtonMenuBarHome : MultiStateButtonInterface {
+    override val TAG: String = "ButtonMenuBarHome"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/menu_bar_home_unselected", Screen.BOTTOM_HALF),
+        Template("buttons/menu_bar_home_selected", Screen.BOTTOM_HALF),
+    )
+}
+
+object ButtonMenuBarRaceSelected : ComponentInterface {
+    override val TAG: String = "ButtonMenuBarRaceSelected"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/menu_bar_race_selected", Screen.BOTTOM_HALF)
+    )
+}
+
+object ButtonMenuBarRaceUnselected : ComponentInterface {
+    override val TAG: String = "ButtonMenuBarRaceUnselected"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/menu_bar_race_unselected", Screen.BOTTOM_HALF)
+    )
+}
+
+object ButtonMenuBarRace : MultiStateButtonInterface {
+    override val TAG: String = "ButtonMenuBarRace"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/menu_bar_race_unselected", Screen.BOTTOM_HALF),
+        Template("buttons/menu_bar_race_selected", Screen.BOTTOM_HALF),
     )
 }

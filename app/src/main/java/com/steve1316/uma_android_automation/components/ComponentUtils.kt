@@ -19,14 +19,13 @@ object ComponentUtils {
     * @param taps The number of taps.
     * @param ignoreWaiting Flag to ignore checking if the game is busy loading.
     */
-    fun tap(x: Double, y: Double, imageName: String, taps: Int = 1, ignoreWaiting: Boolean = false) {
+    fun tap(x: Double, y: Double, imageName: String, taps: Int = 1, ignoreWaiting: Boolean = false, imageUtils: ImageUtils? = null) {
         // Perform the tap.
         MyAccessibilityService.getInstance().tap(x, y, imageName, taps = taps)
 
         if (!ignoreWaiting) {
             // Now check if the game is waiting for a server response from the tap and wait if necessary.
-            GameUtils.wait(0.20)
-            GameUtils.waitForLoading()
+            GameUtils.wait(0.20, imageUtils=imageUtils)
         }
     }
 
@@ -40,12 +39,12 @@ object ComponentUtils {
     * @param suppressError Whether or not to suppress saving error messages to the log in failing to find the button. Defaults to false.
     * @return True if the button was found and clicked. False otherwise.
     */
-	fun findAndTapImage(imageName: String, tries: Int = 3, region: IntArray = Screen.FULL, taps: Int = 1, suppressError: Boolean = false, loggingTag: String = "ComponentUtils"): Boolean {
+	fun findAndTapImage(imageUtils: ImageUtils, imageName: String, tries: Int = 3, region: IntArray = Screen.FULL, taps: Int = 1, suppressError: Boolean = false, loggingTag: String = "ComponentUtils"): Boolean {
 		if (UserConfig.config.bEnableDebugMode) {
 			MessageLog.d(loggingTag, "Now attempting to find and click the \"$imageName\" button.")
 		}
 
-		val tempLocation: Point? = ImageUtils.findImage(imageName, tries = tries, region = region, suppressError = suppressError).first
+		val tempLocation: Point? = imageUtils.findImage(imageName, tries = tries, region = region, suppressError = suppressError).first
 
 		return if (tempLocation != null) {
 			MessageLog.d(loggingTag, "Found and going to tap: $imageName")

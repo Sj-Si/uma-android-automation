@@ -59,34 +59,34 @@ object ScreenCareerEnd : ScreenInterface {
 object ButtonCareerQuick : ComponentInterface {
     override val TAG: String = "ButtonCareerQuick"
     override val templates: List<Template> = listOf<Template>(
-        Template("career/career_quick", Screen.BOTTOM)
+        Template("career/career_quick", Screen.BOTTOM_HALF)
     )
 }
 
 object ButtonCareerQuickEnabled : ComponentInterface {
     override val TAG: String = "ButtonCareerQuickEnabled"
     override val templates: List<Template> = listOf<Template>(
-        Template("career/career_quick_enabled", Screen.BOTTOM)
+        Template("career/career_quick_enabled", Screen.BOTTOM_HALF)
     )
 }
 
 object ButtonCareerSkip1 : ComponentInterface {
     override val TAG: String = "ButtonCareerSkip1"
     override val templates: List<Template> = listOf<Template>(
-        Template("career/career_skip_1", Screen.BOTTOM)
+        Template("career/career_skip_1", Screen.BOTTOM_HALF)
     )
 }
 object ButtonCareerSkip2 : ComponentInterface {
     override val TAG: String = "ButtonCareerSkip2"
     override val templates: List<Template> = listOf<Template>(
-        Template("career/career_skip_2", Screen.BOTTOM)
+        Template("career/career_skip_2", Screen.BOTTOM_HALF)
     )
 }
 
 object ButtonCareerSkipOff : ComponentInterface {
     override val TAG: String = "ButtonCareerSkipOff"
     override val templates: List<Template> = listOf<Template>(
-        Template("career/career_skip_off", Screen.BOTTOM)
+        Template("career/career_skip_off", Screen.BOTTOM_HALF)
     )
 }
 

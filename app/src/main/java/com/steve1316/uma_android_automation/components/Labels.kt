@@ -31,3 +31,31 @@ object LabelStatDistance : ComponentInterface {
         Template("stat_distance", Screen.MIDDLE),
     )
 }
+
+object LabelTeamTrialsSelectOpponent : ComponentInterface {
+    override val TAG: String = "LabelTeamTrialsSelectOpponent"
+    override val templates: List<Template> = listOf<Template>(
+        Template("team_trials_select_opponent", Screen.TOP_HALF),
+    )
+}
+
+object LabelTeamTrialsRaceResultWin : ComponentInterface {
+    override val TAG: String = "LabelTeamTrialsRaceResultWin"
+    override val templates: List<Template> = listOf<Template>(
+        Template("team_trials_win", Screen.MIDDLE),
+    )
+}
+
+object LabelTeamTrialsRaceResultLose : ComponentInterface {
+    override val TAG: String = "LabelTeamTrialsRaceResultLose"
+    override val templates: List<Template> = listOf<Template>(
+        Template("team_trials_lose", Screen.MIDDLE),
+    )
+}
+
+object LabelTeamTrialsRaceResultDraw : ComponentInterface {
+    override val TAG: String = "LabelTeamTrialsRaceResultDraw"
+    override val templates: List<Template> = listOf<Template>(
+        Template("team_trials_draw", Screen.MIDDLE),
+    )
+}
