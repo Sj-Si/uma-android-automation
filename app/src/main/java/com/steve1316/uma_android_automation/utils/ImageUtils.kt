@@ -7,7 +7,6 @@ import androidx.preference.PreferenceManager
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
-import com.googlecode.tesseract.android.TessBaseAPI
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.utils.MessageLog
@@ -34,25 +33,23 @@ import kotlin.text.replace
 import com.steve1316.uma_android_automation.utils.UserConfig
 import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.Screen
+import com.steve1316.uma_android_automation.utils.TesseractApi
 import com.steve1316.uma_android_automation.components.*
+import kotlinx.coroutines.runBlocking
 import java.io.InputStream
 
 /** Utility functions for image processing via CV like OpenCV. */
-object ImageUtils {
+class ImageUtils() {
     private val TAG: String = "ImageUtils"
 	private val matchMethod: Int = Imgproc.TM_CCOEFF_NORMED
 	private val decimalFormat = DecimalFormat("#.###")
 	private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-	private lateinit var tessBaseAPI: TessBaseAPI
-	private val tesseractLanguages = arrayListOf("eng")
 
-    // Root directory of external files.
-    private var externalFilesPath: String? = ""
+    private lateinit var context: Context
+    private lateinit var tessApi: TesseractApi
+
     // Stores the file path to the saved match image file for debugging purposes.
     private var matchFilePath: String = ""
-    private var tesseractFilePath: String = ""
-    private var tesseractTempDataFilePath: String = ""
-    
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
@@ -103,76 +100,15 @@ object ImageUtils {
         val filledSegments: Int,
         val dominantColor: String,
     )
-    
-    fun initialize() {
-        externalFilesPath = MainApplication.getApplicationContext().getExternalFilesDir(null)?.absolutePath
-        matchFilePath = "$externalFilesPath/temp"
-        tesseractFilePath = "$externalFilesPath/tesseract"
-        tesseractTempDataFilePath = "$tesseractFilePath/tessdata"
-	
-		// Initialize Tesseract with the traineddata model.
-		initTesseract()
-		tessBaseAPI = TessBaseAPI()
 
-		// Start up Tesseract.
-        
-		tessBaseAPI.init(tesseractFilePath, "eng")
-		MessageLog.i(TAG, "Training file loaded.")
+    init {
+        context = MainApplication.getApplicationContext()
+        tessApi = TesseractApi(context)
     }
 
     private fun openAsset(relPath: String): InputStream? {
-        return MainApplication.getApplicationContext().assets?.open(relPath)
+        return context.assets?.open(relPath)
     }
-
-    /**
-    * Initialize Tesseract for future OCR operations. Make sure to put your .traineddata inside the root of the /assets/ folder.
-    */
-	private fun initTesseract() {
-		val newTempDirectory = File(tesseractTempDataFilePath)
-
-		// If the /files/temp/ folder does not exist, create it.
-		if (!newTempDirectory.exists()) {
-			val successfullyCreated: Boolean = newTempDirectory.mkdirs()
-
-			// If the folder was not able to be created for some reason, log the error and stop the MediaProjection Service.
-			if (!successfullyCreated) {
-				MessageLog.e(TAG, "Failed to create the /files/tesseract/tessdata/ folder.")
-			} else {
-				MessageLog.i(TAG, "Successfully created /files/tesseract/tessdata/ folder.")
-			}
-		} else {
-			MessageLog.i(TAG, "/files/tesseract/tessdata/ folder already exists.")
-		}
-
-		// If the traineddata is not in the application folder, copy it there from assets.
-		tesseractLanguages.forEach { lang ->
-			val trainedDataPath = File(tesseractTempDataFilePath, "$lang.traineddata")
-			if (!trainedDataPath.exists()) {
-				try {
-					MessageLog.i(TAG, "Starting Tesseract initialization.")
-					val input = openAsset("$lang.traineddata")
-                    if (input == null) {
-                        throw IOException("Failed to open asset: $lang.traineddata")
-                    }
-
-					val output = FileOutputStream("$tesseractTempDataFilePath/$lang.traineddata")
-
-					val buffer = ByteArray(1024)
-					var read: Int
-					while (input.read(buffer).also { read = it } != -1) {
-						output.write(buffer, 0, read)
-					}
-
-					input.close()
-					output.flush()
-					output.close()
-					MessageLog.i(TAG, "Finished Tesseract initialization.")
-				} catch (e: IOException) {
-					MessageLog.e(TAG, "IO EXCEPTION: ${e.stackTraceToString()}")
-				}
-			}
-		}
-	}
 
     // ===========================================================================
     // UTILITY FUNCTIONS
@@ -760,7 +696,7 @@ object ImageUtils {
         tries: Int = 5,
         region: IntArray = Screen.FULL,
         suppressError: Boolean = false,
-    ): Pair<Point?, Bitmap> {
+    ): Pair<Point?, Bitmap> = runBlocking {
 		var numberOfTries = tries
 
 		if (bEnableDebugMode) {
@@ -783,16 +719,16 @@ object ImageUtils {
 					}
 
 					MessageLog.d(TAG, "Failed to find the ${templateName.uppercase()} button. Trying again...")
-					GameUtils.wait(0.1)
+					GameUtils.wait(0.1, imageUtils=this@ImageUtils)
 					sourceBitmap = getSourceBitmap()
 				} else {
 					MessageLog.i(TAG, "[SUCCESS] Found the ${templateName.uppercase()} at $location.")
-					return Pair(location, sourceBitmap)
+					return@runBlocking Pair(location, sourceBitmap)
 				}
 			}
 		}
 
-		return Pair(null, sourceBitmap)
+		return@runBlocking Pair(null, sourceBitmap)
 	}
 
     /**
@@ -822,7 +758,7 @@ object ImageUtils {
 						break
 					}
 
-					GameUtils.wait(0.1)
+					GameUtils.wait(0.1, imageUtils=this)
 					sourceBitmap = getSourceBitmap()
 				} else {
 					MessageLog.i(TAG, "[SUCCESS] Current location confirmed to be at ${templateName.uppercase()}.")
@@ -1099,21 +1035,9 @@ object ImageUtils {
 		// Convert the Mat directly to Bitmap and then pass it to the text reader.
 		val resultBitmap = createBitmap(bwImage.cols(), bwImage.rows())
 		Utils.matToBitmap(bwImage, resultBitmap)
-		tessBaseAPI.setImage(resultBitmap)
 
-		// Set the Page Segmentation Mode to '--psm 7' or "Treat the image as a single text line" according to https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html#page-segmentation-method
-		tessBaseAPI.pageSegMode = TessBaseAPI.PageSegMode.PSM_SINGLE_LINE
+        val result = tessApi.ocr(resultBitmap, singleLineMode=true)
 
-		var result = "empty!"
-		try {
-			// Finally, detect text on the cropped region.
-			result = tessBaseAPI.utF8Text
-			MessageLog.i(TAG, "Detected text with Tesseract: $result")
-		} catch (e: Exception) {
-			MessageLog.e(TAG, "Cannot perform OCR: ${e.stackTraceToString()}")
-		}
-
-		tessBaseAPI.clear()
 		tempImage.release()
 		cvImage.release()
 		bwImage.release()
@@ -1138,7 +1062,7 @@ object ImageUtils {
 	fun findTrainingFailureChance(sourceBitmap: Bitmap? = null, trainingSelectionLocation: Point? = null): Int {
 		// Crop the source screenshot to hold the success percentage only.
 		val (trainingSelectionLocation, sourceBitmap) = if (sourceBitmap == null && trainingSelectionLocation == null) {
-			TrainingFailureChance.find()
+			TrainingFailureChance.find(imageUtils=this)
 		} else {
 			Pair(trainingSelectionLocation, sourceBitmap)
 		}
@@ -1204,24 +1128,19 @@ object ImageUtils {
 
 		// Fallback to Tesseract if ML Kit failed or didn't find result.
 		if (mlkitFailed || result == -1) {
-			tessBaseAPI.setImage(resultBitmap)
-			tessBaseAPI.pageSegMode = TessBaseAPI.PageSegMode.PSM_SINGLE_LINE
-
+            val detectedText = tessApi.ocr(resultBitmap, singleLineMode=true).replace("%", "")
 			try {
-				val detectedText = tessBaseAPI.utF8Text.replace("%", "")
 				MessageLog.i(TAG, "Detected training failure chance with Tesseract: $detectedText")
 				val cleanedResult = detectedText.replace(Regex("[^0-9]"), "")
 				// The game shows failure rate directly
 				result = cleanedResult.toInt()
 			} catch (_: NumberFormatException) {
-				MessageLog.e(TAG, "Could not convert \"${tessBaseAPI.utF8Text.replace("%", "")}\" to integer.")
+				MessageLog.e(TAG, "Could not convert \"${detectedText}\" to integer.")
 				result = -1
 			} catch (e: Exception) {
 				MessageLog.e(TAG, "Cannot perform OCR using Tesseract: ${e.stackTraceToString()}")
 				result = -1
 			}
-
-			tessBaseAPI.clear()
 		}
 
 		if (bEnableDebugMode) {
@@ -1242,7 +1161,7 @@ object ImageUtils {
 	 */
 	fun determineDayForExtraRace(): Int {
 		var result = -1
-		val (energyTextLocation, sourceBitmap) = LabelEnergy.find()
+		val (energyTextLocation, sourceBitmap) = LabelEnergy.find(imageUtils=this)
 
 		if (energyTextLocation != null) {
 			// Crop the source screenshot to only contain the day number.
@@ -1314,23 +1233,18 @@ object ImageUtils {
 
 			// Fallback to Tesseract if ML Kit failed or didn't find result.
 			if (mlkitFailed || result == -1) {
-				tessBaseAPI.setImage(resultBitmap)
-				tessBaseAPI.pageSegMode = TessBaseAPI.PageSegMode.PSM_SINGLE_LINE
-
+				val detectedText = tessApi.ocr(resultBitmap, singleLineMode=true).replace("%", "")
 				try {
-					val detectedText = tessBaseAPI.utF8Text.replace("%", "")
 					MessageLog.i(TAG, "Detected day for extra racing with Tesseract: $detectedText")
 					val cleanedResult = detectedText.replace(Regex("[^0-9]"), "")
 					result = cleanedResult.toInt()
 				} catch (_: NumberFormatException) {
-					MessageLog.e(TAG, "Could not convert \"${tessBaseAPI.utF8Text.replace("%", "")}\" to integer.")
+					MessageLog.e(TAG, "Could not convert \"${detectedText}\" to integer.")
 					result = -1
 				} catch (e: Exception) {
 					MessageLog.e(TAG, "Cannot perform OCR using Tesseract: ${e.stackTraceToString()}")
 					result = -1
 				}
-
-				tessBaseAPI.clear()
 			}
 
 			cvImage.release()
@@ -1403,20 +1317,9 @@ object ImageUtils {
 
 			resultBitmap = createBitmap(bwImage.cols(), bwImage.rows())
 			Utils.matToBitmap(bwImage, resultBitmap)
-			tessBaseAPI.setImage(resultBitmap)
 
-			// Set the Page Segmentation Mode to '--psm 7' or "Treat the image as a single text line" according to https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html#page-segmentation-method
-			tessBaseAPI.pageSegMode = TessBaseAPI.PageSegMode.PSM_SINGLE_LINE
+			var result = tessApi.ocr(resultBitmap, singleLineMode=true)
 
-			var result = "empty!"
-			try {
-				// Finally, detect text on the cropped region.
-				result = tessBaseAPI.utF8Text
-			} catch (e: Exception) {
-				MessageLog.e(TAG, "Cannot perform OCR with Tesseract: ${e.stackTraceToString()}")
-			}
-
-			tessBaseAPI.clear()
 			cvImage.release()
 			bwImage.release()
 
@@ -1453,7 +1356,7 @@ object ImageUtils {
 	 * @return Number of skill points or -1 if not found.
 	 */
 	fun determineSkillPoints(): Int {
-		val (skillPointLocation, sourceBitmap) = StatTableHeaderSkillPoints.find()
+		val (skillPointLocation, sourceBitmap) = StatTableHeaderSkillPoints.find(imageUtils=this)
 
 		return if (skillPointLocation != null) {
 			val croppedBitmap = if (isTablet) {
@@ -1511,19 +1414,7 @@ object ImageUtils {
 			}
 
 			if (mlkitFailed || result == "") {
-				tessBaseAPI.setImage(resultBitmap)
-
-				// Set the Page Segmentation Mode to '--psm 7' or "Treat the image as a single text line" according to https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html#page-segmentation-method
-				tessBaseAPI.pageSegMode = TessBaseAPI.PageSegMode.PSM_SINGLE_LINE
-
-				try {
-					// Finally, detect text on the cropped region.
-					result = tessBaseAPI.utF8Text
-				} catch (e: Exception) {
-					MessageLog.e(TAG, "Cannot perform OCR with Tesseract: ${e.stackTraceToString()}")
-				}
-
-				tessBaseAPI.clear()
+				result = tessApi.ocr(resultBitmap, singleLineMode=true)
 			}
 
 			cvImage.release()
@@ -1721,7 +1612,7 @@ object ImageUtils {
 	 * @return The preferred distance (Sprint, Mile, Medium, or Long) or Medium as default if no aptitude is detected.
 	 */
 	fun determinePreferredDistance(): String {
-		val (distanceLocation, sourceBitmap) = LabelStatDistance.find()
+		val (distanceLocation, sourceBitmap) = LabelStatDistance.find(imageUtils=this)
 		if (distanceLocation == null) {
 			MessageLog.e(TAG, "Could not determine the preferred distance. Setting to Medium by default.")
 			return "Medium"
@@ -1773,7 +1664,7 @@ object ImageUtils {
 	 * @return The mapping of all 5 stats names to their respective integer values.
 	 */
 	fun determineStatValues(statValueMapping: MutableMap<String, Int>): MutableMap<String, Int> {
-		val (skillPointsLocation, sourceBitmap) = StatTableHeaderSkillPoints.find()
+		val (skillPointsLocation, sourceBitmap) = StatTableHeaderSkillPoints.find(imageUtils=this)
 
 		if (skillPointsLocation != null) {
 			// Process all stats at once using the mapping
@@ -1803,20 +1694,9 @@ object ImageUtils {
 
 				val resultBitmap = createBitmap(cvImage.cols(), cvImage.rows())
 				Utils.matToBitmap(cvImage, resultBitmap)
-				tessBaseAPI.setImage(resultBitmap)
+				
+                val result = tessApi.ocr(resultBitmap, singleLineMode=true)
 
-				// Set the Page Segmentation Mode to '--psm 7' or "Treat the image as a single text line" according to https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html#page-segmentation-method
-				tessBaseAPI.pageSegMode = TessBaseAPI.PageSegMode.PSM_SINGLE_LINE
-
-				var result = "empty!"
-				try {
-					// Finally, detect text on the cropped region.
-					result = tessBaseAPI.utF8Text
-				} catch (e: Exception) {
-					MessageLog.e(TAG, "Cannot perform OCR with Tesseract: ${e.stackTraceToString()}")
-				}
-
-				tessBaseAPI.clear()
 				cvImage.release()
 
 				MessageLog.i(TAG, "Detected number of stats for $statName from Tesseract before formatting: $result")
@@ -1846,7 +1726,7 @@ object ImageUtils {
 	 * @return The detected date string from the game screen, or empty string if detection fails.
 	 */
 	fun determineDayNumber(): String {
-		val (energyLocation, sourceBitmap) = LabelEnergy.find()
+		val (energyLocation, sourceBitmap) = LabelEnergy.find(imageUtils=this)
 		var result = ""
 		if (energyLocation != null) {
 			val croppedBitmap = createSafeBitmap(sourceBitmap, relX(energyLocation.x, -268), relY(energyLocation.y, -180), relWidth(308), relHeight(35), "determineDayNumber")
@@ -1895,18 +1775,7 @@ object ImageUtils {
 
 			// Fallback to Tesseract if ML Kit failed or didn't find result.
 			if (mlkitFailed || result == "") {
-				tessBaseAPI.setImage(resultBitmap)
-				tessBaseAPI.pageSegMode = TessBaseAPI.PageSegMode.PSM_SINGLE_LINE
-
-				try {
-					result = tessBaseAPI.utF8Text
-					MessageLog.i(TAG, "Detected date with Tesseract: $result")
-				} catch (e: Exception) {
-					MessageLog.e(TAG, "Cannot perform OCR using Tesseract: ${e.stackTraceToString()}")
-					result = ""
-				}
-
-				tessBaseAPI.clear()
+				result = tessApi.ocr(resultBitmap, singleLineMode=true)
 			}
 
 			if (bEnableDebugMode) {
@@ -1948,7 +1817,7 @@ object ImageUtils {
 		)
 
 		val (skillPointsLocation, sourceBitmap) = if (sourceBitmap == null && skillPointsLocation == null) {
-			StatTableHeaderSkillPoints.find()
+			StatTableHeaderSkillPoints.find(imageUtils=this)
 		} else {
 			Pair(skillPointsLocation, sourceBitmap)
 		}
