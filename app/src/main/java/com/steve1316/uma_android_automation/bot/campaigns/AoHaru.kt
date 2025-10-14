@@ -23,11 +23,11 @@ class AoHaru(game: Game, coroutineScope: CoroutineScope) : Campaign(game, corout
 
 	override fun handleRaceEvents(): Boolean {
 		// Check for Ao Haru specific race screens first.
-		if (aoHaruRaceFirstTime && ImageUtils.confirmLocation("aoharu_set_initial_team", tries = 1)) {
-			ButtonClose.click()
+		if (aoHaruRaceFirstTime && game.imageUtils.confirmLocation("aoharu_set_initial_team", tries = 1)) {
+			ButtonClose.click(imageUtils=game.imageUtils)
 			handleRaceEventsAoHaru()
 			return true
-		} else if (ImageUtils.confirmLocation("aoharu_race", tries = 1)) {
+		} else if (game.imageUtils.confirmLocation("aoharu_race", tries = 1)) {
 			handleRaceEventsAoHaru()
 			return true
 		}
@@ -45,11 +45,11 @@ class AoHaru(game: Game, coroutineScope: CoroutineScope) : Campaign(game, corout
 	 */
 	private fun handleTrainingEventAoHaru() {
 		if (tutorialChances > 0) {
-			if (ImageUtils.confirmLocation("aoharu_tutorial", tries = 2)) {
+			if (game.imageUtils.confirmLocation("aoharu_tutorial", tries = 2)) {
 				MessageLog.i(TAG, "[AOHARU] Detected tutorial for Ao Haru. Closing it now...")
 				
 				// If the tutorial is detected, select the second option to close it.
-				val trainingOptionLocations: ArrayList<Point> = ImageUtils.findAll("career/training_event_active")
+				val trainingOptionLocations: ArrayList<Point> = game.imageUtils.findAll("career/training_event_active")
 				ComponentUtils.tap(
                     trainingOptionLocations[1].x,
                     trainingOptionLocations[1].y,
@@ -73,56 +73,56 @@ class AoHaru(game: Game, coroutineScope: CoroutineScope) : Campaign(game, corout
 		aoHaruRaceFirstTime = false
 		
 		// Head to the next screen with the 3 racing options.
-		ButtonAoHaruRace.click()
-		GameUtils.wait(7.0)
+		ButtonAoHaruRace.click(imageUtils=game.imageUtils)
+		GameUtils.wait(7.0, imageUtils=game.imageUtils)
 		
-		if (ButtonAoHaruFinalRace.click(tries=10)) {
+		if (ButtonAoHaruFinalRace.click(imageUtils=game.imageUtils, tries=10)) {
 			MessageLog.i(TAG, "[AOHARU] Final race detected. Racing it now...")
-			ButtonAoHaruSelectRace.click()
+			ButtonAoHaruSelectRace.click(imageUtils=game.imageUtils)
 		} else {
 			// Run the first option if it has more than 3 double circles and if not, run the second option.
-			var racingOptions = ImageUtils.findAll("aoharu/aoharu_race_option")
+			var racingOptions = game.imageUtils.findAll("aoharu/aoharu_race_option")
 			ComponentUtils.tap(
                 racingOptions[0].x,
                 racingOptions[0].y,
                 "aoharu/aoharu_race_option"
             )
 			
-            ButtonAoHaruSelectRace.click(tries=10)
-			GameUtils.wait(2.0)
+            ButtonAoHaruSelectRace.click(imageUtils=game.imageUtils, tries=10)
+			GameUtils.wait(2.0, imageUtils=game.imageUtils)
 			
-			val doubleCircles = ImageUtils.findAll("race_prediction_double_circle")
+			val doubleCircles = game.imageUtils.findAll("race_prediction_double_circle")
 			if (doubleCircles.size >= 3) {
 				MessageLog.i(TAG, "[AOHARU] First race has sufficient double circle predictions. Selecting it now...")
-				ButtonAoHaruSelectRace.click(tries=10)
+				ButtonAoHaruSelectRace.click(imageUtils=game.imageUtils, tries=10)
 			} else {
 				MessageLog.i(TAG, "[AOHARU] First race did not have the sufficient double circle predictions. Selecting the 2nd race now...")
-				ButtonCancel.click(tries=10)
-				GameUtils.wait(1.0)
+				ButtonCancel.click(imageUtils=game.imageUtils, tries=10)
+				GameUtils.wait(1.0, imageUtils=game.imageUtils)
 				
-				racingOptions = ImageUtils.findAll("aoharu/aoharu_race_option")
+				racingOptions = game.imageUtils.findAll("aoharu/aoharu_race_option")
 				ComponentUtils.tap(
                     racingOptions[1].x,
                     racingOptions[1].y,
                     "aoharu/aoharu_race_option"
                 )
 
-                ButtonAoHaruSelectRace.click(tries=30)
-                ButtonAoHaruSelectRace.click(tries=30)
-                ButtonAoHaruSelectRace.click(tries=10)
+                ButtonAoHaruSelectRace.click(imageUtils=game.imageUtils, tries=30)
+                ButtonAoHaruSelectRace.click(imageUtils=game.imageUtils, tries=30)
+                ButtonAoHaruSelectRace.click(imageUtils=game.imageUtils, tries=10)
 			}
 		}
 		
-		GameUtils.wait(7.0)
+		GameUtils.wait(7.0, imageUtils=game.imageUtils)
 		
 		// Now run the race and skip to the end.
-		ButtonAoHaruRunRace.click(tries=30)
-		GameUtils.wait(1.0)
-        ButtonSkip.click(tries=30)
-		GameUtils.wait(3.0)
+		ButtonAoHaruRunRace.click(imageUtils=game.imageUtils, tries=30)
+		GameUtils.wait(1.0, imageUtils=game.imageUtils)
+        ButtonSkip.click(imageUtils=game.imageUtils, tries=30)
+		GameUtils.wait(3.0, imageUtils=game.imageUtils)
 		
-        ButtonRaceEnd.click(tries=30)
-		GameUtils.wait(1.0)
-		ButtonRaceEnd.click(tries=30)
+        ButtonRaceEnd.click(imageUtils=game.imageUtils, tries=30)
+		GameUtils.wait(1.0, imageUtils=game.imageUtils)
+		ButtonRaceEnd.click(imageUtils=game.imageUtils, tries=30)
 	}
 }

@@ -8,6 +8,7 @@ import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.ImageUtils
 import com.steve1316.uma_android_automation.utils.AppEvent
 import com.steve1316.uma_android_automation.utils.Screen
+import com.steve1316.uma_android_automation.dialog.DialogListener
 import com.steve1316.uma_android_automation.components.*
 
 import kotlinx.coroutines.*
@@ -18,11 +19,11 @@ import kotlinx.coroutines.*
  * By default, URA Finale is handled by this base class.
  */
 open class Campaign(val game: Game, val coroutineScope: CoroutineScope) {
-	protected open val TAG: String = "Normal"
+	protected open val TAG: String = "Campaign"
 
     init {
         EventBus.subscribe<AppEvent.DialogEvent>(coroutineScope) { event ->
-            MessageLog.d(TAG, "DialogEvent (${event.dialog.name})")
+            MessageLog.d(TAG, "DialogEvent (${event.dialog?.name})")
         }
     }
 
@@ -53,15 +54,27 @@ open class Campaign(val game: Game, val coroutineScope: CoroutineScope) {
 	fun start() {
 		while (true) {
 			////////////////////////////////////////////////
-			// Most bot operations start at the Main screen.
-			if (game.checkMainScreen()) {
+            if (DialogListener.check(game.imageUtils)) {
+                val dialog = DialogListener.getDialog(game.imageUtils)
+                if (dialog == null) {
+                    MessageLog.w(TAG, "Dialog detected but returned null.")
+                } else {
+                    // Handle various dialogs.
+                    MessageLog.i(TAG, "Dialog detected: ${dialog.name}")
+                    // Handle campaign specific dialogs
+
+                    // After campaign specific dialog handling, handle general game dialogs.
+                    game.handleDialogs(obj)
+                }
+            } else if (game.checkMainScreen()) {
+                // Most bot operations start at the Main screen.
 				var needToRace = false
 				if (!game.encounteredRacingPopup) {
 					// Refresh the stat values in memory.
 					game.updateStatValueMapping()
 
 					// If the required skill points has been reached, stop the bot.
-					if (UserConfig.config.bEnableSkillPointCheck && ImageUtils.determineSkillPoints() >= UserConfig.config.skillPointCheckThreshold) {
+					if (UserConfig.config.bEnableSkillPointCheck && game.imageUtils.determineSkillPoints() >= UserConfig.config.skillPointCheckThreshold) {
 						MessageLog.i(TAG, "[END] Bot has acquired the set amount of skill points. Exiting now...")
 						game.notificationMessage = "Bot has acquired the set amount of skill points."
 						break
@@ -86,8 +99,8 @@ open class Campaign(val game: Game, val coroutineScope: CoroutineScope) {
 						// If the bot detected a injury, then rest.
 						if (game.checkInjury()) {
 							MessageLog.i(TAG, "A infirmary visit was attempted in order to heal an injury.")
-							ButtonOk.click()
-							GameUtils.wait(3.0)
+							ButtonOk.click(imageUtils=game.imageUtils)
+							GameUtils.wait(3.0, imageUtils=game.imageUtils)
 							game.skipRacing = false
 						} else if (game.recoverMood()) {
 							MessageLog.i(TAG, "Mood has recovered.")
@@ -110,12 +123,12 @@ open class Campaign(val game: Game, val coroutineScope: CoroutineScope) {
 							game.notificationMessage = "Stopping bot due to detection of Mandatory Race."
 							break
 						}
-						ButtonBack.click()
+						ButtonBack.click(imageUtils=game.imageUtils)
 						game.skipRacing = !UserConfig.config.bEnableForceRacing
 						game.handleTraining()
 					}
 				}
-			} else if (ScreenCareerTrainingEvent.check()) {
+			} else if (ScreenCareerTrainingEvent.check(imageUtils=game.imageUtils)) {
 				// If the bot is at the Training Event screen, that means there are selectable options for rewards.
 				MessageLog.i(TAG, "Detected a Training Event on screen.")
 				handleTrainingEvent()
@@ -132,12 +145,12 @@ open class Campaign(val game: Game, val coroutineScope: CoroutineScope) {
 					game.notificationMessage = "Stopping bot due to detection of Mandatory Race."
 					break
 				}
-			} else if (ScreenRace.check()) {
+			} else if (ScreenRace.check(imageUtils=game.imageUtils)) {
 				// If the bot is already at the Racing screen, then complete this standalone race.
 				MessageLog.i(TAG, "There is a standalone race ready to be run.")
 				game.handleStandaloneRace()
 				game.skipRacing = false
-			} else if (ButtonCompleteCareer.check()) {
+			} else if (ButtonCompleteCareer.check(imageUtils=game.imageUtils)) {
 				// Stop when the bot has reached the screen where it details the overall result of the run.
 				MessageLog.i(TAG, "[END] Bot has reached the end of the run. Exiting now...")
 				game.notificationMessage = "Bot has reached the end of the run"

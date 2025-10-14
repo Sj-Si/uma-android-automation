@@ -169,7 +169,7 @@ class TextDetection(private val game: Game) {
 			return Game.Date(3, "Early", 1, 49)
 		} else if (dateString.lowercase().contains("debut")) {
 			// Special handling for the Pre-Debut phase.
-			val turnsRemaining = ImageUtils.determineDayForExtraRace()
+			val turnsRemaining = game.imageUtils.determineDayForExtraRace()
 
 			// Pre-Debut ends on Early July (turn 13), so we calculate backwards.
 			// This includes the Race day.
@@ -278,7 +278,7 @@ class TextDetection(private val game: Game) {
 		while (true) {
 			// Perform Tesseract OCR detection.
 			if ((255.0 - UserConfig.config.ocr.ocrThreshold - increment) > 0.0) {
-				result = ImageUtils.findText(increment)
+				result = game.imageUtils.findText(increment)
 			} else {
 				break
 			}
