@@ -48,25 +48,51 @@ open class Campaign(val game: Game, val coroutineScope: CoroutineScope) {
 		return false
 	}
 
+    fun handleDialogs(): Boolean {
+        val dialog = DialogListener.getDialog(game.imageUtils)
+        if (dialog == null) {
+            MessageLog.w(TAG, "UNKNOWN DIALOG DETECTED")
+            return false
+        } else {
+            // Handle various dialogs.
+            MessageLog.i(TAG, "Dialog detected: ${dialog.name}")
+            // Handle campaign specific dialogs
+            if (handleDialogs(obj)) {
+                continue
+            }
+            
+        }
+        MessageLog.d(TAG, "handleDialogs:: ${dialog?.name}")
+        when (dialog.name) {
+            "umausume_details" -> {
+                game.preferredDistance = imageUtils.determinePreferredDistance()
+                MessageLog.i(TAG, "[STATS] Preferred distance set to ${game.preferredDistance}.")
+                dialog.close(imageUtils=imageUtils, tries=5)
+            }
+            "insufficient_fans" -> {
+                MessageLog.i(TAG, "Dialog Event: General: Insufficient Fans")
+                game.encounteredRacingPopup = true
+                game.skipRacing = false
+                dialog.ok(imageUtils=imageUtils, tries=5)
+            }
+            else -> return false
+        }
+
+        dialog.close(imageUtils=imageUtils)
+
+        return true
+    }
+
 	/**
 	 * Main automation loop that handles all shared logic.
 	 */
 	fun start() {
 		while (true) {
-			////////////////////////////////////////////////
-            if (DialogListener.check(game.imageUtils)) {
-                val dialog = DialogListener.getDialog(game.imageUtils)
-                if (dialog == null) {
-                    MessageLog.w(TAG, "Dialog detected but returned null.")
-                } else {
-                    // Handle various dialogs.
-                    MessageLog.i(TAG, "Dialog detected: ${dialog.name}")
-                    // Handle campaign specific dialogs
+            // Try to handle any campaign and game dialogs.
+            handleDialogs()
+            game.handleDialogs()
 
-                    // After campaign specific dialog handling, handle general game dialogs.
-                    game.handleDialogs(obj)
-                }
-            } else if (game.checkMainScreen()) {
+            if (game.checkMainScreen()) {
                 // Most bot operations start at the Main screen.
 				var needToRace = false
 				if (!game.encounteredRacingPopup) {

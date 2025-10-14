@@ -23,7 +23,12 @@ interface DialogInterface {
 
     fun check(imageUtils: ImageUtils, tries: Int = 1): Boolean {
         return (
-            imageUtils.findImage("dialog/dialog_title_${name}", tries=tries, region=Screen.TOP_HALF).first != null
+            imageUtils.findImage(
+                "dialog/dialog_title_${name}",
+                tries=tries,
+                region=Screen.TOP_HALF,
+                customConfidence=0.95,
+            ).first != null
         )
     }
 
@@ -50,37 +55,38 @@ interface DialogInterface {
 // This is used to easily iterate over all dialogs.
 object DialogObjects {
     val items: List<DialogInterface> = listOf<DialogInterface>(
-        DialogCareerComplete,
+        DialogCareerComplete,               // Career
+        DialogConcertSkipConfirmation,      // Career
         DialogConfirmExchange,
         DialogConfirmRestoreRP,
-        DialogConcertSkipConfirmation,
+        DialogContinueCareer,
         DialogDailySale,
         DialogDateChanged,
         DialogExternalLink,
         DialogFollowTrainer,
-        DialogInfirmary,
-        DialogInsufficientFans,
+        DialogInfirmary,                    // Career
+        DialogInsufficientFans,             // Career
         DialogItemsSelected,
-        DialogMenu,
+        DialogMenu,                         // Career
         DialogNotices,
         DialogOpenSoon,
         DialogPresents,
         DialogPurchaseDailyRaceTicket,
         DialogRaceDetails,
-        DialogRacePlayback,
-        DialogRaceRecommendations,
-        DialogRecreation,
-        DialogRest,
-        DialogRestAndRecreation,
+        DialogRacePlayback,                 // Career
+        DialogRaceRecommendations,          // Career
+        DialogRecreation,                   // Career
+        DialogRest,                         // Career
+        DialogRestAndRecreation,            // Career
         DialogRewardsCollected,
         DialogSessionError,
-        DialogSongAcquired,
+        DialogSongAcquired,                 // Career
         DialogSpecialMissions,
-        DialogStrategy,
+        DialogStrategy,                     // Career
         DialogStoryUnlocked,
-        DialogTrophyWon,
-        DialogTryAgain,
-        DialogUmamusumeDetails,
+        DialogTrophyWon,                    // Career
+        DialogTryAgain,                     // Career
+        DialogUmamusumeDetails,             // Career
         DialogViewStory,
     )
 }
@@ -96,6 +102,18 @@ object DialogCareerComplete : DialogInterface {
     )
 }
 
+object DialogConcertSkipConfirmation : DialogInterface {
+    override val TAG: String = "DialogConcertSkipConfirmation"
+    override val name: String = "concert_skip_confirmation"
+    override val closeButton = null
+    override val okButton: ComponentInterface = ButtonOk
+    override val buttons: List<ComponentInterface> = listOf<ComponentInterface>(
+        ButtonCancel,
+        ButtonOk,
+        Checkbox,
+    )
+}
+
 object DialogConfirmExchange : DialogInterface {
     override val TAG: String = "DialogConfirmExchange"
     override val name: String = "confirm_exchange"
@@ -103,6 +121,17 @@ object DialogConfirmExchange : DialogInterface {
     override val okButton = null
     override val buttons: List<ComponentInterface> = listOf<ComponentInterface>(
         ButtonClose,
+    )
+}
+
+object DialogContinueCareer : DialogInterface {
+    override val TAG: String = "DialogContinueCareer"
+    override val name: String = "continue_career"
+    override val closeButton = null
+    override val okButton = ButtonResume
+    override val buttons: List<ComponentInterface> = listOf<ComponentInterface>(
+        ButtonCancel,
+        ButtonResume,
     )
 }
 
@@ -114,18 +143,6 @@ object DialogConfirmRestoreRP : DialogInterface {
     override val buttons: List<ComponentInterface> = listOf<ComponentInterface>(
         ButtonNo,
         ButtonRestore,
-    )
-}
-
-object DialogConcertSkipConfirmation : DialogInterface {
-    override val TAG: String = "DialogConcertSkipConfirmation"
-    override val name: String = "concert_skip_confirmation"
-    override val closeButton = null
-    override val okButton: ComponentInterface = ButtonOk
-    override val buttons: List<ComponentInterface> = listOf<ComponentInterface>(
-        ButtonCancel,
-        ButtonOk,
-        Checkbox,
     )
 }
 
@@ -437,7 +454,7 @@ object DialogUmamusumeDetails : DialogInterface {
     override val TAG: String = "DialogUmamusumeDetails"
     override val name: String = "umamusume_details"
     override val closeButton = null
-    override val okButton: null
+    override val okButton = null
     override val buttons: List<ComponentInterface> = listOf<ComponentInterface>(
         ButtonClose,
     )

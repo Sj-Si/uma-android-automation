@@ -343,6 +343,13 @@ object ButtonRestore : ComponentInterface {
     )
 }
 
+object ButtonResume : ComponentInterface {
+    override val TAG: String = "ButtonResume"
+    override val templates: List<Template> = listOf<Template>(
+        Template("buttons/resume")
+    )
+}
+
 object ButtonSaveAndExit : ComponentInterface {
     override val TAG: String = "ButtonSaveAndExit"
     override val templates: List<Template> = listOf<Template>(
