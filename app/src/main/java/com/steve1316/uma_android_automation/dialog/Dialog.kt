@@ -59,6 +59,7 @@ object DialogObjects {
         DialogExternalLink,
         DialogFollowTrainer,
         DialogInfirmary,
+        DialogInsufficientFans,
         DialogItemsSelected,
         DialogMenu,
         DialogNotices,
@@ -191,6 +192,17 @@ object DialogInfirmary : DialogInterface {
         ButtonCancel,
         ButtonOk,
         Checkbox,
+    )
+}
+
+object DialogInsufficientFans : DialogInterface {
+    override val TAG: String = "DialogInsufficientFans"
+    override val name: String = "insufficient_fans"
+    override val closeButton = null
+    override val okButton: ComponentInterface = ButtonRace
+    override val buttons: List<ComponentInterface> = listOf<ComponentInterface>(
+        ButtonCancel,
+        ButtonRace,
     )
 }
 
