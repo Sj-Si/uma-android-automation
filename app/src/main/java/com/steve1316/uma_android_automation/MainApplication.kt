@@ -15,4 +15,8 @@ class MainApplication: Application() {
         super.onCreate()
         instance = this
     }
+
+    override fun onTerminate() {
+        super.onTerminate()
+    }
 }
