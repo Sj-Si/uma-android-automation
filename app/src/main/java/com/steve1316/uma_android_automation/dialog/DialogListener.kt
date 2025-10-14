@@ -1,11 +1,13 @@
 package com.steve1316.uma_android_automation.dialog
 
+import android.content.Context
 import com.steve1316.uma_android_automation.utils.AppEvent
 import com.steve1316.uma_android_automation.utils.EventBus
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.utils.MessageLog
 import com.steve1316.uma_android_automation.utils.ImageUtils
 import com.steve1316.uma_android_automation.utils.Screen
+import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.dialog.DialogInterface
 import com.steve1316.uma_android_automation.dialog.DialogObjects
 
@@ -17,17 +19,16 @@ import kotlinx.coroutines.*
 
 import org.opencv.core.Point
 
-class DialogEventProducer(private val coroutineScope: CoroutineScope) {
-    private val TAG: String = "DialogEventProducer"
-    private var job: Job? = null
+object DialogListener {
+    private val TAG: String = "DialogListener"
 
-    fun check(tries: Int = 1): Boolean {
-        return ImageUtils.findImage("dialog/dialog_title_gradient", tries=tries, region=Screen.TOP_HALF).first != null
+    fun check(imageUtils: ImageUtils, tries: Int = 1): Boolean {
+        return imageUtils.findImage("dialog/dialog_title_gradient", tries=tries, region=Screen.TOP_HALF).first != null
     }
 
-    fun checkDialogTitle(): DialogInterface? {
+    private fun checkDialogTitle(imageUtils: ImageUtils, tries: Int = 1): DialogInterface? {
         for (obj in DialogObjects.items) {
-            if (obj.check()) {
+            if (obj.check(imageUtils=imageUtils, tries=tries)) {
                 return obj
             }
         }
@@ -35,16 +36,33 @@ class DialogEventProducer(private val coroutineScope: CoroutineScope) {
         return null
     }
 
+    fun getDialog(imageUtils: ImageUtils): DialogInterface? {
+        if (imageUtils.findImage("dialog/dialog_title_gradient", tries=1, region=Screen.TOP_HALF).first != null) {
+            for (obj in DialogObjects.items) {
+                if (obj.check(imageUtils=imageUtils)) {
+                    //EventBus.post(AppEvent.DialogEvent(obj))
+                    return obj
+                }
+            }
+        }
+        return null
+    }
+
     // Run this dialog item as an event producer.
-    fun start() {
-        job?.cancel()
+    fun start(scope: CoroutineScope) {
+        // This function doesnt currently work.
+        // It causes some memory leak which eventually leads to the program crashing.
+        MessageLog.e(TAG, "DialogListener::start() not working yet!")
+        return
+        /*
         MessageLog.d(TAG, "Starting...")
-        job = coroutineScope.launch(Dispatchers.Default) {
+        scope.launch {
             var counter = 0
             while (isActive) {
                 counter++
                 if (check()) {
                     val dialog: DialogInterface? = checkDialogTitle()
+                    MessageLog.i(TAG, "FOUND DIALOG: ${dialog?.name}")
                     if (dialog != null) {
                         val event = AppEvent.DialogEvent(dialog)
                         EventBus.post(event)
@@ -52,10 +70,6 @@ class DialogEventProducer(private val coroutineScope: CoroutineScope) {
                 }
             }
         }
-    }
-
-    fun stop() {
-        job?.cancel()
-        MessageLog.d(TAG, "Stopped.")
+        */
     }
 }
