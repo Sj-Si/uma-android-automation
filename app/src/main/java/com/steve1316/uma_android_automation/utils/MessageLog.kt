@@ -181,7 +181,6 @@ class MessageLog {
                 LogLevel.INFO -> Log.i(tag, message)
                 LogLevel.WARN -> Log.w(tag, message)
                 LogLevel.ERROR -> Log.e(tag, message)
-                else -> Log.d(tag, message)
             }
 
             var msg = message.removePrefix("\n")
