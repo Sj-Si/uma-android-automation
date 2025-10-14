@@ -70,39 +70,45 @@ class MediaProjectionService : Service() {
 		 */
 		fun takeScreenshotNow(saveImage: Boolean = false, isException: Boolean = false): Bitmap? {
 			var sourceBitmap: Bitmap? = null
+            var image: Image? = null
 			
-			val image: Image? = imageReader.acquireLatestImage()
-			
-			if (image != null) {
-				val planes: Array<Plane> = image.planes
-				val buffer = planes[0].buffer
-				val pixelStride = planes[0].pixelStride
-				val rowStride = planes[0].rowStride
-				val rowPadding: Int = rowStride - pixelStride * displayWidth
-				
-				// Create the Bitmap.
-				sourceBitmap = createBitmap(displayWidth + rowPadding / pixelStride, displayHeight)
-				sourceBitmap.copyPixelsFromBuffer(buffer)
-				
-				// Now write the Bitmap to the specified file inside the /files/temp/ folder. This adds about 500-600ms to runtime every time this is called when Debug Mode is on.
-				if (saveImage) {
-					val fos = if (isException) {
-						FileOutputStream("$tempDirectory/exception.png")
-					} else {
-						FileOutputStream("$tempDirectory/source.png")
-					}
-					sourceBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
-					
-					// Perform cleanup by closing streams and freeing up memory.
-					try {
-						fos.close()
-					} catch (ioe: IOException) {
-						ioe.printStackTrace()
-					}
-				}
-				
-				image.close()
-			}
+            try {
+                image = imageReader.acquireLatestImage()
+                
+                if (image != null) {
+                    val planes: Array<Plane> = image.planes
+                    val buffer = planes[0].buffer
+                    val pixelStride = planes[0].pixelStride
+                    val rowStride = planes[0].rowStride
+                    val rowPadding: Int = rowStride - pixelStride * displayWidth
+                    
+                    // Create the Bitmap.
+                    sourceBitmap = createBitmap(displayWidth + rowPadding / pixelStride, displayHeight)
+                    sourceBitmap.copyPixelsFromBuffer(buffer)
+                    
+                    // Now write the Bitmap to the specified file inside the /files/temp/ folder. This adds about 500-600ms to runtime every time this is called when Debug Mode is on.
+                    if (saveImage) {
+                        val fos = if (isException) {
+                            FileOutputStream("$tempDirectory/exception.png")
+                        } else {
+                            FileOutputStream("$tempDirectory/source.png")
+                        }
+                        sourceBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+                        
+                        // Perform cleanup by closing streams and freeing up memory.
+                        try {
+                            fos.close()
+                        } catch (ioe: IOException) {
+                            ioe.printStackTrace()
+                        }
+                    }
+                    image.close()
+                }
+            } catch (e: IllegalStateException) {
+                MessageLog.e(TAG, "takeScreenshotNow:: $e")
+            } finally {
+                image?.close()
+            }
 			
 			return sourceBitmap
 		}
@@ -364,7 +370,7 @@ class MediaProjectionService : Service() {
 		MessageLog.d(TAG, "Screen Width: $displayWidth, Screen Height: $displayHeight, Screen DPI: $displayDPI")
 		
 		// Start the ImageReader.
-		imageReader = ImageReader.newInstance(displayWidth, displayHeight, PixelFormat.RGBA_8888, 2)
+		imageReader = ImageReader.newInstance(displayWidth, displayHeight, PixelFormat.RGBA_8888, 5)
 		
 		// Now create the VirtualDisplay.
 		virtualDisplay = mediaProjection?.createVirtualDisplay(

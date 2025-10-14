@@ -24,7 +24,7 @@ object GameUtils {
     * @param seconds Number of seconds to pause execution.
     * @param skipWaitingForLoading If true, then it will skip the loading check. Defaults to false.
     */
-    fun wait(seconds: Double, skipWaitingForLoading: Boolean = false) {
+    fun wait(seconds: Double, skipWaitingForLoading: Boolean = false, imageUtils: ImageUtils? = null) {
         val totalMillis = (seconds * 1000).toLong()
         // Check for interruption every 100ms.
         val checkInterval = 100L
@@ -42,19 +42,19 @@ object GameUtils {
             remainingMillis -= sleepTime
         }
 
-        if (!skipWaitingForLoading) {
+        if (!skipWaitingForLoading && imageUtils != null) {
             // Check if the game is still loading as well.
-            waitForLoading()
+            waitForLoading(imageUtils=imageUtils)
         }
     }
 
     /**
     * Wait for the game to finish loading.
     */
-    fun waitForLoading() {
-        while (checkLoading()) {
+    fun waitForLoading(imageUtils: ImageUtils) {
+        while (checkLoading(imageUtils=imageUtils)) {
             // Avoid an infinite loop by setting the flag to true.
-            wait(0.5, skipWaitingForLoading = true)
+            wait(0.5, skipWaitingForLoading=true, imageUtils=imageUtils)
         }
     }
 
@@ -63,12 +63,12 @@ object GameUtils {
     *
     * @return True if the game is still loading or is awaiting for a server response. Otherwise, false.
     */
-    fun checkLoading(tag: String = TAG): Boolean {
+    fun checkLoading(imageUtils: ImageUtils, tag: String = TAG): Boolean {
         MessageLog.i(tag, "Now checking if the game is still loading...")
-        return if (LabelConnecting.check()) {
+        return if (LabelConnecting.check(imageUtils=imageUtils)) {
             MessageLog.i(tag, "Detected that the game is awaiting a response from the server from the \"Connecting\" text at the top of the screen. Waiting...")
             true
-        } else if (LabelNowLoading.check()) {
+        } else if (LabelNowLoading.check(imageUtils=imageUtils)) {
             MessageLog.i(tag, "Detected that the game is still loading from the \"Now Loading\" text at the bottom of the screen. Waiting...")
             true
         } else {
