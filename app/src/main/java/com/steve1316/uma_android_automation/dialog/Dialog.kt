@@ -57,37 +57,39 @@ object DialogObjects {
     val items: List<DialogInterface> = listOf<DialogInterface>(
         DialogCareerComplete,               // Career
         DialogConcertSkipConfirmation,      // Career
-        DialogConfirmExchange,
-        DialogConfirmRestoreRP,
-        DialogContinueCareer,
-        DialogDailySale,
-        DialogDateChanged,
-        DialogExternalLink,
-        DialogFollowTrainer,
+        DialogConfirmExchange,              // Main Screen
+        DialogConfirmRestoreRP,             // Team Trials
+        DialogContinueCareer,               // Main Screen
+        DialogDailySale,                    // Team Trials, Special Events, Daily Races
+        DialogDateChanged,                  // Anywhere
+        DialogExternalLink,                 // Main Screen
+        DialogFollowTrainer,                // Career
         DialogInfirmary,                    // Career
         DialogInsufficientFans,             // Career
-        DialogItemsSelected,
+        DialogItemsSelected,                // Team Trials, Special Events, Daily Races
         DialogMenu,                         // Career
-        DialogNotices,
-        DialogOpenSoon,
-        DialogPresents,
-        DialogPurchaseDailyRaceTicket,
-        DialogRaceDetails,
+        DialogNotices,                      // Main Screen
+        DialogOpenSoon,                     // Shop (only when clicking inactive daily sales button)
+        DialogPresents,                     // Main Screen (i think?)
+        DialogPurchaseDailyRaceTicket,      // Daily Races
+        DialogQuickModeSettings,            // Career
+        DialogRaceDetails,                  // Daily Races, Special Events
+        DialogRaceDetailsCareer,            // Career
         DialogRacePlayback,                 // Career
         DialogRaceRecommendations,          // Career
         DialogRecreation,                   // Career
         DialogRest,                         // Career
         DialogRestAndRecreation,            // Career
-        DialogRewardsCollected,
-        DialogSessionError,
+        DialogRewardsCollected,             // Main Screen, Special Events
+        DialogSessionError,                 // Anywhere
         DialogSongAcquired,                 // Career
-        DialogSpecialMissions,
+        DialogSpecialMissions,              // Main Screen, Special Events
         DialogStrategy,                     // Career
-        DialogStoryUnlocked,
+        DialogStoryUnlocked,                // Main Screen, end of career
         DialogTrophyWon,                    // Career
         DialogTryAgain,                     // Career
         DialogUmamusumeDetails,             // Career
-        DialogViewStory,
+        DialogViewStory,                    // Main Screen, end of career
     )
 }
 
@@ -289,6 +291,18 @@ object DialogPurchaseDailyRaceTicket : DialogInterface {
     )
 }
 
+object DialogQuickModeSettings : DialogInterface {
+    override val TAG: String = "DialogQuickModeSettings"
+    override val name: String = "quick_mode_settings"
+    override val closeButton = null
+    override val okButton: ComponentInterface = ButtonConfirm
+    override val buttons: List<ComponentInterface> = listOf<ComponentInterface>(
+        ButtonCancel,
+        ButtonConfirm,
+        RadioCareerQuickShortenAllEvents,
+    )
+}
+
 object DialogRaceDetails : DialogInterface {
     override val TAG: String = "DialogRaceDetails"
     override val name: String = "race_details"
@@ -297,6 +311,17 @@ object DialogRaceDetails : DialogInterface {
     override val buttons: List<ComponentInterface> = listOf<ComponentInterface>(
         ButtonCancel,
         ButtonRaceExclamation,
+    )
+}
+
+object DialogRaceDetailsCareer : DialogInterface {
+    override val TAG: String = "DialogRaceDetailsCareer"
+    override val name: String = "race_details"
+    override val closeButton = null
+    override val okButton: ComponentInterface = ButtonRace
+    override val buttons: List<ComponentInterface> = listOf<ComponentInterface>(
+        ButtonCancel,
+        ButtonRace,
     )
 }
 
@@ -353,6 +378,7 @@ object DialogRest : DialogInterface {
 }
 
 object DialogRestAndRecreation : DialogInterface {
+    // This one doesn't have a checkbox to not ask again for some reason.
     override val TAG: String = "DialogRestAndRecreation"
     override val name: String = "rest_and_recreation"
     override val closeButton = null

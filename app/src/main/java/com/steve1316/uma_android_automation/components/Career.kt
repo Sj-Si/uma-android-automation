@@ -56,6 +56,13 @@ object ScreenCareerEnd : ScreenInterface {
 // BUTTONS
 // ===========================================================================
 
+object RadioCareerQuickShortenAllEvents : ComponentInterface {
+    override val TAG: String = "RadioCareerQuickShortenAllEvents"
+    override val templates: List<Template> = listOf<Template>(
+        Template("career/radio_career_quick_shorten_all_events", Screen.MIDDLE)
+    )
+}
+
 object ButtonCareerQuick : ComponentInterface {
     override val TAG: String = "ButtonCareerQuick"
     override val templates: List<Template> = listOf<Template>(
@@ -206,6 +213,20 @@ object MoodNormal : ComponentInterface {
     )
 }
 
+object MoodBad : ComponentInterface {
+    override val TAG: String = "MoodBad"
+    override val templates: List<Template> = listOf<Template>(
+        Template("career/mood_bad", Screen.TOP_HALF)
+    )
+}
+
+object MoodAwful : ComponentInterface {
+    override val TAG: String = "MoodAwful"
+    override val templates: List<Template> = listOf<Template>(
+        Template("career/mood_awful", Screen.TOP_HALF)
+    )
+}
+
 object RaceNoneAvailable : ComponentInterface {
     override val TAG: String = "RaceNoneAvailable"
     override val templates: List<Template> = listOf<Template>(
@@ -276,6 +297,41 @@ object IconRaceNotEnoughFans : ComponentInterface {
     )
 }
 
+object IconFans : ComponentInterface {
+    override val TAG: String = "IconFans"
+    override val templates: List<Template> = listOf<Template>(
+        Template("career/fans", Screen.TOP_HALF)
+    )
+}
+
+object IconCriteriaPill : ComponentInterface {
+    override val TAG: String = "IconCriteriaPill"
+    override val templates: List<Template> = listOf<Template>(
+        Template("career/criteria_pill", Screen.TOP_HALF)
+    )
+}
+
+object IconCriteriaRaces : ComponentInterface {
+    override val TAG: String = "IconCriteriaRaces"
+    override val templates: List<Template> = listOf<Template>(
+        Template("career/criteria_races", Screen.TOP_HALF)
+    )
+}
+
+object IconProgressFans : ComponentInterface {
+    override val TAG: String = "IconProgressFans"
+    override val templates: List<Template> = listOf<Template>(
+        Template("career/progress_fans", Screen.TOP_HALF)
+    )
+}
+
+object IconRaceListG1Pill : ComponentInterface {
+    override val TAG: String = "IconRaceListG1Pill"
+    override val templates: List<Template> = listOf<Template>(
+        Template("career/race_list_g1_pill")
+    )
+}
+
 object IconTrainingHeaderSpeed : ComponentInterface {
     override val TAG: String = "IconTrainingHeaderSpeed"
     override val templates: List<Template> = listOf<Template>(
@@ -322,6 +378,13 @@ object ButtonTraining : ComponentInterface {
     override val TAG: String = "ButtonTraining"
     override val templates: List<Template> = listOf<Template>(
         Template("career/training", Screen.BOTTOM_HALF)
+    )
+}
+
+object ButtonRaces : ComponentInterface {
+    override val TAG: String = "ButtonRaces"
+    override val templates: List<Template> = listOf<Template>(
+        Template("career/races", Screen.BOTTOM_HALF)
     )
 }
 

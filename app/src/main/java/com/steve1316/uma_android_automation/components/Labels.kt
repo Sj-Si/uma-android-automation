@@ -32,6 +32,20 @@ object LabelStatDistance : ComponentInterface {
     )
 }
 
+object LabelStatTrackSurface : ComponentInterface {
+    override val TAG: String = "LabelStatTrackSurface"
+    override val templates: List<Template> = listOf<Template>(
+        Template("stat_track_surface", Screen.MIDDLE),
+    )
+}
+
+object LabelStatStyle : ComponentInterface {
+    override val TAG: String = "LabelStatStyle"
+    override val templates: List<Template> = listOf<Template>(
+        Template("stat_style", Screen.MIDDLE),
+    )
+}
+
 object LabelTeamTrialsSelectOpponent : ComponentInterface {
     override val TAG: String = "LabelTeamTrialsSelectOpponent"
     override val templates: List<Template> = listOf<Template>(
