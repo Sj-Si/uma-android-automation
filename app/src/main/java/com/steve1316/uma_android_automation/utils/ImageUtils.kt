@@ -38,6 +38,12 @@ import com.steve1316.uma_android_automation.components.*
 import kotlinx.coroutines.runBlocking
 import java.io.InputStream
 
+import com.steve1316.uma_android_automation.utils.types.Aptitude
+import com.steve1316.uma_android_automation.utils.types.Mood
+import com.steve1316.uma_android_automation.utils.types.TrackSurface
+import com.steve1316.uma_android_automation.utils.types.TrackDistance
+import com.steve1316.uma_android_automation.utils.types.RunningStyle
+
 /** Utility functions for image processing via CV like OpenCV. */
 class ImageUtils() {
     private val TAG: String = "ImageUtils"
@@ -88,6 +94,7 @@ class ImageUtils() {
     data class RaceDetails (
         val fans: Int,
         val hasDoublePredictions: Boolean,
+        val isG1: Boolean,
     )
 
     data class ScaleConfidenceResult(
@@ -1273,8 +1280,11 @@ class ImageUtils() {
 		}
 		if (croppedBitmap == null) {
 			MessageLog.e(TAG, "Failed to create cropped bitmap for extra race prediction detection.")
-			return RaceDetails(-1, false)
+			return RaceDetails(-1, false, false)
 		}
+
+        val (g1PillTemplateSource, g1PillTemplateBitmap) = getBitmaps("career/race_list_g1_pill")
+		val g1PillTemplate = g1PillTemplateBitmap ?: g1PillTemplateSource
 
 		val cvImage = Mat()
 		Utils.bitmapToMat(croppedBitmap, cvImage)
@@ -1282,6 +1292,8 @@ class ImageUtils() {
 
 		// Determine if the extra race has double star prediction.
 		val (predictionCheck, _) = match(croppedBitmap, doubleStarPredictionBitmap, "race_extra_double_prediction")
+
+        val (g1PillCheck, _) = match(croppedBitmap, g1PillTemplate, "career/race_list_g1_pill")
 
 		return if (forceRacing || predictionCheck) {
 			if (bEnableDebugMode && !forceRacing) {
@@ -1299,7 +1311,7 @@ class ImageUtils() {
 			}
 			if (croppedBitmap2 == null) {
 				MessageLog.e(TAG, "Failed to create cropped bitmap for extra race fans detection.")
-				return RaceDetails(-1, predictionCheck)
+				return RaceDetails(-1, predictionCheck, g1PillCheck)
 			}
 
 			// Make the cropped screenshot grayscale.
@@ -1341,13 +1353,13 @@ class ImageUtils() {
 			try {
 				MessageLog.d(TAG, "Converting $result to integer for fans")
 				val cleanedResult = result.replace(Regex("[^0-9]"), "")
-				RaceDetails(cleanedResult.toInt(), predictionCheck)
+				RaceDetails(cleanedResult.toInt(), predictionCheck, g1PillCheck)
 			} catch (_: NumberFormatException) {
-				RaceDetails(-1, predictionCheck)
+				RaceDetails(-1, predictionCheck, g1PillCheck)
 			}
 		} else {
 			MessageLog.d(TAG, "This race has no double prediction.")
-			return RaceDetails(-1, false)
+			return RaceDetails(-1, false, g1PillCheck)
 		}
 	}
 
@@ -1602,6 +1614,115 @@ class ImageUtils() {
 		return results
 	}
 
+    fun getStatAptitudeTemplates(): Map<Aptitude, Bitmap?> {
+        return mapOf<Aptitude, Bitmap?>(
+            Aptitude.S to getBitmaps("stat_aptitude_S").second,
+            Aptitude.A to getBitmaps("stat_aptitude_A").second,
+            Aptitude.B to getBitmaps("stat_aptitude_B").second,
+            Aptitude.C to getBitmaps("stat_aptitude_C").second,
+            Aptitude.D to getBitmaps("stat_aptitude_D").second,
+            Aptitude.E to getBitmaps("stat_aptitude_E").second,
+            Aptitude.F to getBitmaps("stat_aptitude_F").second,
+            Aptitude.G to getBitmaps("stat_aptitude_G").second,
+        )
+    }
+
+    fun determinePreferredTrackSurface(): TrackSurface {
+        val (bitmapLocation, sourceBitmap) = LabelStatTrackSurface.find(imageUtils=this)
+        if (bitmapLocation == null) {
+            MessageLog.e(TAG, "Could not determine the preferred track surface. Setting to Turf")
+            return TrackSurface.TURF
+        }
+
+        val statAptitudeTemplates = getStatAptitudeTemplates()
+
+        var bestOption = TrackSurface.TURF
+        var bestAptitude: Aptitude = Aptitude.G
+
+        TrackSurface.entries.forEachIndexed { index, option ->
+            val croppedBitmap = createSafeBitmap(
+                sourceBitmap,
+                relX(bitmapLocation.x, 108 + (index * 190)),
+                relY(bitmapLocation.y, -25),
+                176,
+                52,
+                "determinePreferredTrackSurface: ${option}",
+            )
+            if (croppedBitmap == null) {
+                MessageLog.e(TAG, "Failed to create cropped bitmap: ${option}.")
+                return@forEachIndexed
+            }
+
+            when {
+                match(croppedBitmap, statAptitudeTemplates[Aptitude.S]!!, "stat_aptitude_S").first -> {
+                    // Return immediately if we find an S aptitude since it is the best.
+                    return option
+                }
+				bestAptitude < Aptitude.A && match(croppedBitmap, statAptitudeTemplates[Aptitude.A]!!, "stat_aptitude_A").first -> {
+                    // A aptitude found. Set as current best but keep looking for S.
+                    bestOption = option
+                    bestAptitude = Aptitude.A
+                }
+				bestAptitude < Aptitude.B && match(croppedBitmap, statAptitudeTemplates[Aptitude.B]!!, "stat_aptitude_B").first -> {
+                    // B aptitude found. Only use if no A aptitude found yet.
+                    bestOption = option
+                    bestAptitude = Aptitude.B
+                }
+                // Any lower than B aptitude and we're screwed anyway...
+            }
+        }
+
+        return bestOption
+    }
+
+    fun determinePreferredRunningStyle(): RunningStyle {
+        val (bitmapLocation, sourceBitmap) = LabelStatStyle.find(imageUtils=this)
+        if (bitmapLocation == null) {
+            MessageLog.e(TAG, "Could not determine the preferred running style. Setting to Front Runner")
+            return RunningStyle.FRONT_RUNNER
+        }
+
+        val statAptitudeTemplates = getStatAptitudeTemplates()
+
+        var bestOption = RunningStyle.FRONT_RUNNER
+        var bestAptitude: Aptitude = Aptitude.G
+
+        RunningStyle.entries.forEachIndexed { index, option ->
+            val croppedBitmap = createSafeBitmap(
+                sourceBitmap,
+                relX(bitmapLocation.x, 108 + (index * 190)),
+                relY(bitmapLocation.y, -25),
+                176,
+                52,
+                "determinePreferredRunningStyle: ${option}",
+            )
+            if (croppedBitmap == null) {
+                MessageLog.e(TAG, "Failed to create cropped bitmap: ${option}.")
+                return@forEachIndexed
+            }
+
+            when {
+                match(croppedBitmap, statAptitudeTemplates[Aptitude.S]!!, "stat_aptitude_S").first -> {
+                    // Return immediately if we find an S aptitude since it is the best.
+                    return option
+                }
+				bestAptitude < Aptitude.A && match(croppedBitmap, statAptitudeTemplates[Aptitude.A]!!, "stat_aptitude_A").first -> {
+                    // A aptitude found. Set as current best but keep looking for S.
+                    bestOption = option
+                    bestAptitude = Aptitude.A
+                }
+				bestAptitude < Aptitude.B && match(croppedBitmap, statAptitudeTemplates[Aptitude.B]!!, "stat_aptitude_B").first -> {
+                    // B aptitude found. Only use if no A aptitude found yet.
+                    bestOption = option
+                    bestAptitude = Aptitude.B
+                }
+                // Any lower than B aptitude and we're screwed anyway...
+            }
+        }
+
+        return bestOption
+    }
+
 	/**
 	 * Determines the preferred race distance based on aptitude levels (S, A, B) for each distance type on the Full Stats popup.
 	 *
@@ -1612,51 +1733,51 @@ class ImageUtils() {
 	 *
 	 * @return The preferred distance (Sprint, Mile, Medium, or Long) or Medium as default if no aptitude is detected.
 	 */
-	fun determinePreferredDistance(): String {
-		val (distanceLocation, sourceBitmap) = LabelStatDistance.find(imageUtils=this)
-		if (distanceLocation == null) {
+	fun determinePreferredDistance(): TrackDistance {
+		val (bitmapLocation, sourceBitmap) = LabelStatDistance.find(imageUtils=this)
+		if (bitmapLocation == null) {
 			MessageLog.e(TAG, "Could not determine the preferred distance. Setting to Medium by default.")
-			return "Medium"
+			return TrackDistance.MEDIUM
 		}
 
-		val (_, statAptitudeSTemplate) = getBitmaps("stat_aptitude_S")
-		val (_, statAptitudeATemplate) = getBitmaps("stat_aptitude_A")
-		val (_, statAptitudeBTemplate) = getBitmaps("stat_aptitude_B")
+        val statAptitudeTemplates = getStatAptitudeTemplates()
+		var bestOption = TrackDistance.MEDIUM
+		var bestAptitude = Aptitude.G
 
-		val distances = listOf("Sprint", "Mile", "Medium", "Long")
-		var bestAptitudeDistance = ""
-		var bestAptitudeLevel = -1 // -1 = none, 0 = B, 1 = A, 2 = S
+        TrackDistance.entries.forEachIndexed { index, option ->
+            val croppedBitmap = createSafeBitmap(
+                sourceBitmap,
+                relX(bitmapLocation.x, 108 + (index * 190)),
+                relY(bitmapLocation.y, -25),
+                176,
+                52,
+                "determinePreferredDistance: ${option}",
+            )
+            if (croppedBitmap == null) {
+                MessageLog.e(TAG, "Failed to create cropped bitmap: ${option}.")
+                return@forEachIndexed
+            }
 
-		for (i in 0 until 4) {
-			val distance = distances[i]
-			val croppedBitmap = createSafeBitmap(sourceBitmap, relX(distanceLocation.x, 108 + (i * 190)), relY(distanceLocation.y, -25), 176, 52, "determinePreferredDistance distance $distance")
-			if (croppedBitmap == null) {
-				MessageLog.e(TAG, "Failed to create cropped bitmap for distance $distance.")
-				continue
-			}
+            when {
+                match(croppedBitmap, statAptitudeTemplates[Aptitude.S]!!, "stat_aptitude_S").first -> {
+                    // Return immediately if we find an S aptitude since it is the best.
+                    return option
+                }
+                bestAptitude < Aptitude.A && match(croppedBitmap, statAptitudeTemplates[Aptitude.A]!!, "stat_aptitude_A").first -> {
+                    // A aptitude found. Set as current best but keep looking for S.
+                    bestOption = option
+                    bestAptitude = Aptitude.A
+                }
+                bestAptitude < Aptitude.B && match(croppedBitmap, statAptitudeTemplates[Aptitude.B]!!, "stat_aptitude_B").first -> {
+                    // B aptitude found. Only use if no A aptitude found yet.
+                    bestOption = option
+                    bestAptitude = Aptitude.B
+                }
+                // Any lower than B aptitude and we're screwed anyway...
+            }
+        }
 
-			when {
-				match(croppedBitmap, statAptitudeSTemplate!!, "stat_aptitude_S").first -> {
-					// S aptitude found - this is the best possible, return immediately.
-					return distance
-				}
-				bestAptitudeLevel < 1 && match(croppedBitmap, statAptitudeATemplate!!, "stat_aptitude_A").first -> {
-					// A aptitude found (pick the leftmost aptitude) - better than B, but keep looking for S.
-					bestAptitudeDistance = distance
-					bestAptitudeLevel = 1
-				}
-				bestAptitudeLevel < 0 && match(croppedBitmap, statAptitudeBTemplate!!, "stat_aptitude_B").first -> {
-					// B aptitude found - only use if no A aptitude found yet.
-					bestAptitudeDistance = distance
-					bestAptitudeLevel = 0
-				}
-			}
-		}
-
-		return bestAptitudeDistance.ifEmpty {
-			MessageLog.w(TAG, "Could not determine the preferred distance with at least B aptitude. Setting to Medium by default.")
-			"Medium"
-		}
+		return bestOption
 	}
 
 	/**
