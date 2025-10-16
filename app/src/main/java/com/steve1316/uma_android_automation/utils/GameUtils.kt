@@ -4,18 +4,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import com.steve1316.uma_android_automation.utils.ImageUtils
 import com.steve1316.uma_android_automation.utils.Screen
+import com.steve1316.uma_android_automation.utils.types.GameDate
 import com.steve1316.uma_android_automation.components.*
 
 object GameUtils {
     private var TAG: String = "GameUtils"
-
-    // In-game Date info.
-    data class Date(
-		val year: Int,
-		val phase: String,
-		val month: Int,
-		val turnNumber: Int
-	)
 
     /**
     * Wait the specified seconds to account for ping or loading.

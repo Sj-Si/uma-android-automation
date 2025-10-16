@@ -19,7 +19,7 @@ import com.steve1316.uma_android_automation.utils.types.Mood
 import com.steve1316.uma_android_automation.utils.types.TrackSurface
 import com.steve1316.uma_android_automation.utils.types.TrackDistance
 import com.steve1316.uma_android_automation.utils.types.RunningStyle
-import com.steve1316.uma_android_automation.utils.types.Date
+import com.steve1316.uma_android_automation.utils.types.GameDate
 
 import kotlinx.coroutines.*
 
@@ -35,7 +35,7 @@ open class Campaign(val game: Game, val coroutineScope: CoroutineScope) {
     protected var bHasSetSkip: Boolean = false
     protected var bHasReadStats: Boolean = false
 
-    protected var date: Date = Date(1, "Early", 1, 1)
+    protected var date: GameDate = GameDate()
     protected var preferredDistance: TrackDistance = TrackDistance.MEDIUM
     protected var preferredTrackSurface: TrackSurface = TrackSurface.TURF
     protected var preferredRunningStyle: RunningStyle = RunningStyle.FRONT_RUNNER
@@ -252,7 +252,7 @@ open class Campaign(val game: Game, val coroutineScope: CoroutineScope) {
         }
     }
 
-    fun checkDate(): Date {
+    fun checkDate(): GameDate {
         MessageLog.d(TAG, "Checking date...")
         val dateString = game.imageUtils.determineDayNumber()
         date = game.textDetection.determineDateFromString(dateString)

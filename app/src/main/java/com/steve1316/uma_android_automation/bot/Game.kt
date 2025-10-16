@@ -15,7 +15,7 @@ import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.AppEvent
 import com.steve1316.uma_android_automation.utils.EventBus
 import com.steve1316.uma_android_automation.utils.Screen
-import com.steve1316.uma_android_automation.utils.types.Date
+import com.steve1316.uma_android_automation.utils.types.GameDate
 import com.steve1316.uma_android_automation.dialog.DialogInterface
 import com.steve1316.uma_android_automation.dialog.DialogListener
 import com.steve1316.uma_android_automation.components.*
@@ -81,7 +81,7 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	// Misc
-	private var currentDate: Date = Date(1, "Early", 1, 1)
+	private var currentDate: GameDate = GameDate()
 	private var inheritancesDone = 0
 	private val startTime: Long = System.currentTimeMillis()
 
@@ -552,9 +552,9 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 		// Apply phase-based adjustments
 		val phaseMultiplier = when {
 			// Early game: prioritize relationships even with some risk
-			currentDate.year == 1 && training.relationshipBars.isNotEmpty() -> 1.3
+			currentDate.year == DateYear.JUNIOR.ordinal && training.relationshipBars.isNotEmpty() -> 1.3
 			// Late game: prioritize safe stat gains
-			currentDate.year == 3 && training.failureChance <= 10 -> 1.2
+			currentDate.year == DateYear.SENIOR.ordinal && training.failureChance <= 10 -> 1.2
 			else -> 1.0
 		}
 
@@ -569,7 +569,7 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 		if (witTraining == null) return false
 
 		// Check if summer is approaching (Early June = 2 turns before Late June summer)
-		val isSummerApproaching = currentDate.month == 6 && currentDate.phase == "Early"
+		val isSummerApproaching = currentDate.month == 6 && currentDate.phase == DatePhase.EARLY.ordinal
 		if (isSummerApproaching && estimatedEnergy < 70) {
 			MessageLog.i(TAG, "[WIT VS REST] Summer training approaching in 2 turns. Energy low (~${estimatedEnergy.toInt()}%), prioritizing Rest for Lv5 training benefits")
 			return false  // Always rest before summer if energy is not high
@@ -894,7 +894,7 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 				// Check if summer training is approaching (Late June is month 6, phase "Late")
 				val isSummerApproaching = when {
 					// 2 turns before summer: Early June (month 6, phase "Early")
-					currentDate.month == 6 && currentDate.phase == "Early" -> {
+					currentDate.month == 6 && currentDate.phase == DatePhase.EARLY.ordinal -> {
 						MessageLog.i(TAG, "[TRAINING] Summer training is 2 turns away (currently Early June)")
 						true
 					}
@@ -952,17 +952,17 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 					}
 
 					// GAME PHASE ADJUSTMENTS
-					currentDate.year == 3 && currentDate.month >= 11 -> {
+					currentDate.year == DateYear.SENIOR.ordinal && currentDate.month >= 11 -> {
 						// Very late game: need to preserve energy for final push
 						MessageLog.i(TAG, "[TRAINING] ENDGAME: Year 3, Month 11+ - conservative 8% failure risk")
 						8
 					}
-					currentDate.year == 3 -> {
+					currentDate.year == DateYear.SENIOR.ordinal -> {
 						// Late game: slightly conservative
 						MessageLog.i(TAG, "[TRAINING] Late game (Year 3) - standard 12% failure risk")
 						12
 					}
-					currentDate.year == 1 && estimatedEnergy > 40 -> {
+					currentDate.year == DateYear.JUNIOR.ordinal && estimatedEnergy > 40 -> {
 						// Early game with good energy: can take more risks for relationships
 						MessageLog.i(TAG, "[TRAINING] Early game with good energy - accepting up to 18% failure risk")
 						18
@@ -1196,9 +1196,9 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 						}
 
 						val baseWeight = when {
-							currentDate.year == 1 || currentDate.phase == "Pre-Debut" -> 1.0 + (0.1 * (UserConfig.config.training.statPriority.size - priorityIndex)) / UserConfig.config.training.statPriority.size
-							currentDate.year == 2 -> 1.0 + (0.3 * (UserConfig.config.training.statPriority.size - priorityIndex)) / UserConfig.config.training.statPriority.size
-							currentDate.year == 3 -> 1.0 + (0.5 * (UserConfig.config.training.statPriority.size - priorityIndex)) / UserConfig.config.training.statPriority.size
+							currentDate.year == DateYear.JUNIOR.ordinal -> 1.0 + (0.1 * (UserConfig.config.training.statPriority.size - priorityIndex)) / UserConfig.config.training.statPriority.size
+							currentDate.year == DateYear.CLASSIC.ordinal -> 1.0 + (0.3 * (UserConfig.config.training.statPriority.size - priorityIndex)) / UserConfig.config.training.statPriority.size
+							currentDate.year == DateYear.SENIOR.ordinal -> 1.0 + (0.5 * (UserConfig.config.training.statPriority.size - priorityIndex)) / UserConfig.config.training.statPriority.size
 							else -> 1.0
 						}
 
@@ -1304,9 +1304,9 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 					// Year-based focus from the guide
 					// Year 1: 55% relationship focus, Year 2: 50/50, Year 3: 30% relationships
 					val yearMultiplier = when {
-						currentDate.year == 1 || currentDate.phase == "Pre-Debut" -> 1.55  // 55% focus
-						currentDate.year == 2 -> 1.0   // 50/50 balanced
-						currentDate.year == 3 -> 0.6   // 30% relationships, 70% stats
+						currentDate.year == DateYear.JUNIOR.ordinal -> 1.55  // 55% focus
+						currentDate.year == DateYear.CLASSIC.ordinal -> 1.0   // 50/50 balanced
+						currentDate.year == DateYear.SENIOR.ordinal -> 0.6   // 30% relationships, 70% stats
 						else -> 1.0
 					}
 
@@ -1414,7 +1414,7 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 
 			// Dynamic bonuses based on game phase
 			when {
-				currentDate.year == 1 || currentDate.phase == "Pre-Debut" -> {
+				currentDate.year == DateYear.JUNIOR.ordinal -> {
 					// Year 1: Focus on relationship building (55% weight according to guide)
 					if (training.relationshipBars.isNotEmpty()) {
 						score += training.relationshipBars.size * 15.0  // Dynamic based on friend count
@@ -1426,7 +1426,7 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 						MessageLog.i(TAG, "[TRAINING] Year 1 stat bonus: +${statBonus.toInt()}")
 					}
 				}
-				currentDate.year == 2 -> {
+				currentDate.year == DateYear.CLASSIC.ordinal -> {
 					// Year 2: Balanced approach (50/50 according to guide)
 					// Stat gains become more important
 					val statBonus = minOf(training.statGains.sum() * 0.8, 40.0)
@@ -1435,7 +1435,7 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 						MessageLog.i(TAG, "[TRAINING] Year 2 stat bonus: +${statBonus.toInt()}")
 					}
 				}
-				currentDate.year == 3 -> {
+				currentDate.year == DateYear.SENIOR.ordinal -> {
 					// Year 3: Stat maximization (70% weight according to guide)
 					// High value on large stat gains
 					val statBonus = minOf(training.statGains.sum() * 1.2, 60.0)
@@ -1600,7 +1600,7 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 
 		// Decide which scoring function to use based on the current phase or year.
 		// Junior Year will focus on building relationship bars.
-		val best = if (currentDate.phase == "Pre-Debut" || currentDate.year == 1) {
+		val best = if (currentDate.year == DateYear.JUNIOR.ordinal) {
 			acceptableTrainings.maxByOrNull { scoreFriendshipTraining(it) }
 		} else acceptableTrainings.maxByOrNull { scoreStatTraining(it) }
 
@@ -1950,10 +1950,7 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 
 			MessageLog.i(TAG, "[RACE] Racing process for Mandatory Race is completed.")
 			return true
-		} else if (
-            currentDate.phase != "Pre-Debut" &&
-            ButtonRaceSelectExtra.click(imageUtils=imageUtils)
-        ) {
+		} else if (ButtonRaceSelectExtra.click(imageUtils=imageUtils)) {
 			MessageLog.i(TAG, "[RACE] Starting process for handling a extra race.")
 
 			// If there is a popup warning about repeating races 3+ times, stop the process and do something else other than racing.
@@ -2443,7 +2440,7 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 		MessageLog.i(TAG, "[MOOD] Detected mood to be $currentMood.")
 
 		// Never recover mood on turn 1 (random chance opportunity)
-		if (currentDate.turnNumber == 1) {
+		if (currentDate.day == 1) {
 			MessageLog.i(TAG, "[MOOD] Turn 1 detected. Never recovering mood on turn 1 to utilize random chance opportunity.")
 			return false
 		}

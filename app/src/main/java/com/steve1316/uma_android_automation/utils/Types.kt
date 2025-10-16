@@ -1,11 +1,11 @@
 package com.steve1316.uma_android_automation.utils.types
 
-data class Date(
-    val year: Int,
-    val phase: String,
-    val month: Int,
-    val turnNumber: Int
-)
+import com.steve1316.uma_android_automation.data.RaceData
+
+import java.time.Month
+import java.util.Locale
+
+// ENUMS
 
 enum class Aptitude {
     G,
@@ -83,4 +83,107 @@ enum class Mood {
         fun fromName(value: String): Mood? = nameMap[value.uppercase()]
         fun fromOrdinal(ordinal: Int): Mood? = ordinalMap[ordinal]
     }
+}
+
+enum class RaceGrade {
+    DEBUT,
+    MAIDEN,
+    PRE_OP,
+    OP,
+    G3,
+    G2,
+    G1,
+    EX;
+
+    companion object {
+        private val nameMap = entries.associateBy { it.name }
+        private val ordinalMap = entries.associateBy { it.ordinal }
+
+        fun fromName(value: String): RaceGrade? = nameMap[value.uppercase()]
+        fun fromOrdinal(ordinal: Int): RaceGrade? = ordinalMap[ordinal]
+    }
+}
+
+enum class DatePhase {
+    EARLY,
+    LATE;
+
+    companion object {
+        private val nameMap = entries.associateBy { it.name }
+        private val ordinalMap = entries.associateBy { it.ordinal }
+
+        fun fromName(value: String): DatePhase? = nameMap[value.uppercase()]
+        fun fromOrdinal(ordinal: Int): DatePhase? = ordinalMap[ordinal]
+    }
+}
+
+enum class DateYear {
+    JUNIOR,
+    CLASSIC,
+    SENIOR;
+
+    companion object {
+        private val nameMap = entries.associateBy { it.name }
+        private val ordinalMap = entries.associateBy { it.ordinal }
+
+        fun fromName(value: String): DateYear? = nameMap[value.uppercase()]
+        fun fromOrdinal(ordinal: Int): DateYear? = ordinalMap[ordinal]
+    }
+}
+
+// DATA CLASSES
+
+data class GameDate(
+    val year: Int,
+    val month: Int,
+    val phase: Int,
+) {
+    // Calendar starting at Jan 1 of Junior year.
+    // Each year has 24 turns since each month is two phases.
+    val day: Int = (year * (12 * 2)) + (month * (phase + 1))
+
+    constructor(year: String = "junior", month: String = "january", phase: String = "early") : this(
+        DateYear.fromName(year).value,
+        Month.valueOf(month.uppercase(Locale.getDefault())).value,
+        DatePhase.fromName(phase).value,
+    )
+
+    fun getRaces(): MutableMap<String, RaceInfo> {
+        return RaceData[day]
+    }
+}
+
+data class RaceInfo(
+    val name: String,
+    val grade: RaceGrade,
+    val year: String,
+    val month: String,
+    val phase: String,
+    val track: String,
+    val trackSurface: TrackSurface,
+    val trackDistance: TrackDistance,
+    val lengthMeters: Int,
+) {
+    val date: GameDate = GameDate(year, month, phase)
+    constructor(
+        name: String,
+        grade: String,
+        year: String,
+        month: String,
+        phase: String,
+        trackName: String,
+        trackSurface: String,
+        trackDistance: String,
+        lengthMeters: String,
+    ) : this(
+        name,
+        grade,
+        year,
+        month,
+        phase,
+        trackName,
+        TrackSurface.fromName(trackSurface),
+        TrackDistance.fromName(trackDistance),
+        lengthMeters.toInt() ?: -1,
+    )
 }
