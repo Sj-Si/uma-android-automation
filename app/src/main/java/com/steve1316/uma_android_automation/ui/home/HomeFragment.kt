@@ -24,6 +24,7 @@ import com.github.javiersantos.appupdater.enums.UpdateFrom
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.R
 import com.steve1316.uma_android_automation.data.CharacterData
+import com.steve1316.uma_android_automation.data.RaceData
 import com.steve1316.uma_android_automation.data.SkillData
 import com.steve1316.uma_android_automation.data.SupportData
 import com.steve1316.uma_android_automation.utils.MediaProjectionService
@@ -383,5 +384,49 @@ class HomeFragment : Fragment() {
 				}
 			}
 		}
+
+        // Now construct data class for Races
+        val racesObjectString = myContext.assets.open("data/races.json").bufferedReader().use { it.readText() }
+        JsonReader(StringReader(racesObjectString)).use { reader ->
+            reader.beginObject {
+                while (reader.hasNext()) {
+                    val date = reader.nextName()
+                    val raceList = mutableMapOf<String, MutableMap<String, String>>()
+                    reader.beginArray {
+                        while(reader.hasNext()) {
+                            reader.beginObject {
+								var raceName: String = ""
+                                var raceInfo = mutableMapOf<String, String>()
+                                while (reader.hasNext()) {
+                                    when (reader.nextName()) {
+                                        "raceName" -> raceName = reader.nextString()
+                                        "category" -> raceInfo.put("category", reader.nextString())
+                                        "year" -> raceInfo.put("year", reader.nextString())
+                                        "month" -> raceInfo.put("month", reader.nextString())
+                                        "day" -> raceInfo.put("day", reader.nextString())
+                                        "trackName" -> raceInfo.put("trackName", reader.nextString())
+                                        "trackType" -> raceInfo.put("trackType", reader.nextString())
+                                        "distanceType" -> raceInfo.put("distanceType", reader.nextString())
+                                        "distance" -> raceInfo.put("distance", reader.nextString())
+                                        "date" -> raceInfo.put("date", reader.nextString())
+                                    }
+                                }
+								raceInfo.put("raceName", raceName)
+								raceList.put(raceName, raceInfo)
+                            }
+                        }
+                    }
+                    RaceData.races[date] = raceList
+                }
+            }
+        }
+
+		/* Print out the RaceData for debugging purposes.
+        for ((date, raceList) in RaceData.races) {
+			for ((raceName, raceInfo) in raceList) {
+                MessageLog.d(TAG, "[RaceData] [${date}] [${raceName}] ${raceInfo}")
+            }
+        }
+        */
 	}
 }
