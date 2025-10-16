@@ -175,6 +175,7 @@ class TextDetection(private val game: Game) {
 		} else if (dateString.lowercase().contains("debut")) {
 			// Special handling for the Pre-Debut phase.
 			val turnsRemaining = game.imageUtils.determineDayForExtraRace()
+            MessageLog.d(TAG, "TURNS REMAINING: $turnsRemaining")
 
 			// Pre-Debut ends on Early July (turn 13), so we calculate backwards.
 			// This includes the Race day.

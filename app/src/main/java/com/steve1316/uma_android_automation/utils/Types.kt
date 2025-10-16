@@ -1,6 +1,7 @@
 package com.steve1316.uma_android_automation.utils.types
 
 import com.steve1316.uma_android_automation.data.RaceData
+import com.steve1316.uma_android_automation.utils.MessageLog
 
 import java.time.Month
 import java.util.Locale
@@ -133,6 +134,15 @@ enum class DateYear {
 
 // DATA CLASSES
 
+fun getMonthNumber(month: String): Int {
+    return try {
+        MessageLog.i("getMonthNumber", "$month => ${Month.valueOf(month.uppercase(Locale.getDefault())).value}")
+        Month.valueOf(month.uppercase(Locale.getDefault())).value
+    } catch (e: IllegalArgumentException) {
+        -1
+    }
+}
+
 data class GameDate(
     val year: Int,
     val month: Int,
@@ -143,13 +153,17 @@ data class GameDate(
     val day: Int = (year * (12 * 2)) + (month * (phase + 1))
 
     constructor(year: String = "junior", month: String = "january", phase: String = "early") : this(
-        DateYear.fromName(year).value,
-        Month.valueOf(month.uppercase(Locale.getDefault())).value,
-        DatePhase.fromName(phase).value,
+        DateYear.fromName(year)?.ordinal ?: 0,
+        getMonthNumber(month),
+        DatePhase.fromName(phase)?.ordinal ?: 0,
     )
 
     fun getRaces(): MutableMap<String, RaceInfo> {
-        return RaceData[day]
+        return RaceData.races[day]!!
+    }
+
+    fun asString(): String {
+        return "${year}-${month}-${phase} (${day})"
     }
 }
 
@@ -159,7 +173,7 @@ data class RaceInfo(
     val year: String,
     val month: String,
     val phase: String,
-    val track: String,
+    val trackName: String,
     val trackSurface: TrackSurface,
     val trackDistance: TrackDistance,
     val lengthMeters: Int,
@@ -177,13 +191,13 @@ data class RaceInfo(
         lengthMeters: String,
     ) : this(
         name,
-        grade,
+        RaceGrade.fromName(grade) ?: RaceGrade.MAIDEN,
         year,
         month,
         phase,
         trackName,
-        TrackSurface.fromName(trackSurface),
-        TrackDistance.fromName(trackDistance),
-        lengthMeters.toInt() ?: -1,
+        TrackSurface.fromName(trackSurface) ?: TrackSurface.TURF,
+        TrackDistance.fromName(trackDistance) ?: TrackDistance.MEDIUM,
+        lengthMeters.toIntOrNull() ?: -1,
     )
 }

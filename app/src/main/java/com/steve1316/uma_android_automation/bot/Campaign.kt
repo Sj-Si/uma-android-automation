@@ -256,7 +256,7 @@ open class Campaign(val game: Game, val coroutineScope: CoroutineScope) {
         MessageLog.d(TAG, "Checking date...")
         val dateString = game.imageUtils.determineDayNumber()
         date = game.textDetection.determineDateFromString(dateString)
-        MessageLog.d(TAG, "Current Date: ${date}")
+        MessageLog.d(TAG, "Current Date: ${date.asString()}")
         return date
     }
 

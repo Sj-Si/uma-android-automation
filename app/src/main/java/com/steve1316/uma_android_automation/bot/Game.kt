@@ -30,6 +30,8 @@ import java.util.concurrent.TimeUnit
 import kotlin.intArrayOf
 import kotlinx.coroutines.*
 import kotlinx.coroutines.CoroutineScope
+import com.steve1316.uma_android_automation.utils.types.DateYear
+import com.steve1316.uma_android_automation.utils.types.DatePhase
 
 /**
  * Main driver for bot activity and navigation.

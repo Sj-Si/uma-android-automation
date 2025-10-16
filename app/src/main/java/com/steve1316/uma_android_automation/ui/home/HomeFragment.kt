@@ -392,27 +392,34 @@ class HomeFragment : Fragment() {
         JsonReader(StringReader(racesObjectString)).use { reader ->
             reader.beginObject {
                 while (reader.hasNext()) {
-                    val day = reader.nextName()
+                    val day: String = reader.nextName()
+                    MessageLog.i("HERE", "$day")
                     val raceList = mutableMapOf<String, RaceInfo>()
                     reader.beginArray {
                         while(reader.hasNext()) {
                             reader.beginObject {
-								var name: String = ""
-                                var raceInfoMap = mutableMapOf<String, String>()
+                                var name: String = ""
+                                var grade: String = ""
+                                var year: String = ""
+                                var month: String = ""
+                                var phase: String = ""
+                                var trackName: String = ""
+                                var trackSurface: String = ""
+                                var trackDistance: String = ""
+                                var lengthMeters: String = ""
                                 while (reader.hasNext()) {
                                     when (reader.nextName()) {
                                         "name" -> name = reader.nextString()
-                                        "grade" -> raceInfoMap.put("grade", reader.nextString())
-                                        "year" -> raceInfoMap.put("year", reader.nextString())
-                                        "month" -> raceInfoMap.put("month", reader.nextString())
-                                        "phase" -> raceInfoMap.put("phase", reader.nextString())
-                                        "trackName" -> raceInfoMap.put("trackName", reader.nextString())
-                                        "trackSurface" -> raceInfoMap.put("trackSurface", reader.nextString())
-                                        "trackDistance" -> raceInfoMap.put("trackDistance", reader.nextString())
-                                        "lengthMeters" -> raceInfoMap.put("lengthMeters", reader.nextString())
+                                        "grade" -> grade = reader.nextString()
+                                        "year" -> year = reader.nextString()
+                                        "month" -> month = reader.nextString()
+                                        "phase" -> phase = reader.nextString()
+                                        "trackName" -> trackName = reader.nextString()
+                                        "trackSurface" -> trackSurface = reader.nextString()
+                                        "trackDistance" -> trackDistance = reader.nextString()
+                                        "lengthMeters" -> lengthMeters = reader.nextString()
                                     }
                                 }
-								raceInfoMap.put("name", name)
                                 var raceInfo: RaceInfo = RaceInfo(
                                     name,
                                     grade,
@@ -424,11 +431,11 @@ class HomeFragment : Fragment() {
                                     trackDistance,
                                     lengthMeters,
                                 )
-								raceList.put(raceName, raceInfo)
+								raceList.put(name, raceInfo)
                             }
                         }
                     }
-                    RaceData.races[day] = raceList
+                    RaceData.races[day.toIntOrNull() ?: -1] = raceList
                 }
             }
         }

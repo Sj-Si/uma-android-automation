@@ -1207,7 +1207,13 @@ class ImageUtils() {
 			// Create a InputImage object for Google's ML OCR.
 			val resultBitmap = createBitmap(bwImage.cols(), bwImage.rows())
 			Utils.matToBitmap(bwImage, resultBitmap)
-			val inputImage: InputImage = InputImage.fromBitmap(resultBitmap, 0)
+
+            // FIXME: resultBitmap doesn't work accurately for some reason.
+            // For example, 11 is read as 1 by Google ML
+			//val inputImage: InputImage = InputImage.fromBitmap(resultBitmap, 0)
+            
+            // REMOVEME: Temporary bandaid to fix the problem noted above.
+            val inputImage: InputImage = InputImage.fromBitmap(resizedBitmap, 0)
 
 			// Use CountDownLatch to make the async operation synchronous.
 			val latch = CountDownLatch(1)
