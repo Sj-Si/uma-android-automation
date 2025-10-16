@@ -7,6 +7,7 @@ import com.steve1316.uma_android_automation.data.SupportData
 import com.steve1316.uma_android_automation.utils.ImageUtils
 import com.steve1316.uma_android_automation.utils.MessageLog
 import com.steve1316.uma_android_automation.utils.UserConfig
+import com.steve1316.uma_android_automation.utils.types.Date
 import net.ricecode.similarity.JaroWinklerStrategy
 import net.ricecode.similarity.StringSimilarityServiceImpl
 
@@ -148,7 +149,7 @@ class TextDetection(private val game: Game) {
 	}
 
 	/**
-	 * Parses a date string from the game and converts it to a structured Game.Date object.
+	 * Parses a date string from the game and converts it to a structured Types.Date object.
 	 * 
 	 * This function handles two types of date formats: Pre-Debut and regular date strings.
 	 * 
@@ -161,12 +162,12 @@ class TextDetection(private val game: Game) {
 	 * 
 	 * @param dateString The date string to parse (e.g., "Classic Year Early Jan" or "Pre-Debut")
 	 *
-	 * @return A Game.Date object containing the parsed year, phase, month, and calculated turn number.
+	 * @return A Types.Date object containing the parsed year, phase, month, and calculated turn number.
 	 */
-	fun determineDateFromString(dateString: String): Game.Date {
+	fun determineDateFromString(dateString: String): Date {
 		if (dateString == "") {
 			MessageLog.e(TAG, "Received date string from OCR was empty. Defaulting to \"Senior Year Early Jan\" at turn number 49.")
-			return Game.Date(3, "Early", 1, 49)
+			return Date(3, "Early", 1, 49)
 		} else if (dateString.lowercase().contains("debut")) {
 			// Special handling for the Pre-Debut phase.
 			val turnsRemaining = game.imageUtils.determineDayForExtraRace()
@@ -177,7 +178,7 @@ class TextDetection(private val game: Game) {
 			val currentTurnInPreDebut = totalTurnsInPreDebut - turnsRemaining + 1
 
 			val month = ((currentTurnInPreDebut - 1) / 2) + 1
-			return Game.Date(1, "Pre-Debut", month, currentTurnInPreDebut)
+			return Date(1, "Pre-Debut", month, currentTurnInPreDebut)
 		}
 
 		// Example input is "Classic Year Early Jan".
@@ -205,7 +206,7 @@ class TextDetection(private val game: Game) {
 		val parts = dateString.trim().split(" ")
 		if (parts.size < 3) {
 			MessageLog.w(TAG, "[TEXT-DETECTION] Invalid date string format: $dateString")
-			return Game.Date(3, "Early", 1, 49)
+			return Date(3, "Early", 1, 49)
 		}
  
 		// Extract the parts with safe indexing using default values.
@@ -256,7 +257,7 @@ class TextDetection(private val game: Game) {
 		// Each month has 2 turns (Early and Late).
 		val turnNumber = ((year - 1) * 24) + ((month - 1) * 2) + (if (phase == "Early") 1 else 2)
 
-		return Game.Date(year, phase, month, turnNumber)
+		return Date(year, phase, month, turnNumber)
 	}
 	
 	fun start(): Pair<ArrayList<String>, Double> {

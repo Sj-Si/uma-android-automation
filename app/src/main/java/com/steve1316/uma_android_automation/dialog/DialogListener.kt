@@ -38,12 +38,14 @@ object DialogListener {
 
     fun getDialog(imageUtils: ImageUtils): DialogInterface? {
         if (imageUtils.findImage("dialog/dialog_title_gradient", tries=1, region=Screen.TOP_HALF).first != null) {
+            MessageLog.d(TAG, "FOUND DIALOG GRADIENT")
             for (obj in DialogObjects.items) {
                 if (obj.check(imageUtils=imageUtils)) {
                     //EventBus.post(AppEvent.DialogEvent(obj))
                     return obj
                 }
             }
+            MessageLog.d(TAG, "FAILED TO MATCH DIALOGS")
         }
         return null
     }

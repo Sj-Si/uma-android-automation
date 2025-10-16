@@ -15,7 +15,9 @@ import com.steve1316.uma_android_automation.utils.GameUtils
 import com.steve1316.uma_android_automation.utils.AppEvent
 import com.steve1316.uma_android_automation.utils.EventBus
 import com.steve1316.uma_android_automation.utils.Screen
+import com.steve1316.uma_android_automation.utils.types.Date
 import com.steve1316.uma_android_automation.dialog.DialogInterface
+import com.steve1316.uma_android_automation.dialog.DialogListener
 import com.steve1316.uma_android_automation.components.*
 import com.steve1316.uma_android_automation.components.ComponentUtils
 
@@ -38,13 +40,13 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 	private val decimalFormat = DecimalFormat("#.##")
 	val gestureUtils: MyAccessibilityService = MyAccessibilityService.getInstance()
     val imageUtils = ImageUtils()
-	private val textDetection: TextDetection = TextDetection(this)
+	val textDetection: TextDetection = TextDetection(this)
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	// Training
 	private val trainings: List<String> = listOf("Speed", "Stamina", "Power", "Guts", "Wit")
-	private val trainingMap: MutableMap<String, Training> = mutableMapOf()
+	val trainingMap: MutableMap<String, Training> = mutableMapOf()
 	private var currentStatsMap: MutableMap<String, Int> = mutableMapOf(
 		"Speed" to 0,
 		"Stamina" to 0,
@@ -57,16 +59,16 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 	private var currentConditions: MutableList<String> = mutableListOf()
 	private var currentFans: Int = 0
 	private var currentDistance: String = "Medium" // Default to Medium distance
-	private var preferredDistance: String = ""
-	private var firstTrainingCheck = true
+	var preferredDistance: String = ""
+	var firstTrainingCheck = true
 	private val currentStatCap = 1200
 	private val historicalTrainingCounts: MutableMap<String, Int> = mutableMapOf()
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	// Racing
-	private var raceRetries = 3
-	private var raceRepeatWarningCheck = false
+	var raceRetries = 3
+	var raceRepeatWarningCheck = false
 	var encounteredRacingPopup = false
 	var skipRacing = false
 	var strategySelected = false
@@ -97,42 +99,31 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
     }
 
     fun handleDialogs(): Boolean {
-        val dialog = DialogListener.getDialog(game.imageUtils)
+        val dialog = DialogListener.getDialog(imageUtils)
         if (dialog == null) {
-            MessageLog.w(TAG, "UNKNOWN DIALOG DETECTED")
             return false
-        } else {
-            // Handle various dialogs.
-            MessageLog.i(TAG, "Dialog detected: ${dialog.name}")
-            // Handle campaign specific dialogs
-            if (handleDialogs(obj)) {
-                continue
-            }
-            
         }
-
-        MessageLog.d(TAG, "handleDialogs:: ${dialog?.name}")
 
         when (dialog.name) {
             "concert_skip_confirmation" -> {
-                MessageLog.d(TAG, "Dialog Event: General: Skip Concert Confirmation")
+                MessageLog.d(TAG, "Dialog Event: General: concert_skip_confirmation")
                 Checkbox.click(imageUtils=imageUtils, tries=5)
                 dialog.ok(imageUtils=imageUtils, tries=5)
             }
             "presents" -> {
-                MessageLog.d(TAG, "Dialog Event: General: Presents")
+                MessageLog.d(TAG, "Dialog Event: General: presents")
                 dialog.ok(imageUtils=imageUtils, tries=5)
                 dialog.close(imageUtils=imageUtils, tries=5)
                 presentsCollected = true
             }
             "race_playback" -> {
-                MessageLog.d(TAG, "Dialog Event: General: Race Playback")
+                MessageLog.d(TAG, "Dialog Event: General: race_playback")
                 Checkbox.click(imageUtils=imageUtils, tries=5)
                 RadioPortrait.click(imageUtils=imageUtils, tries=5)
                 dialog.ok(imageUtils=imageUtils, tries=5)
             }
             "rewards_collected" -> {
-                MessageLog.d(TAG, "Dialog Event: General: Rewards Collected")
+                MessageLog.d(TAG, "Dialog Event: General: rewards_collected")
                 dialog.ok(imageUtils=imageUtils, tries=5)
                 numRewardsCollected++
             }
@@ -141,7 +132,7 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
                 dialog.ok(imageUtils=imageUtils, tries=5)
             }
             "strategy" -> {
-                MessageLog.d(TAG, "Dialog Event: General: Race Strategy")
+                MessageLog.d(TAG, "Dialog Event: General: strategy")
                 // We don't want to select a strategy. Just use default.
                 dialog.ok(imageUtils=imageUtils, tries=5)
             }
@@ -192,13 +183,6 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 			return result
 		}
 	}
-
-	data class Date(
-		val year: Int,
-		val phase: String,
-		val month: Int,
-		val turnNumber: Int
-	)
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
@@ -705,7 +689,7 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 	 *
 	 * @param test Flag that forces the failure chance through even if it is not in the acceptable range for testing purposes.
 	 */
-	private fun analyzeTrainings(test: Boolean = false) {
+	fun analyzeTrainings(test: Boolean = false) {
 		MessageLog.i(TAG, "[TRAINING] Now starting process to analyze all 5 Trainings.")
 
 		// Acquire the position of the speed stat text.
@@ -1632,7 +1616,7 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 	/**
 	 * Execute the training with the highest stat weight.
 	 */
-	private fun executeTraining() {
+	fun executeTraining() {
 		MessageLog.i(TAG, "********************")
 		MessageLog.i(TAG, "[TRAINING] Now starting process to execute training...")
 		val trainingSelected = recommendTraining()
@@ -2391,7 +2375,7 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 	 *
 	 * @return True if the bot successfully recovered energy. Otherwise false.
 	 */
-	private fun recoverEnergy(): Boolean {
+	fun recoverEnergy(): Boolean {
 		MessageLog.i(TAG, "[ENERGY] Now starting attempt to recover energy.")
 
 		// Check if it's summer
@@ -2419,7 +2403,6 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 
 			// If we do need to rest during summer
 			if (ButtonRestAndRecreation.click(imageUtils=imageUtils)) {
-				ButtonOk.click(imageUtils=imageUtils)
 				MessageLog.i(TAG, "[ENERGY] Summer: Low energy detected. Using summer rest for recovery.")
 				raceRepeatWarningCheck = false
 				return true
@@ -2429,7 +2412,6 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 		// Normal energy recovery (non-summer)
 		return when {
 			ButtonRest.click(imageUtils=imageUtils) -> {
-				ButtonOk.click(imageUtils=imageUtils)
 				MessageLog.i(TAG, "[ENERGY] Successfully recovered energy.")
 				raceRepeatWarningCheck = false
 				true
@@ -2472,7 +2454,6 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 			if (currentMood == "Bad/Awful") {
 				MessageLog.i(TAG, "[MOOD] Summer: Current mood is Bad/Awful. Using summer rest for mood recovery.")
 				ButtonRestAndRecreation.click(imageUtils=imageUtils)
-				ButtonOk.click(imageUtils=imageUtils)
 				raceRepeatWarningCheck = false
 				return true
 			} else {
@@ -2497,7 +2478,6 @@ class Game(val context: Context, val coroutineScope: CoroutineScope) {
 				wait(1.0)
 			}
 
-			ButtonOk.click(imageUtils=imageUtils)
 			raceRepeatWarningCheck = false
 			true
 		} else {
