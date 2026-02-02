@@ -828,7 +828,7 @@ open class Campaign(val game: Game) {
 	/**
 	 * Main automation loop that handles all shared logic.
 	 */
-	fun start() {
+	open fun start() {
 		while (true) {
             try {
                 val (bWasDialogHandled, dialog) = handleDialogs()

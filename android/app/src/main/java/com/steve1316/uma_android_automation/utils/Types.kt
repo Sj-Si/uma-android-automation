@@ -11,6 +11,20 @@
 
 package com.steve1316.uma_android_automation.utils.types
 
+enum class Scenario {
+    URA_FINALE,
+    UNITY_CUP,
+    DAILY_TASKS;
+
+    companion object {
+        private val nameMap = entries.associateBy { it.name }
+        private val ordinalMap = entries.associateBy { it.ordinal }
+
+        fun fromName(value: String): Scenario? = nameMap[value.uppercase()]
+        fun fromOrdinal(ordinal: Int): Scenario? = ordinalMap[ordinal]
+    }
+}
+
 /** These are the different tiers defined in game and awarded based on fan count. */
 enum class FanCountClass {
     DEBUT,

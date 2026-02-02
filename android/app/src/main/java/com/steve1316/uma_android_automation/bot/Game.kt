@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.util.Log
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.campaigns.UnityCup
+import com.steve1316.uma_android_automation.bot.campaigns.DailyTasks
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
 import com.steve1316.automation_library.utils.ImageUtils.ScaleConfidenceResult
 import com.steve1316.automation_library.utils.BotService
@@ -73,10 +74,11 @@ class Game(val myContext: Context) {
 	val racing: Racing = Racing(this)
     val skillPlan: SkillPlan = SkillPlan(this)
 	val trainingEvent: TrainingEvent = TrainingEvent(this)
-    val campaign: Campaign = if (scenario == "Unity Cup") {
-        UnityCup(this)
-    } else {
-        Campaign(this)
+    val campaign: Campaign = when (scenario) {
+        "URA Finale" -> Campaign(this)
+        "Unity Cup" -> UnityCup(this)
+        "Daily Tasks" -> DailyTasks(this)
+        else -> throw InterruptedException("Invalid scenario: $scenario")
     }
 
 	////////////////////////////////////////////////////////////////////

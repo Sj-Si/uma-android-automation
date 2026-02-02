@@ -8,5 +8,10 @@
         "value": "Unity Cup",
         "label": "Unity Cup",
         "disabled": false
+    },
+    {
+        "value": "Daily Tasks",
+        "label": "Daily Tasks",
+        "disabled": false
     }
 ]
