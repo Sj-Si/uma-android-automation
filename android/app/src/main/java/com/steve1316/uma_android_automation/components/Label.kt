@@ -90,3 +90,38 @@ object LabelTrophyWonDialogTitle : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]LabelTrophyWonDialogTitle"
     override val template = Template("components/label/trophy_won")
 }
+
+object LabelRaceMenuBanner : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelRaceMenuBanner"
+    override val template = Template("components/label/race_menu_banner")
+}
+
+object LabelTeamTrialsExtraRewardWithEveryWin : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelTeamTrialsExtraRewardWithEveryWin"
+    override val template = Template("components/label/team_trials_extra_reward_with_every_win")
+}
+
+object LabelTeamTrialsSelectOpponent : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelTeamTrialsSelectOpponent"
+    override val template = Template("components/label/team_trials_select_opponent", region = Region.topHalf)
+}
+
+object LabelShopStarPiece : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelShopStarPiece"
+    override val template = Template("components/label/shop_star_piece")
+}
+
+object LabelShopAlarmClock : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelShopAlarmClock"
+    override val template = Template("components/label/shop_alarm_clock")
+}
+
+object LabelShopPleasingParfait : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelShopPleasingParfait"
+    override val template = Template("components/label/shop_pleasing_parfait")
+}
+
+object LabelYouHaveReachedTheDailyTicketPurchaseLimit : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelYouHaveReachedTheDailyTicketPurchaseLimit"
+    override val template = Template("components/label/you_have_reached_the_daily_ticket_purchase_limit")
+}

@@ -72,6 +72,11 @@ object ButtonCollectAll : ComponentInterface {
     override val template = Template("components/button/collect_all", region = Region.bottomHalf)
 }
 
+object ButtonCollect : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonCollect"
+    override val template = Template("components/button/rewards_collect", region = Region.rightHalf)
+}
+
 
 object ButtonConfirm : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonConfirm"
@@ -89,19 +94,34 @@ object ButtonDailyRaces : ComponentInterface {
     override val template = Template("components/button/daily_races")
 }
 
-object ButtonDailyRacesDisabled : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesDisabled"
-    override val template = Template("components/button/daily_races_disabled")
+object ButtonDailyRacesLocked : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesLocked"
+    override val template = Template("components/button/daily_races_locked")
 }
 
 object ButtonDailyRacesJupiterCup : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesJupiterCup"
-    override val template = Template("components/button/daily_races_jupiter_cup_logo")
+    override val template = Template("components/button/jupiter_cup")
+}
+
+object ButtonDailyRacesJupiterCupRaceSelection : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesJupiterCupRaceSelection"
+    override val template = Template("components/button/jupiter_cup_race_selection")
 }
 
 object ButtonDailyRacesMoonlightSho : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesMoonlightSho"
-    override val template = Template("components/button/daily_races_moonlight_sho_logo")
+    override val template = Template("components/button/moonlight_sho")
+}
+
+object ButtonDailyRacesMoonlightShoRaceSelection : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesMoonlightShoRaceSelection"
+    override val template = Template("components/button/moonlight_sho_race_selection")
+}
+
+object ButtonComplete : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonComplete"
+    override val template = Template("components/button/complete", region = Region.bottomHalf)
 }
 
 object ButtonEditTeam : ComponentInterface {
@@ -162,31 +182,6 @@ object ButtonSpecialMissionsTabSpecial : ComponentInterface {
 object ButtonLater : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonLater"
     override val template = Template("components/button/later")
-}
-
-object ButtonLegendRace : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonLegendRace"
-    override val template = Template("components/button/legend_race")
-}
-
-object ButtonLegendRaceDisabled : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonLegendRaceDisabled"
-    override val template = Template("components/button/legend_race_disabled")
-}
-
-object ButtonRaceHardInactive : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonRaceHardInactive"
-    override val template = Template("components/button/race_hard_inactive")
-}
-
-object ButtonRaceHardActive : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonRaceHardActive"
-    override val template = Template("components/button/race_hard_active")
-}
-
-object ButtonLegendRaceHomeSpecialMissions : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonLegendRaceHomeSpecialMissions"
-    override val template = Template("components/button/legend_race_special_missions")
 }
 
 object ButtonLog : ComponentInterface {
@@ -264,6 +259,16 @@ object ButtonRaceExclamationShiftedUp : ComponentInterface {
     override val template = Template("components/button/race_exclamation_shifted_up", region = Region.middle)
 }
 
+object ButtonCirclePlus : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonCirclePlus"
+    override val template = Template("components/button/circle_plus")
+}
+
+object ButtonCircleMinus : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonCircleMinus"
+    override val template = Template("components/button/circle_minus")
+}
+
 object ButtonRaceManual : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonRaceManual"
     override val template = Template("components/button/race_manual", region = Region.bottomHalf)
@@ -339,6 +344,56 @@ object ButtonShop : ComponentInterface {
     override val template = Template("components/button/shop")
 }
 
+object ButtonClub : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonClub"
+    override val template = Template("components/button/club")
+}
+
+object ButtonClubItemRequest : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonClubItemRequest"
+    override val template = Template("components/button/club_item_request")
+}
+
+object ButtonClubViewRequests : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonClubViewRequests"
+    override val template = Template("components/button/club_view_requests")
+}
+
+object ButtonDonateToAll0 : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDonateToAll0"
+    override val template = Template("components/button/donate_to_all_0")
+}
+
+object ButtonDonateToAll1 : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDonateToAll1"
+    override val template = Template("components/button/donate_to_all_1")
+}
+
+object ButtonShoesSprint : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonShoesSprint"
+    override val template = Template("components/button/shoes_sprint")
+}
+
+object ButtonShoesMile : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonShoesMile"
+    override val template = Template("components/button/shoes_mile")
+}
+
+object ButtonShoesMedium : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonShoesMedium"
+    override val template = Template("components/button/shoes_medium")
+}
+
+object ButtonShoesLong : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonShoesLong"
+    override val template = Template("components/button/shoes_long")
+}
+
+object ButtonShoesDirt : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonShoesDirt"
+    override val template = Template("components/button/shoes_dirt")
+}
+
 object ButtonSkip : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonSkip"
     override val template = Template("components/button/skip", region = Region.bottomHalf)
@@ -367,6 +422,31 @@ object ButtonTeamRace : ComponentInterface {
 object ButtonTeamTrials : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonTeamTrials"
     override val template = Template("components/button/team_trials")
+}
+
+object ButtonTeamTrialsRaceResultsNext : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonTeamTrialsRaceResultsNext"
+    override val template = Template("components/button/team_trials_race_results_next")
+}
+
+object ButtonTeamTrialsSeeAllRaceResults : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonTeamTrialsSeeAllRaceResults"
+    override val template = Template("components/button/team_trials_see_all_race_results")
+}
+
+object ButtonShopDailySales : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonShopDailySales"
+    override val template = Template("components/button/shop_daily_sales")
+}
+
+object ButtonShopEndSale : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonShopEndSale"
+    override val template = Template("components/button/end_sale", region = Region.bottomHalf)
+}
+
+object ButtonShopExchange : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonShopExchange"
+    override val template = Template("components/button/shop_exchange", region = Region.rightHalf)
 }
 
 object ButtonTitleScreen : ComponentInterface {
@@ -409,6 +489,26 @@ object ButtonRaceStrategyEnd : ComponentInterface {
     override val template = Template("components/button/strategy_end_select", region = Region.middle)
 }
 
+object ButtonChampionsMeetingLocked : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonChampionsMeetingLocked"
+    override val template = Template("components/button/champions_meeting_locked")
+}
+
+object ButtonLegendRaceLocked : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonLegendRaceLocked"
+    override val template = Template("components/button/legend_race_locked")
+}
+
+object ButtonLegendRace : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonLegendRace"
+    override val template = Template("components/button/legend_race")
+}
+
+object ButtonLegendRaceSpecialMissions : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonLegendRaceSpecialMissions"
+    override val template = Template("components/button/legend_race_special_missions")
+}
+
 // More complex buttons
 
 object ButtonMenuBarHomeSelected : ComponentInterface {
@@ -444,6 +544,47 @@ object ButtonMenuBarRace : MultiStateButtonInterface {
     override val templates: List<Template> = listOf(
         Template("components/button/menu_bar_race_unselected"),
         Template("components/button/menu_bar_race_selected"),
+    )
+}
+
+object ButtonTeamTrialsQuickModeOff : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonTeamTrialsQuickModeOff"
+    override val template = Template("components/button/team_trials_quick_mode_off")
+}
+
+object ButtonTeamTrialsQuickModeOn : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonTeamTrialsQuickModeOn"
+    override val template = Template("components/button/team_trials_quick_mode_on")
+}
+
+object ButtonTeamTrialsQuickMode : MultiStateButtonInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonTeamTrialsQuickMode"
+    override val templates: List<Template> = listOf(
+        Template("components/button/team_trials_quick_mode_off"),
+        Template("components/button/team_trials_quick_mode_on"),
+    )
+}
+
+object ButtonDailyRacesMultiRaceDisabled : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesMultiRaceDisabled"
+    override val template = Template("components/button/multi_race_disabled")
+}
+
+object ButtonDailyRacesMultiRaceOff : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesMultiRaceOff"
+    override val template = Template("components/button/multi_race_off")
+}
+
+object ButtonDailyRacesMultiRaceOn : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesMultiRaceOn"
+    override val template = Template("components/button/multi_race_on")
+}
+
+object ButtonDailyRacesMultiRace : MultiStateButtonInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesMultiRace"
+    override val templates: List<Template> = listOf(
+        Template("components/button/multi_race_off"),
+        Template("components/button/multi_race_on"),
     )
 }
 
@@ -565,6 +706,11 @@ object ButtonSkillListFullStats : ComponentInterface {
 object ButtonHomeFullStats : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonHomeFullStats"
     override val template = Template("components/button/home_full_stats", region = Region.middle)
+}
+
+object ButtonHome : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonHome"
+    override val template = Template("components/button/home")
 }
 
 object ButtonTrainingSpeed : ComponentInterface {

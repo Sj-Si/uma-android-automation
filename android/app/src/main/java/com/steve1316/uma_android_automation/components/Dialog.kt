@@ -304,6 +304,7 @@ object DialogObjects {
         DialogCompleteCareer,               // Career (yes this is different from above...)
         DialogConcertSkipConfirmation,      // Career
         DialogConfirmAutoSelect,            // Career Selection
+        DialogConfirmDonations,             // Club
         DialogConfirmExchange,              // Main Screen
         DialogConfirmRestoreRP,             // Team Trials
         DialogConnectionError,              // Anywhere
@@ -312,7 +313,9 @@ object DialogObjects {
         DialogDailySale,                    // Team Trials, Special Events, Daily Races
         DialogDateChanged,                  // Anywhere
         DialogDisplaySettings,              // Anywhere
+        DialogDonationComplete,             // Club
         DialogDownloadError,                // Title Screen (only?)
+        DialogEndSaleConfirmation,          // Daily Sale
         DialogEpithet,                      // Career End
         DialogEpithets,                     // Career DialogMenu -> Epithets button
         DialogExternalLink,                 // Main Screen
@@ -326,10 +329,13 @@ object DialogObjects {
         DialogHelpAndGlossary,              // Anywhere (from options dialog)
         DialogInfirmary,                    // Career
         DialogInsufficientFans,             // Career
+        DialogItemRequest,                  // Club
+        DialogItemRequestError,             // Club
         DialogItemsSelected,                // Team Trials, Special Events, Daily Races
         DialogLog,                          // Career
         DialogMenu,                         // Career
         DialogMoodEffect,                   // Career
+        DialogMultiRace,                    // Daily Races
         DialogMyAgendas,                    // Career
         DialogNoRetries,                    // Career
         DialogNotices,                      // Main Screen
@@ -345,6 +351,7 @@ object DialogObjects {
         DialogRaceDetails,                  // Daily Races, Special Events, and Career
         DialogRacePlayback,                 // Career
         DialogRaceRecommendations,          // Career
+        DialogRaceResults,                  // Daily Races
         DialogRecreation,                   // Career
         DialogRegistrationComplete,         // Anywhere
         DialogRequestFulfilled,             // Transfer Requests
@@ -581,6 +588,18 @@ object DialogConfirmAutoSelect : DialogInterface {
     )
 }
 
+object DialogConfirmDonations : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogConfirmDonations"
+    override val name: String = "confirm_donations"
+    override val title: String = "Confirm Donations"
+    override val closeButton = null
+    override val okButton: ComponentInterface = ButtonDonateToAll1
+    override val buttons: List<ComponentInterface> = listOf(
+        ButtonCancel,
+        ButtonDonateToAll1,
+    )
+}
+
 object DialogConfirmExchange : DialogInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]DialogConfirmExchange"
     override val name: String = "confirm_exchange"
@@ -686,6 +705,17 @@ object DialogDisplaySettings : DialogInterface {
     )
 }
 
+object DialogDonationComplete : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogDonationComplete"
+    override val name: String = "donation_complete"
+    override val title: String = "Donation Complete"
+    override val closeButton = null
+    override val okButton = null
+    override val buttons: List<ComponentInterface> = listOf(
+        ButtonClose
+    )
+}
+
 object DialogDownloadError : DialogInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]DialogDownloadError"
     override val name: String = "download_error"
@@ -695,6 +725,18 @@ object DialogDownloadError : DialogInterface {
     override val buttons: List<ComponentInterface> = listOf(
         ButtonTitleScreen,
         ButtonRetry,
+    )
+}
+
+object DialogEndSaleConfirmation : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogEndSaleConfirmation"
+    override val name: String = "end_sale_confirmation"
+    override val title: String = "Confirmation"
+    override val closeButton = null
+    override val okButton: ComponentInterface = ButtonOk
+    override val buttons: List<ComponentInterface> = listOf(
+        ButtonCancel,
+        ButtonOk,
     )
 }
 
@@ -851,6 +893,115 @@ object DialogInsufficientFans : DialogInterface {
     )
 }
 
+object DialogItemRequest : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogItemRequest"
+    override val name: String = "item_request"
+    override val title: String = "Item Request"
+    override val closeButton = null
+    override val okButton: ComponentInterface? = null
+    override val buttons: List<ComponentInterface> = listOf(
+        ButtonClose,
+        ButtonOk,
+        ButtonDonateToAll0,
+        ButtonCancel,
+        ButtonConfirm,
+        ButtonShoesSprint,
+        ButtonShoesMile,
+        ButtonShoesMedium,
+        ButtonShoesLong,
+        ButtonShoesDirt,
+    )
+
+    // This dialog is unique in that there are five variants of it.
+    override fun ok(imageUtils: CustomImageUtils, tries: Int): Boolean {
+        val bitmap: Bitmap = imageUtils.getSourceBitmap()
+
+        // The order of these versions matters.
+
+        // Select the item to request.
+        val v1: List<ComponentInterface> = listOf(
+            ButtonCancel,
+            ButtonConfirm,
+            ButtonShoesSprint,
+            ButtonShoesMile,
+            ButtonShoesMedium,
+            ButtonShoesLong,
+            ButtonShoesDirt,
+        )
+        // Confirmation after selecting item you want to request.
+        val v2: List<ComponentInterface> = listOf(ButtonCancel, ButtonConfirm)
+        // Donate to club members.
+        val v3: List<ComponentInterface> = listOf(ButtonClose, ButtonDonateToAll0)
+        // Shows the total items received.
+        val v4: List<ComponentInterface> = listOf(ButtonClose)
+        // "It hasn't been 8 hours since your last request."
+        // Replaces the dialog that shows items received after you've received
+        // all requested items.
+        val v5: List<ComponentInterface> = listOf(ButtonClose)
+
+        when {
+            v1.all { it.check(imageUtils, sourceBitmap = bitmap) } -> {
+                return ButtonConfirm.click(imageUtils, sourceBitmap = bitmap)
+            }
+            v2.all { it.check(imageUtils, sourceBitmap = bitmap) } -> {
+                return ButtonConfirm.click(imageUtils, sourceBitmap = bitmap)
+            }
+            v3.all { it.check(imageUtils, sourceBitmap = bitmap) } -> {
+                return ButtonDonateToAll0.click(imageUtils, sourceBitmap = bitmap)
+            }
+            v4.all { it.check(imageUtils, sourceBitmap = bitmap) } -> {
+                return ButtonClose.click(imageUtils, sourceBitmap = bitmap)
+            }
+            v5.all { it.check(imageUtils, sourceBitmap = bitmap) } -> {
+                return ButtonClose.click(imageUtils, sourceBitmap = bitmap)
+            }
+            else -> return false
+        }
+    }
+
+    // This dialog is unique in that there are two versions for its close button.
+    override fun close(imageUtils: CustomImageUtils, tries: Int): Boolean {
+        val bitmap: Bitmap = imageUtils.getSourceBitmap()
+        if (ButtonClose.click(imageUtils, sourceBitmap = bitmap)) {
+            return true
+        }
+
+        return ButtonCancel.click(imageUtils, sourceBitmap = bitmap)
+    }
+}
+
+object DialogItemRequestError : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogItemRequestError"
+    override val name: String = "item_request_error"
+    override val title: String = "Item Request Error"
+    override val closeButton = null
+    override val okButton = null
+    override val buttons: List<ComponentInterface> = listOf(
+        ButtonClose,
+        ButtonHome,
+    )
+
+    // This dialog is unique in that there are two variants of it.
+    override fun ok(imageUtils: CustomImageUtils, tries: Int): Boolean {
+        val bitmap: Bitmap = imageUtils.getSourceBitmap()
+        if (ButtonClose.click(imageUtils, sourceBitmap = bitmap)) {
+            return true
+        }
+
+        return ButtonHome.click(imageUtils, sourceBitmap = bitmap)
+    }
+
+    // This dialog is unique in that there are two variants of it.
+    override fun close(imageUtils: CustomImageUtils, tries: Int): Boolean {
+        val bitmap: Bitmap = imageUtils.getSourceBitmap()
+        if (ButtonClose.click(imageUtils, sourceBitmap = bitmap)) {
+            return true
+        }
+
+        return ButtonHome.click(imageUtils, sourceBitmap = bitmap)
+    }
+}
+
 object DialogItemsSelected : DialogInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]DialogItemsSelected"
     override val name: String = "items_selected"
@@ -896,6 +1047,20 @@ object DialogMoodEffect : DialogInterface {
     override val okButton = null
     override val buttons: List<ComponentInterface> = listOf(
         ButtonClose,
+    )
+}
+
+object DialogMultiRace : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogMultiRace"
+    override val name: String = "multi_race"
+    override val title: String = "Multi-Race"
+    override val closeButton = null
+    override val okButton: ComponentInterface = ButtonRaceExclamationShiftedUp
+    override val buttons: List<ComponentInterface> = listOf(
+        ButtonCancel,
+        ButtonRaceExclamationShiftedUp,
+        ButtonCircleMinus,
+        ButtonCirclePlus,
     )
 }
 
@@ -1124,6 +1289,37 @@ object DialogRaceRecommendations : DialogInterface {
         ButtonRaceRecommendationsForgeYourOwnPath,
         Checkbox,
     )
+}
+
+object DialogRaceResults : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogRaceResults"
+    override val name: String = "race_results"
+    override val title: String = "Race Results"
+    override val closeButton = null
+    override val okButton: ComponentInterface = ButtonComplete
+    override val buttons: List<ComponentInterface> = listOf(
+        ButtonClose,
+        ButtonComplete,
+    )
+
+    // This dialog is unique in that there are two versions of it.
+    // The dialog can only have one button at a time but it can switch
+    // between two different buttons.
+    override fun close(imageUtils: CustomImageUtils, tries: Int): Boolean {
+        if (ButtonComplete.click(imageUtils = imageUtils, tries = tries)) {
+            return true
+        }
+        
+        return ButtonClose.click(imageUtils = imageUtils, tries = tries)
+    }
+
+    override fun ok(imageUtils: CustomImageUtils, tries: Int): Boolean {
+        if (ButtonComplete.click(imageUtils = imageUtils, tries = tries)) {
+            return true
+        }
+        
+        return ButtonClose.click(imageUtils = imageUtils, tries = tries)
+    }
 }
 
 object DialogRecreation : DialogInterface {
