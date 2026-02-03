@@ -318,6 +318,8 @@ object DialogObjects {
         DialogEndSaleConfirmation,          // Daily Sale
         DialogEpithet,                      // Career End
         DialogEpithets,                     // Career DialogMenu -> Epithets button
+        DialogEventExclusiveMissions,       // Missions Screen
+        DialogExchangeComplete,             // Shop
         DialogExternalLink,                 // Main Screen
         DialogFans,                         // Career DialogGoals
         DialogFeaturedCards,                // Career
@@ -609,6 +611,25 @@ object DialogConfirmExchange : DialogInterface {
     override val buttons: List<ComponentInterface> = listOf(
         ButtonClose,
     )
+
+    // This dialog is unique in that there are two versions of it.
+    // The dialog can have either a single button ("Close") or
+    // two buttons ("Cancel" and "Exchange").
+    override fun ok(imageUtils: CustomImageUtils, tries: Int): Boolean {
+        if (ButtonClose.click(imageUtils, tries = tries)) {
+            return true
+        }
+        
+        return ButtonExchange.click(imageUtils, tries = tries)
+    }
+
+    override fun close(imageUtils: CustomImageUtils, tries: Int): Boolean {
+        if (ButtonClose.click(imageUtils, tries = tries)) {
+            return true
+        }
+        
+        return ButtonCancel.click(imageUtils, tries = tries)
+    }
 }
 
 object DialogConnectionError : DialogInterface {
@@ -757,6 +778,28 @@ object DialogEpithets : DialogInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]DialogEpithets"
     override val name: String = "epithets"
     override val title: String = "Epithets"
+    override val closeButton = null
+    override val okButton = null
+    override val buttons: List<ComponentInterface> = listOf(
+        ButtonClose,
+    )
+}
+
+object DialogEventExclusiveMissions : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogEventExclusiveMissions"
+    override val name: String = "event_exclusive_missions"
+    override val title: String = "Event Exclusive Missions"
+    override val closeButton = null
+    override val okButton = null
+    override val buttons: List<ComponentInterface> = listOf(
+        ButtonClose,
+    )
+}
+
+object DialogExchangeComplete : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogExchangeComplete"
+    override val name: String = "exchange_complete"
+    override val title: String = "Exchange Complete"
     override val closeButton = null
     override val okButton = null
     override val buttons: List<ComponentInterface> = listOf(

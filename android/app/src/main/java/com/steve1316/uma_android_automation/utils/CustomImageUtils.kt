@@ -2099,6 +2099,7 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
         val tempImage = Mat()
         Utils.bitmapToMat(bitmap, tempImage)
         Imgcodecs.imwrite("$matchFilePath/$filename.png", tempImage)
+        MessageLog.e("REMOVEME", "Saved bitmap to $matchFilePath/$filename.png")
         tempImage.release()
     }
 
@@ -2119,6 +2120,10 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
             bbox.h,
             "saveBitmap(filename=$filename, bbox=$bbox)",
         )
+        if (croppedBitmap == null) {
+            MessageLog.e("REMOVEME", "CroppedBitmap is null.")
+            return
+        }
         saveBitmap(bitmap = croppedBitmap, filename = filename)
     }
 

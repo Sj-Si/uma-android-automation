@@ -7,6 +7,8 @@ import org.opencv.core.Point
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.bot.Game
+import com.steve1316.uma_android_automation.utils.ScrollList
+
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.utils.MessageLog
 
@@ -27,6 +29,22 @@ enum class DailyRaceName {
     }
 }
 
+enum class ShoeType {
+    SPRINT,
+    MILE,
+    MEDIUM,
+    LONG,
+    DIRT;
+
+    companion object {
+        private val nameMap = entries.associateBy { it.name }
+        private val ordinalMap = entries.associateBy { it.ordinal }
+
+        fun fromName(value: String): ShoeType? = nameMap[value.uppercase()]
+        fun fromOrdinal(ordinal: Int): ShoeType? = ordinalMap[ordinal]
+    }
+}
+
 class DailyTasks(game: Game) : Campaign(game) {
     override val TAG: String = "[${MainActivity.loggerTag}]DailyTasks"
 
@@ -36,8 +54,9 @@ class DailyTasks(game: Game) : Campaign(game) {
     private var bHasCompletedChampionsMeeting: Boolean = false
     private var bHasCompletedClubActivity: Boolean = false
     private var bHasCollectedSpecialMissions: Boolean = false
+    private var bHasCollectedEventMissions: Boolean = false
     private var bHasCollectedPresents: Boolean = false
-
+    private var bHasHandledDailySale: Boolean = false
 
     // TODO: Read from settingshelper.
     private val bShouldHandleDailySale: Boolean = true
@@ -46,7 +65,8 @@ class DailyTasks(game: Game) : Campaign(game) {
     private val bShouldBuyPleasingParfait: Boolean = true
 
     private val dailyRaceName: DailyRaceName = DailyRaceName.MOONLIGHT_SHO
-    private val clubDonationShoeType: String = "medium"
+    private val clubDonationShoeTypeString: String = "medium"
+    private val clubDonationShoeType: ShoeType = ShoeType.fromName(clubDonationShoeTypeString) ?: ShoeType.MEDIUM
 
     /**
      * Detects and handles any dialog popups.
@@ -74,6 +94,7 @@ class DailyTasks(game: Game) : Campaign(game) {
 
         when (dialog.name) {
             "confirm_donations" -> dialog.ok(game.imageUtils)
+            "confirm_exchange" -> dialog.ok(game.imageUtils)
             "confirm_restore_rp" -> {
                 dialog.close(game.imageUtils)
                 game.wait(0.5, skipWaitingForLoading = true)
@@ -89,10 +110,15 @@ class DailyTasks(game: Game) : Campaign(game) {
                 // TODO: Handle daily sales.
                 if (bShouldHandleDailySale) {
                     dialog.ok(game.imageUtils)
+                    game.wait(0.5)
                     handleDailySale()
                 } else {
                     dialog.close(game.imageUtils)
                 }
+            }
+            "date_changed" -> {
+                dialog.close(game.imageUtils)
+                handleTitleMenu()
             }
             "donation_complete" -> {
                 dialog.close(game.imageUtils)
@@ -104,28 +130,25 @@ class DailyTasks(game: Game) : Campaign(game) {
 
                 bHasCompletedClubActivity = true
             }
+            "end_sale_confirmation" -> dialog.ok(game.imageUtils)
+            // We want to handle this dialog elsewhere. So we don't do anything
+            // and just let the dialog get returned to the calling function
+            // for them to handle it.
+            "event_exclusive_missions" -> {}
+            "exchange_complete" -> dialog.close(game.imageUtils)
             "item_request" -> {
                 val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
-                val shoes: List<ComponentInterface> = listOf(
-                    ButtonShoesSprint,
-                    ButtonShoesMile,
-                    ButtonShoesMedium,
-                    ButtonShoesLong,
-                    ButtonShoesDirt,
+                val shoeButtons: Map<ShoeType, ComponentInterface> = mapOf(
+                    ShoeType.SPRINT to ButtonShoesSprint,
+                    ShoeType.MILE to ButtonShoesMile,
+                    ShoeType.MEDIUM to ButtonShoesMedium,
+                    ShoeType.LONG to ButtonShoesLong,
+                    ShoeType.DIRT to ButtonShoesDirt,
                 )
 
-                if (shoes.all { it.check(game.imageUtils, sourceBitmap = bitmap) }) {
-                    when (clubDonationShoeType) {
-                        "sprint" -> ButtonShoesSprint.click(game.imageUtils, sourceBitmap = bitmap)
-                        "mile" -> ButtonShoesMile.click(game.imageUtils, sourceBitmap = bitmap)
-                        "medium" -> ButtonShoesMedium.click(game.imageUtils, sourceBitmap = bitmap)
-                        "long" -> ButtonShoesLong.click(game.imageUtils, sourceBitmap = bitmap)
-                        "dirt" -> ButtonShoesDirt.click(game.imageUtils, sourceBitmap = bitmap)
-                        else -> {
-                            MessageLog.e(TAG, "[CLUB] Invalid donation shoe type: $clubDonationShoeType")
-                            throw InterruptedException("[CLUB] Invalid donation shoe type: $clubDonationShoeType")
-                        }
-                    }
+                if (shoeButtons.values.all { it.check(game.imageUtils, sourceBitmap = bitmap) }) {
+                    val button: ComponentInterface = shoeButtons[clubDonationShoeType]!!
+                    button.click(game.imageUtils, sourceBitmap = bitmap)
                 }
                 dialog.ok(game.imageUtils)
             }
@@ -140,11 +163,16 @@ class DailyTasks(game: Game) : Campaign(game) {
                 game.wait(0.5)
             }
             "items_selected" -> {
-                // TODO: Add option for selecting parfait.
+                // TODO: Add option for selecting parfait when we have bonus rewards.
                 dialog.ok(game.imageUtils)
             }
+            "notices" -> dialog.close(game.imageUtils)
+            "open_soon" -> {
+                dialog.close(game.imageUtils)
+                bHasHandledDailySale = true
+            }
             "presents" -> {
-                if (!ButtonCollect.check(game.imageUtils, tries = 5)) {
+                if (bHasCollectedPresents || !ButtonCollect.check(game.imageUtils, tries = 5)) {
                     dialog.close(game.imageUtils)
                     game.wait(0.5, skipWaitingForLoading = true)
                     bHasCollectedPresents = true
@@ -166,6 +194,7 @@ class DailyTasks(game: Game) : Campaign(game) {
             "race_results" -> dialog.ok(game.imageUtils)
             "rewards_collected" -> dialog.close(game.imageUtils)
             "special_missions" -> dialog.ok(game.imageUtils)
+            "story_unlocked" -> dialog.close(game.imageUtils)
             else -> {
                 return Pair(false, dialog)
             }
@@ -174,7 +203,41 @@ class DailyTasks(game: Game) : Campaign(game) {
         return Pair(true, dialog)
     }
 
-    private fun handleDailySale(): Boolean {
+    private fun goToDailySale(): Boolean {
+        if (!goToHomeMenu()) {
+            return false
+        }
+
+        val maxTimeMs = 10000 // 10 seconds
+        val startTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startTime < maxTimeMs) {
+            val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
+            when {
+                bHasHandledDailySale -> {
+                    goToHomeMenu()
+                    return true
+                }
+                ButtonHomeShopDaily.click(game.imageUtils, sourceBitmap = bitmap) -> {
+                    MessageLog.d(TAG, "[DAILY_SALE] Entering shop...")
+                }
+                ButtonShopDailySales.click(game.imageUtils, sourceBitmap = bitmap) -> {
+                    MessageLog.d(TAG, "[DAILY_SALE] Entering daily sale...")
+                }
+            }
+        }
+
+        MessageLog.e(TAG, "[DAILY_SALE] goToDailySale timed out.")
+        return false
+    }
+
+    fun handleDailySale(bShouldReturnToHome: Boolean = false): Boolean {
+        if (!ButtonShopEndSale.check(game.imageUtils, tries = 5)) {
+            if (!goToDailySale()) {
+                MessageLog.e(TAG, "[DAILY_SALE] Failed to go to daily sale.")
+                return false
+            }
+        }
+
         val buttonBitmap: Bitmap? = ButtonShopExchange.template.getBitmap(game.imageUtils)
         if (buttonBitmap == null) {
             MessageLog.e(TAG, "Failed to load bitmap for ButtonShopExchange.")
@@ -182,50 +245,71 @@ class DailyTasks(game: Game) : Campaign(game) {
         }
 
         val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
-        val locs: ArrayList<Point> = ButtonShopExchange.findAll(
-            game.imageUtils,
-            sourceBitmap = bitmap,
+
+        val scrollList: ScrollList? = ScrollList.create(
+            game,
+            entryHeight = (SharedData.displayHeight * 0.0979).toInt(),
+            bitmap = bitmap,
         )
 
-        if (locs.isEmpty()) {
+        if (scrollList == null) {
+            MessageLog.e(TAG, "[DAILY_SALE] Failed to detect sale list.")
             return false
         }
 
-        for (loc in locs) {
-            // Expand Y by half button size in both directions.
-            val bbox = BoundingBox(
-                x = 0,
-                y = (loc.y - buttonBitmap.height).toInt(),
-                w = SharedData.displayWidth,
-                h = buttonBitmap.height * 2,
-            )
+        var prevNames: Set<String> = setOf()
+
+        var numHandled: Int = 0
+
+        scrollList.process(ButtonShopExchange) { _, _, loc, bitmap ->
             when {
-                LabelShopStarPiece.check(game.imageUtils, sourceBitmap = bitmap, region = bbox.toIntArray()) -> {
+                LabelShopStarPiece.check(game.imageUtils, sourceBitmap = bitmap) -> {
                     if (bShouldBuyStarPiece) {
                         game.tap(loc.x, loc.y, ButtonShopExchange.template.path)
                     }
                 }
-                LabelShopAlarmClock.check(game.imageUtils, sourceBitmap = bitmap, region = bbox.toIntArray()) -> {
+                LabelShopAlarmClock.check(game.imageUtils, sourceBitmap = bitmap) -> {
                     if (bShouldBuyAlarmClock) {
                         game.tap(loc.x, loc.y, ButtonShopExchange.template.path)
                     }
                 }
-                LabelShopPleasingParfait.check(game.imageUtils, sourceBitmap = bitmap, region = bbox.toIntArray()) -> {
+                LabelShopPleasingParfait.check(game.imageUtils, sourceBitmap = bitmap) -> {
                     if (bShouldBuyPleasingParfait) {
                         game.tap(loc.x, loc.y, ButtonShopExchange.template.path)
                     }
                 }
-                else -> continue
             }
+            game.wait(0.5, skipWaitingForLoading = true)
+            if (handleDialogs().first) {
+                numHandled++
+            }
+            // Need to close the second dialog opened when confirming the exchange.
+            handleDialogs()
+
+            // Return true if we bought everything to stop the scroll list loop.
+            numHandled >= 4
         }
 
-        // Always return to previous location after handling daily sale.
+        bHasHandledDailySale = true
+
+        ButtonShopEndSale.click(game.imageUtils)
+        handleDialogs()
+
+        // If specified, we return to the home menu.
+        if (bShouldReturnToHome) {
+            goToHomeMenu()
+            return true
+        }
+
+        // Otherwise, return to previous location after handling daily sale.
         return ButtonBack.click(game.imageUtils, sourceBitmap = bitmap)
     }
 
     private fun goToHomeMenu(bitmap: Bitmap? = null): Boolean {
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
-        return ButtonMenuBarHome.click(game.imageUtils, sourceBitmap = bitmap)
+        val res: Boolean = ButtonMenuBarHome.click(game.imageUtils, sourceBitmap = bitmap)
+        game.waitForLoading()
+        return res
     }
 
     private fun goToRaceMenu(bitmap: Bitmap? = null): Boolean {
@@ -254,12 +338,6 @@ class DailyTasks(game: Game) : Campaign(game) {
     private fun checkTeamTrialsMenu(bitmap: Bitmap? = null): Boolean {
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
         return ButtonTeamRace.check(game.imageUtils, sourceBitmap = bitmap)
-    }
-
-    private fun checkScreen(bitmap: Bitmap? = null) {
-        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
-
-
     }
 
     private fun selectTeamTrialsOpponent(bitmap: Bitmap? = null): Boolean {
@@ -299,6 +377,11 @@ class DailyTasks(game: Game) : Campaign(game) {
             return false
         }
 
+        if (ButtonTeamTrialsTallying.check(game.imageUtils)) {
+            MessageLog.i(TAG, "[TEAM_TRIALS] Tallying in progress. Cannot race.")
+            return true
+        }
+
         // We use this as a means of exiting the loop if it runs too long.
         val maxTimeMs = 180000 // 3 min (180 seconds)
         val startTime = System.currentTimeMillis()
@@ -308,8 +391,7 @@ class DailyTasks(game: Game) : Campaign(game) {
                 bHasCompletedTeamTrials -> {
                     ButtonTeamTrialsRaceResultsNext.click(game.imageUtils)
                     game.waitForLoading()
-                    ButtonMenuBarHome.click(game.imageUtils)
-                    game.waitForLoading()
+                    goToHomeMenu()
                     return true
                 }
                 handleDialogs().first -> {}
@@ -350,6 +432,7 @@ class DailyTasks(game: Game) : Campaign(game) {
             }
         }
 
+        MessageLog.e(TAG, "[TEAM_TRIALS] handleTeamTrials timed out.")
         return false
     }
 
@@ -359,7 +442,6 @@ class DailyTasks(game: Game) : Campaign(game) {
         val dailyRaceSelectionButton: ComponentInterface = when (dailyRaceName) {
             DailyRaceName.MOONLIGHT_SHO -> ButtonDailyRacesMoonlightShoRaceSelection
             DailyRaceName.JUPITER_CUP -> ButtonDailyRacesJupiterCupRaceSelection
-            else -> ButtonDailyRacesMoonlightShoRaceSelection
         }
 
         // Always select the hardest race.
@@ -389,7 +471,6 @@ class DailyTasks(game: Game) : Campaign(game) {
         val dailyRaceButton: ComponentInterface = when (dailyRaceName) {
             DailyRaceName.MOONLIGHT_SHO -> ButtonDailyRacesMoonlightSho
             DailyRaceName.JUPITER_CUP -> ButtonDailyRacesJupiterCup
-            else -> ButtonDailyRacesMoonlightSho
         }
 
         val maxTimeMs = 180000 // 3 min (180 seconds)
@@ -398,15 +479,17 @@ class DailyTasks(game: Game) : Campaign(game) {
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
             when {
                 bHasCompletedDailyRaces -> {
-                    ButtonMenuBarHome.click(game.imageUtils)
-                    game.waitForLoading()
+                    goToHomeMenu()
                     return true
                 }
                 handleDialogs().first -> {}
-                ButtonDailyRacesLocked.check(game.imageUtils, sourceBitmap = bitmap) -> {
-                    MessageLog.d(TAG, "[DAILY_RACES] Daily Races are locked.")
+                ButtonDailyRacesDoneForToday.check(game.imageUtils) -> {
+                    MessageLog.i(TAG, "[DAILY_RACES] Daily races are done for today. Cannot race.")
                     bHasCompletedDailyRaces = true
-                    return true
+                }
+                ButtonDailyRacesLocked.check(game.imageUtils, sourceBitmap = bitmap) -> {
+                    MessageLog.d(TAG, "[DAILY_RACES] Daily Races are locked. Cannot race.")
+                    bHasCompletedDailyRaces = true
                 }
                 ButtonDailyRaces.click(game.imageUtils, sourceBitmap = bitmap) -> {
                     MessageLog.d(TAG, "[DAILY_RACES] Navigated to Daily Races menu.")
@@ -432,6 +515,8 @@ class DailyTasks(game: Game) : Campaign(game) {
                 else -> game.tap(350.0, 750.0, "ok", taps = 1)
             }
         }
+
+        MessageLog.e(TAG, "[DAILY_RACES] handleDailyRaces timed out.")
         return false
     }
 
@@ -463,7 +548,11 @@ class DailyTasks(game: Game) : Campaign(game) {
         while (System.currentTimeMillis() - startTime < maxTimeMs) {
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
             when {
-                bHasCompletedLegendRaces -> return true
+                bHasCompletedLegendRaces -> {
+                    game.waitForLoading()
+                    goToHomeMenu()
+                    return true
+                }
                 numCompleted >= 3 -> bHasCompletedLegendRaces = true
                 handleDialogs().first -> {}
                 ButtonLegendRaceLocked.check(game.imageUtils, sourceBitmap = bitmap) -> {
@@ -496,6 +585,8 @@ class DailyTasks(game: Game) : Campaign(game) {
                 else -> game.tap(350.0, 750.0, "ok", taps = 1)
             }
         }
+
+        MessageLog.e(TAG, "[LEGEND_RACES] handleLegendRaces timed out.")
         return false
     }
 
@@ -509,7 +600,10 @@ class DailyTasks(game: Game) : Campaign(game) {
         while (System.currentTimeMillis() - startTime < maxTimeMs) {
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
             when {
-                bHasCompletedChampionsMeeting -> return true
+                bHasCompletedChampionsMeeting -> {
+                    goToHomeMenu()
+                    return true
+                }
                 handleDialogs().first -> {}
                 ButtonChampionsMeetingLocked.check(game.imageUtils, sourceBitmap = bitmap) -> {
                     MessageLog.d(TAG, "[CHAMPIONS_MEETING] Champions Meeting is locked.")
@@ -528,27 +622,33 @@ class DailyTasks(game: Game) : Campaign(game) {
                 }
             }
         }
+
+        MessageLog.e(TAG, "[CHAMPIONS_MEETING] handleChampionsMeeting timed out.")
         return false
     }
 
     private fun handleClub(): Boolean {
         if (!goToHomeMenu()) {
+            MessageLog.e(TAG, "handleClub: Failed to goToHomeMenu.")
             return false
         }
 
-        val maxTimeMs = 180000 // 3 min (180 seconds)
+        val maxTimeMs = 30000 // 30 seconds
         val startTime = System.currentTimeMillis()
         while (System.currentTimeMillis() - startTime < maxTimeMs) {
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
             when {
                 bHasCompletedClubActivity -> {
-                    ButtonMenuBarHome.click(game.imageUtils)
-                    game.waitForLoading()
+                    goToHomeMenu()
                     return true
                 }
                 handleDialogs().first -> {}
                 ButtonClub.click(game.imageUtils, sourceBitmap = bitmap) -> {
                     MessageLog.e(TAG, "[CLUB] Navigating to club.")
+                }
+                ButtonClubLocked.check(game.imageUtils, sourceBitmap = bitmap) -> {
+                    MessageLog.d(TAG, "[CLUB] Club is locked. Cannot perform tasks.")
+                    bHasCompletedClubActivity = true
                 }
                 ButtonClubItemRequest.click(game.imageUtils, sourceBitmap = bitmap) -> {
                     MessageLog.e(TAG, "[CLUB] Processing existing item request.")
@@ -557,7 +657,7 @@ class DailyTasks(game: Game) : Campaign(game) {
                     MessageLog.e(TAG, "[CLUB] Handling club member requests.")
                 }
                 // If there are no item requests, then we have nothing left to do.
-                ButtonClubItemRequest.check(game.imageUtils, sourceBitmap = bitmap) &&
+                ButtonClubEmoji.check(game.imageUtils, sourceBitmap = bitmap) && 
                 !ButtonClubViewRequests.check(game.imageUtils, sourceBitmap = bitmap) -> {
                     MessageLog.e(TAG, "[CLUB] No available item requests.")
                     bHasCompletedClubActivity = true
@@ -565,7 +665,53 @@ class DailyTasks(game: Game) : Campaign(game) {
             }
         }
 
+        MessageLog.e(TAG, "[CLUB] handleClub timed out.")
         return false
+    }
+
+    private fun handleEventMissions(): Boolean {
+        // If there isn't an event going on, then this button won't exist.
+        // Thus we don't treat this as a failure.
+        if (!ButtonEventMissions.click(game.imageUtils, tries = 5)) {
+            MessageLog.w(TAG, "[EVENT_MISSIONS] Event Missions button not found.")
+            bHasCollectedEventMissions = true
+            return true
+        }
+
+        game.wait(0.5)
+        val dialog: DialogInterface? = handleDialogs().second
+        if (dialog == null || dialog.name != "event_exclusive_missions") {
+            MessageLog.e(TAG, "[EVENT_MISSIONS] Event Exclusive Missions dialog wasn't detected.")
+            return false
+        }
+
+        if (!ButtonEventExclusiveMissionsStoryEvent.click(game.imageUtils)) {
+            MessageLog.e(TAG, "[EVENT_MISSIONS] Failed to click Story Event button.")
+            return false
+        }
+        game.wait(1.0)
+        game.waitForLoading()
+
+        val tabs: List<ComponentInterface> = listOf(
+            ButtonSpecialMissionsTabDaily,
+            ButtonSpecialMissionsTabTitles,
+            ButtonEventMissionsTabLimitedTime,
+        )
+
+        for (tab in tabs) {
+            tab.click(game.imageUtils)
+            game.wait(0.5, skipWaitingForLoading = true)
+            val bm = game.imageUtils.getSourceBitmap()
+            game.imageUtils.saveBitmap(bm, "BLAH")
+            if (!ButtonCollectAll.click(game.imageUtils, tries = 5)) {
+                MessageLog.e(TAG, "[EVENT_MISSIONS] Failed to click collect for tab ${tab::class.simpleName}")
+            }
+            game.wait(0.5, skipWaitingForLoading = true)
+            handleDialogs()
+        }
+
+        bHasCollectedEventMissions = true
+        return true
     }
 
     private fun handleSpecialMissions(): Boolean {
@@ -576,7 +722,7 @@ class DailyTasks(game: Game) : Campaign(game) {
         game.wait(0.5)
 
         ButtonHomeSpecialMissions.click(game.imageUtils)
-        MessageLog.d(TAG, "[DAILY_TASKS] Collecting special missions rewards...")
+        MessageLog.d(TAG, "[SPECIAL_MISSIONS] Collecting special missions rewards...")
         game.wait(0.5)
 
         val tabs: List<ComponentInterface> = listOf(
@@ -587,18 +733,22 @@ class DailyTasks(game: Game) : Campaign(game) {
         )
 
         for (tab in tabs) {
-            val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
-            tab.click(game.imageUtils, sourceBitmap = bitmap)
+            tab.click(game.imageUtils)
             game.wait(0.5, skipWaitingForLoading = true)
-            if (!ButtonCollectAll.click(game.imageUtils, sourceBitmap = bitmap)) {
-                MessageLog.e(TAG, "Failed to click collect for tab ${tab::class.simpleName}")
+            if (!ButtonCollectAll.click(game.imageUtils, tries = 5)) {
+                MessageLog.e(TAG, "[SPECIAL_MISSIONS] Failed to click collect for tab ${tab::class.simpleName}")
             }
             game.wait(0.5, skipWaitingForLoading = true)
             handleDialogs()
         }
 
-        bHasCollectedSpecialMissions = true
+        // Now handle event missions.
+        if (!handleEventMissions()) {
+            MessageLog.e(TAG, "[SPECIAL_MISSIONS] Failed to handle event missions.")
+            return false
+        }
 
+        bHasCollectedSpecialMissions = true
         return true
     }
 
@@ -607,7 +757,7 @@ class DailyTasks(game: Game) : Campaign(game) {
             return false
         }
 
-        val maxTimeMs = 180000 // 3 min (180 seconds)
+        val maxTimeMs = 10000 // 10 seconds
         val startTime = System.currentTimeMillis()
         while (System.currentTimeMillis() - startTime < maxTimeMs) {
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
@@ -616,13 +766,38 @@ class DailyTasks(game: Game) : Campaign(game) {
                     goToHomeMenu()
                     return true
                 }
-                handleDialogs().first -> {}
+                handleDialogs().first -> {
+                    // Need to close the extra dialog that pops up.
+                    handleDialogs()
+                    // Now close the original dialog.
+                    handleDialogs()
+                }
                 ButtonHomePresents.click(game.imageUtils, sourceBitmap = bitmap) -> {
                     MessageLog.e(TAG, "[PRESENTS] Opening presents dialog...")
+                    game.wait(0.5, skipWaitingForLoading = true)
                 }
             }
         }
 
+        MessageLog.e(TAG, "[PRESENTS] handlePresents timed out.")
+        return false
+    }
+
+    private fun handleTitleMenu(): Boolean {
+        val maxTimeMs = 60000 // 60 seconds
+        val startTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startTime < maxTimeMs) {
+            val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
+            when {
+                handleDialogs().first -> {}
+                ButtonMenuBarHome.check(game.imageUtils, sourceBitmap = bitmap) -> return true
+                ButtonTitleScreen.click(game.imageUtils, sourceBitmap = bitmap) -> {}
+                ButtonSkip.click(game.imageUtils, sourceBitmap = bitmap) -> {}
+                else -> game.tap(350.0, 750.0, "ok", taps = 1)
+            }
+        }
+
+        MessageLog.e(TAG, "[DAILY_TASKS] handleTitleMenu timed out.")
         return false
     }
 	
@@ -632,12 +807,9 @@ class DailyTasks(game: Game) : Campaign(game) {
 	override fun start() {
 		MessageLog.i(TAG, "[DAILY_TASKS] Starting process for handling the Daily Tasks.")
 
-        // We use this as a means of exiting the loop if it runs too long.
         val maxTimeMs = 600000 // 10 min (600 seconds)
         val startTime = System.currentTimeMillis()
-
         while (System.currentTimeMillis() - startTime < maxTimeMs) {
-            val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
             when {
                 handleDialogs().first -> {}
                 !bHasCompletedTeamTrials -> handleTeamTrials()
@@ -646,19 +818,11 @@ class DailyTasks(game: Game) : Campaign(game) {
                 !bHasCompletedChampionsMeeting -> handleChampionsMeeting()
                 !bHasCompletedClubActivity -> handleClub()
                 !bHasCollectedSpecialMissions -> handleSpecialMissions()
+                !bHasCollectedEventMissions -> handleSpecialMissions()
                 !bHasCollectedPresents -> handlePresents()
-                ButtonMenuBarHome.click(game.imageUtils, sourceBitmap = bitmap) -> {
-                    MessageLog.d(TAG, "[DAILY_TASKS] Navigated to home.")
-                }
-                
-                ButtonHomePresents.click(game.imageUtils, sourceBitmap = bitmap) -> {
-                    MessageLog.d(TAG, "[DAILY_TASKS] Collecting presents...")
-                }
-                // Tap on the screen to skip past any intermediate screens.
-                else -> game.tap(350.0, 750.0, "ok", taps = 3)
+                !bHasHandledDailySale -> handleDailySale(bShouldReturnToHome = true)
+                else -> return
             }
         }
-
-        MessageLog.e(TAG, "[DAILY_TASKS] Routine timed out.")
 	}
 }
