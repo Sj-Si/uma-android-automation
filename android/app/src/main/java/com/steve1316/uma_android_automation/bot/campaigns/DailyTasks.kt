@@ -45,6 +45,616 @@ enum class ShoeType {
     }
 }
 
+open class Routine(protected val game: Game) {
+    protected open val TAG: String = "[${MainActivity.loggerTag}]Routine"
+
+    protected var bIsComplete: Boolean = false
+
+    open fun handleDialogs(dialog: DialogInterface? = null): Pair<Boolean, DialogInterface?> {
+        val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
+        return Pair(false, dialog)
+    }
+
+    open fun waitForPages(
+        pages: List<PageInterface>,
+        timeoutMs: Int = 10000,
+        bShouldTapWhileWaiting: Boolean = true,
+    ): Boolean {
+        val startTime = System.currentTimeMillis()
+        var result: Boolean = false
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
+            if (pages.any { it.check(game.imageUtils, bitmap) }) {
+                result = true
+                break
+            }
+            if (bShouldTapWhileWaiting) {
+                game.tap(350.0, 750.0, "ok", taps = 3)
+            }
+        }
+        checkPage()
+        return result
+    }
+
+    open fun waitForButton(
+        button: ComponentInterface,
+        timeoutMs: Int = 3000,
+        bShouldTapWhileWaiting: Boolean = false,
+        bShouldClickButton: Boolean = true,
+    ): Boolean {
+        val startTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            if (bShouldClickButton) {
+                if (button.click(game.imageUtils)) {
+                    return true
+                }
+            } else {
+                if (button.check(game.imageUtils)) {
+                    return true
+                }
+            }
+            if (bShouldTapWhileWaiting) {
+                game.tap(350.0, 750.0, "ok", taps = 3)
+            }
+        }
+        return false
+    }
+
+    open fun checkPage(bitmap: Bitmap? = null): PageInterface? {
+        return null
+    }
+
+    open fun progress(bitmap: Bitmap? = null): PageInterface? {
+        return null
+    }
+
+    open fun start(timeoutMs: Int = 60000 * 5): Boolean {
+        val startTime = System.currentTimeMillis()
+        while (!bIsComplete && System.currentTimeMillis() - startTime < timeoutMs) {
+            progress()
+        }
+        return bIsComplete
+    }
+}
+
+class DailySaleRoutine(game: Game) : Routine(game) {
+    override val TAG: String = "[${MainActivity.loggerTag}]DailySaleRoutine"
+
+    // TODO: Load from settings.
+    private val bShouldBuyStarPieces: Boolean = true
+    private val bShouldBuyAlarmClock: Boolean = true
+    private val bShouldBuyPleasingParfait: Boolean = true
+
+    /**
+     * Detects and handles any dialog popups.
+     *
+     * To prevent the bot moving too fast, we add a 500ms delay to the
+     * exit of this function whenever we close the dialog.
+     * This gives the dialog time to close since there is a very short
+     * animation that plays when a dialog closes.
+     *
+     * @param dialog An optional dialog to evaluate. This allows chaining
+     * dialog handler calls for improved performance.
+     *
+     * @return A pair of a boolean and a nullable DialogInterface.
+     * The boolean is true when a dialog has been handled by this function.
+     * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
+     */
+    override fun handleDialogs(dialog: DialogInterface?): Pair<Boolean, DialogInterface?> {
+        val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
+        if (dialog == null) {
+            return Pair(false, null)
+        }
+
+        when (dialog.name) {
+            "confirm_exchange" -> dialog.ok(game.imageUtils)
+            "end_sale_confirmation" -> dialog.ok(game.imageUtils)
+            "exchange_complete" -> dialog.close(game.imageUtils)
+            "return_to_shops" -> dialog.close(game.imageUtils)
+            else -> return Pair(false, dialog)
+        }
+        game.wait(0.5, skipWaitingForLoading = true)
+        return Pair(true, dialog)
+    }
+
+    override fun start(timeoutMs: Int): Boolean {
+        if (!PageDailySale.check(game.imageUtils)) {
+            MessageLog.e(TAG, "[DAILY_SALE] Failed to start routine. Not at Daily Sale page.")
+            return false
+        }
+
+        val scrollList: ScrollList? = ScrollList.create(
+            game,
+            entryHeight = (SharedData.displayHeight * 0.0979).toInt(),
+        )
+
+        if (scrollList == null) {
+            MessageLog.e(TAG, "[DAILY_SALE] Failed to detect sale list.")
+            return false
+        }
+
+        var prevNames: Set<String> = setOf()
+
+        var numToHandle: Int = listOf<Boolean>(
+            bShouldBuyStarPieces,
+            bShouldBuyStarPieces,
+            bShouldBuyAlarmClock,
+            bShouldBuyPleasingParfait,
+        ).count { it }
+
+        var numHandled: Int = 0
+
+        var bSaleExpired: Boolean = false
+        
+        val entryComponents: List<ComponentInterface> = listOf(
+            ButtonShopExchange,
+            ButtonShopExchangeDisabled,
+        )
+        scrollList.process(entryComponents) { _, _, component, loc, bitmap ->
+            var bShouldBuyItem: Boolean = false
+            when {
+                LabelShopStarPiece.check(game.imageUtils, sourceBitmap = bitmap) -> {
+                    bShouldBuyItem = bShouldBuyStarPieces
+                }
+                LabelShopAlarmClock.check(game.imageUtils, sourceBitmap = bitmap) -> {
+                    bShouldBuyItem = bShouldBuyAlarmClock
+                }
+                LabelShopPleasingParfait.check(game.imageUtils, sourceBitmap = bitmap) -> {
+                    bShouldBuyItem = bShouldBuyPleasingParfait
+                }
+            }
+
+            if (bShouldBuyItem) {
+                if (component != ButtonShopExchangeDisabled) {
+                    game.tap(loc.x, loc.y, ButtonShopExchange.template.path, taps = 3)
+
+                    val startTime = System.currentTimeMillis()
+                    while (System.currentTimeMillis() - startTime < 5000) {
+                        val (_, dialog) = handleDialogs()
+                        if (dialog != null) {
+                            if (dialog.name == "return_to_shops") {
+                                bSaleExpired = true
+                                break
+                            } else if (dialog.name == "exchange_complete") {
+                                break
+                            }
+                        }
+                    }
+                }
+
+                numHandled++
+            }
+
+            // Return true if we bought everything to stop the scroll list loop.
+            numHandled >= numToHandle
+        }
+
+        if (!bSaleExpired) {
+            ButtonShopEndSale.click(game.imageUtils, tries = 10)
+            handleDialogs()
+        }
+        ButtonBack.click(game.imageUtils)
+        return true
+    }
+}
+
+class TeamTrialsRoutine(game: Game) : Routine(game) {
+    override val TAG: String = "[${MainActivity.loggerTag}]TeamTrialsRoutine"
+
+    // TODO: Load from settings.
+    private val bShouldHandleDailySale: Boolean = false
+    private val bShouldUseParfaitOnExtraRewards: Boolean = true
+
+    private var bIsExtraRewards: Boolean = false
+
+    fun handleSelectOpponent(bitmap: Bitmap? = null): Boolean {
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+        // Always select the extra rewards option if it is available.
+        if (LabelTeamTrialsExtraRewardsOpponent.click(
+            game.imageUtils,
+            tries = 10,
+        )) {
+            return true
+        }
+
+        // Otherwise always select the hardest opponent.
+        val locs: ArrayList<Point> = IconTeamTrialsOpponentSelectionLaurelRight.findAll(
+            game.imageUtils,
+            sourceBitmap = bitmap,
+        )
+
+        if (locs.isEmpty()) {
+            return false
+        }
+
+        game.tap(
+            locs.first().x,
+            locs.first().y,
+            IconTeamTrialsOpponentSelectionLaurelRight.template.path,
+        )
+        return true
+    }
+
+    /**
+     * Detects and handles any dialog popups.
+     *
+     * To prevent the bot moving too fast, we add a 500ms delay to the
+     * exit of this function whenever we close the dialog.
+     * This gives the dialog time to close since there is a very short
+     * animation that plays when a dialog closes.
+     *
+     * @param dialog An optional dialog to evaluate. This allows chaining
+     * dialog handler calls for improved performance.
+     *
+     * @return A pair of a boolean and a nullable DialogInterface.
+     * The boolean is true when a dialog has been handled by this function.
+     * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
+     */
+    override fun handleDialogs(dialog: DialogInterface?): Pair<Boolean, DialogInterface?> {
+        val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
+        if (dialog == null) {
+            return Pair(false, null)
+        }
+
+        when (dialog.name) {
+            "daily_sale" -> {
+                // TODO: Handle daily sales.
+                if (bShouldHandleDailySale) {
+                    dialog.ok(game.imageUtils)
+                    game.wait(0.5)
+                    game.waitForLoading()
+                    val dailySaleRoutine = DailySaleRoutine(game)
+                    dailySaleRoutine.start()
+                } else {
+                    dialog.close(game.imageUtils)
+                }
+            }
+            "items_selected" -> {
+                // TODO: Add option for selecting parfait when we have bonus rewards.
+                if (bIsExtraRewards && bShouldUseParfaitOnExtraRewards) {
+                    IconPleasingParfait.click(game.imageUtils)
+                }
+                dialog.ok(game.imageUtils)
+                // Reset this flag every time we handle this dialog.
+                bIsExtraRewards = false
+            }
+            "confirm_restore_rp" -> {
+                dialog.close(game.imageUtils)
+                game.wait(0.5, skipWaitingForLoading = true)
+                bIsComplete = true
+            }
+            else -> return Pair(false, dialog)
+        }
+        game.wait(0.5, skipWaitingForLoading = true)
+        return Pair(true, dialog)
+    }
+
+    override fun checkPage(bitmap: Bitmap?): PageInterface? {
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+
+        return listOf<PageInterface>(
+            PageTeamTrialsHome,
+            PageTeamTrialsSelectOpponent,
+            PageTeamTrialsPreRace,
+            PageTeamTrialsRaceQuickModeOff,
+            PageTeamTrialsRaceQuickModeOn,
+            PageTeamTrialsRaceFinished,
+            PageTeamTrialsPreRaceResults,
+            PageTeamTrialsRaceResults,
+        ).find { it.check(game.imageUtils, bitmap) }
+    }
+
+    override fun progress(bitmap: Bitmap?): PageInterface? {
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+
+        val currentPage: PageInterface? = checkPage(bitmap)
+        when (currentPage) {
+            PageTeamTrialsHome -> {
+                PageTeamTrialsHome.next(game.imageUtils, bitmap)
+            }
+            PageTeamTrialsSelectOpponent -> {
+                if (!handleSelectOpponent()) {
+                    MessageLog.e(TAG, "progress: Failed to select opponent.")
+                    return checkPage()
+                }
+            }
+            PageTeamTrialsPreRace -> {
+                bIsExtraRewards = LabelTeamTrialsExtraRewardsOpponent.check(game.imageUtils, tries=10)
+                PageTeamTrialsPreRace.next(game.imageUtils, bitmap)
+            }
+            PageTeamTrialsRaceQuickModeOff -> {
+                ButtonTeamTrialsQuickModeOff.click(game.imageUtils, sourceBitmap = bitmap)
+            }
+            PageTeamTrialsRaceQuickModeOn -> {
+                PageTeamTrialsRaceQuickModeOn.next(game.imageUtils, bitmap)
+            }
+            PageTeamTrialsRaceFinished -> {
+                PageTeamTrialsRaceFinished.next(game.imageUtils, bitmap)
+            }
+            PageTeamTrialsPreRaceResults -> {
+                PageTeamTrialsPreRaceResults.next(game.imageUtils, bitmap)
+            }
+            PageTeamTrialsRaceResults -> {
+                if (bIsComplete) {
+                    PageTeamTrialsRaceResults.next(game.imageUtils)
+                } else {
+                    ButtonRaceAgain.click(game.imageUtils)
+                }
+            }
+            else -> {
+                if (!handleDialogs().first &&
+                    !ButtonSkip.click(game.imageUtils) &&
+                    !ButtonNext.click(game.imageUtils)
+                ) {
+                    game.tap(350.0, 750.0, "ok", taps = 3)
+                }
+            }
+        }
+
+        if (bIsComplete) {
+            PageTeamTrialsRaceResults.next(game.imageUtils)
+        }
+
+        return checkPage()
+    }
+}
+
+class DailyRacesRoutine(game: Game) : Routine(game) {
+    override val TAG: String = "[${MainActivity.loggerTag}]DailyRacesRoutine"
+
+    // TODO: Load from settings.
+    private val bShouldHandleDailySale: Boolean = false
+    private val dailyRaceName: DailyRaceName = DailyRaceName.MOONLIGHT_SHO
+
+    private val dailyRaceButton: ComponentInterface = when (dailyRaceName) {
+        DailyRaceName.MOONLIGHT_SHO -> ButtonDailyRacesMoonlightSho
+        DailyRaceName.JUPITER_CUP -> ButtonDailyRacesJupiterCup
+    }
+
+    private val dailyRaceSelectionButton: ComponentInterface = when (dailyRaceName) {
+        DailyRaceName.MOONLIGHT_SHO -> ButtonDailyRacesMoonlightShoRaceSelection
+        DailyRaceName.JUPITER_CUP -> ButtonDailyRacesJupiterCupRaceSelection
+    }
+
+    private fun selectDailyRace(bitmap: Bitmap? = null): Boolean {
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+
+        // Always select the hardest available race.
+        val locs: ArrayList<Point> = dailyRaceSelectionButton.findAll(game.imageUtils, sourceBitmap = bitmap)
+        if (locs.isEmpty()) {
+            return false
+        }
+
+        game.tap(locs.first().x, locs.first().y, dailyRaceSelectionButton.template.path)
+
+        // Check if we're out of ticket purchases. This also means we've
+        // done all our daily races.
+        if (LabelYouHaveReachedTheDailyTicketPurchaseLimit.check(game.imageUtils, tries = 10)) {
+            bIsComplete = true
+            return true
+        }
+
+        game.waitForLoading()
+        return true
+    }
+
+    /**
+     * Detects and handles any dialog popups.
+     *
+     * To prevent the bot moving too fast, we add a 500ms delay to the
+     * exit of this function whenever we close the dialog.
+     * This gives the dialog time to close since there is a very short
+     * animation that plays when a dialog closes.
+     *
+     * @param dialog An optional dialog to evaluate. This allows chaining
+     * dialog handler calls for improved performance.
+     *
+     * @return A pair of a boolean and a nullable DialogInterface.
+     * The boolean is true when a dialog has been handled by this function.
+     * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
+     */
+    override fun handleDialogs(dialog: DialogInterface?): Pair<Boolean, DialogInterface?> {
+        val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
+        if (dialog == null) {
+            return Pair(false, null)
+        }
+
+        when (dialog.name) {
+            "daily_sale" -> {
+                if (bShouldHandleDailySale) {
+                    dialog.ok(game.imageUtils)
+                    game.wait(0.5)
+                    game.waitForLoading()
+                    val dailySaleRoutine = DailySaleRoutine(game)
+                    dailySaleRoutine.start()
+                } else {
+                    dialog.close(game.imageUtils)
+                }
+            }
+            "items_selected" -> dialog.ok(game.imageUtils)
+            "multi_race" -> dialog.ok(game.imageUtils)
+            "purchase_daily_race_ticket" -> {
+                dialog.close(game.imageUtils)
+                bIsComplete = true
+            }
+            "race_details" -> {
+                // Always try to enable multi-race.
+                ButtonDailyRacesMultiRaceOff.click(game.imageUtils)
+                dialog.ok(game.imageUtils)
+            }
+            "race_results" -> dialog.ok(game.imageUtils)
+            else -> return Pair(false, dialog)
+        }
+        game.wait(0.5, skipWaitingForLoading = true)
+        return Pair(true, dialog)
+    }
+
+    override fun checkPage(bitmap: Bitmap?): PageInterface? {
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+
+        return listOf<PageInterface>(
+            PageDailyRacesRaceSelection,
+            PageDailyRacesDifficultySelection,
+            PageDailyRacesRunnerSelection,
+            PageDailyRacesPreRacePrep,
+            PageDailyRacesRacePrep,
+            PageDailyRacesResultsPlacing,
+            PageDailyRacesResultsRewards,
+        ).find { it.check(game.imageUtils, bitmap) }
+    }
+
+    override fun progress(bitmap: Bitmap?): PageInterface? {
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+
+        val currentPage: PageInterface? = checkPage(bitmap)
+        when (currentPage) {
+            PageDailyRacesRaceSelection -> {
+                dailyRaceButton.click(game.imageUtils)
+            }
+            PageDailyRacesDifficultySelection -> {
+                selectDailyRace()
+            }
+            PageDailyRacesRunnerSelection -> {
+                PageDailyRacesRunnerSelection.next(game.imageUtils)
+            }
+            PageDailyRacesPreRacePrep -> {
+                PageDailyRacesPreRacePrep.next(game.imageUtils)
+            }
+            PageDailyRacesRacePrep -> {
+                if (ButtonViewResultsLocked.check(game.imageUtils)) {
+                    ButtonRaceManual.click(game.imageUtils)
+                } else {
+                    ButtonViewResults.click(game.imageUtils)
+                }
+            }
+            PageDailyRacesResultsPlacing -> {
+                PageDailyRacesResultsPlacing.next(game.imageUtils)
+            }
+            PageDailyRacesResultsRewards -> {
+                if (!bIsComplete) {
+                    ButtonRaceAgain.click(game.imageUtils)
+                } else {
+                    PageDailyRacesResultsRewards.next(game.imageUtils)
+                }
+            }
+            else -> {
+                // Catch-all for various intermediate screens.
+                if (!handleDialogs().first &&
+                    !ButtonSkip.click(game.imageUtils) &&
+                    !ButtonNext.click(game.imageUtils) &&
+                    !ButtonRaceExclamation.click(game.imageUtils)
+                ) {
+                    game.tap(350.0, 750.0, "ok", taps = 3)
+                }
+            }
+        }
+
+        return checkPage()
+    }
+}
+
+class ClubActivityRoutine(game: Game) : Routine(game) {
+    override val TAG: String = "[${MainActivity.loggerTag}]ClubActivityRoutine"
+
+    // TODO: Load from settings.
+    private val clubDonationShoeTypeString: String = "medium"
+    private val clubDonationShoeType: ShoeType = ShoeType.fromName(clubDonationShoeTypeString) ?: ShoeType.MEDIUM
+
+    private var bHasSelectedShoes: Boolean = false
+    private var bHasRequestedItems: Boolean = false
+    private var bHasDonatedItems: Boolean = false
+
+    private val shoeButtons: Map<ShoeType, ComponentInterface> = mapOf(
+        ShoeType.SPRINT to ButtonShoesSprint,
+        ShoeType.MILE to ButtonShoesMile,
+        ShoeType.MEDIUM to ButtonShoesMedium,
+        ShoeType.LONG to ButtonShoesLong,
+        ShoeType.DIRT to ButtonShoesDirt,
+    )
+
+    /**
+     * Detects and handles any dialog popups.
+     *
+     * To prevent the bot moving too fast, we add a 500ms delay to the
+     * exit of this function whenever we close the dialog.
+     * This gives the dialog time to close since there is a very short
+     * animation that plays when a dialog closes.
+     *
+     * @param dialog An optional dialog to evaluate. This allows chaining
+     * dialog handler calls for improved performance.
+     *
+     * @return A pair of a boolean and a nullable DialogInterface.
+     * The boolean is true when a dialog has been handled by this function.
+     * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
+     */
+    override fun handleDialogs(dialog: DialogInterface?): Pair<Boolean, DialogInterface?> {
+        val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
+        if (dialog == null) {
+            return Pair(false, null)
+        }
+
+        when (dialog.name) {
+            "confirm_donations" -> dialog.ok(game.imageUtils)
+            "donation_complete" -> {
+                dialog.close(game.imageUtils)
+                bHasDonatedItems = true
+            }
+            "item_request" -> {
+                val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
+
+                if (shoeButtons.values.all { it.check(game.imageUtils, sourceBitmap = bitmap) }) {
+                    val button: ComponentInterface = shoeButtons[clubDonationShoeType]!!
+                    button.click(game.imageUtils, sourceBitmap = bitmap)
+                    bHasSelectedShoes = true
+                }
+
+                if (bHasSelectedShoes && ButtonConfirm.check(game.imageUtils)) {
+                    bHasRequestedItems = true
+                }
+                dialog.ok(game.imageUtils)
+            }
+            "item_request_error" -> {
+                if (ButtonHome.check(game.imageUtils)) {
+                    dialog.close(game.imageUtils)
+                    game.waitForLoading()
+                    // We want to return to the club menu if we get this error.
+                    waitForButton(ButtonClub)
+                    return Pair(true, dialog)
+                }
+                dialog.close(game.imageUtils)
+            }
+            else -> return Pair(false, dialog)
+        }
+        game.wait(0.5, skipWaitingForLoading = true)
+        return Pair(true, dialog)
+    }
+
+    override fun checkPage(bitmap: Bitmap?): PageInterface? {
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+        return if (PageClubHome.check(game.imageUtils, bitmap)) PageClubHome else null
+    }
+
+    override fun progress(bitmap: Bitmap?): PageInterface? {
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+
+        val currentPage: PageInterface? = checkPage(bitmap)
+        when (currentPage) {
+            PageClubHome -> {
+                if (!bHasRequestedItems) {
+                    ButtonClubItemRequest.click(game.imageUtils)
+                } else if (!bHasDonatedItems) {
+                    ButtonClubViewRequests.click(game.imageUtils)
+                } else if (bHasRequestedItems && bHasDonatedItems) {
+                    bIsComplete = true
+                }
+            }
+            else -> handleDialogs()
+        }
+
+        return checkPage()
+    }
+}
+
 class DailyTasks(game: Game) : Campaign(game) {
     override val TAG: String = "[${MainActivity.loggerTag}]DailyTasks"
 
@@ -261,7 +871,11 @@ class DailyTasks(game: Game) : Campaign(game) {
 
         var numHandled: Int = 0
 
-        scrollList.process(ButtonShopExchange) { _, _, loc, bitmap ->
+        val entryComponents: List<ComponentInterface> = listOf(
+            ButtonShopExchange,
+            ButtonShopExchangeDisabled,
+        )
+        scrollList.process(entryComponents) { _, _, component, loc, bitmap ->
             when {
                 LabelShopStarPiece.check(game.imageUtils, sourceBitmap = bitmap) -> {
                     if (bShouldBuyStarPiece) {
