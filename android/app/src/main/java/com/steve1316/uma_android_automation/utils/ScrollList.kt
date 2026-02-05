@@ -29,7 +29,7 @@ const val MAX_PROCESS_TIME_DEFAULT_MS = 60000
  * and we don't want to do anything after finding it, then we can return
  * True and the loop will stop as soon as we find the entry.
  */
-typealias OnEntryDetectedCallback = (ScrollList, Int, Point, Bitmap) -> Boolean
+typealias OnEntryDetectedCallback = (ScrollList, Int, ComponentInterface, Point, Bitmap) -> Boolean
 
 /**
  *
@@ -289,14 +289,11 @@ class ScrollList private constructor(
     }
 
     fun process(
-        entryComponent: ComponentInterface,
-        componentRegion: BoundingBox? = null,
+        entryComponents: List<ComponentInterface>,
         maxTimeMs: Int = MAX_PROCESS_TIME_DEFAULT_MS,
         onEntry: OnEntryDetectedCallback,
     ): Boolean {
         var bitmap = game.imageUtils.getSourceBitmap()
-        // If not specified, default to the entries region.
-        val componentRegion: BoundingBox = componentRegion ?: bboxList
 
         val bboxScrollBar: BoundingBox? = getListScrollBarBoundingRegion(bitmap, bboxList)
         if (bboxScrollBar == null) {
@@ -333,19 +330,25 @@ class ScrollList private constructor(
 
             prevScrollBarBitmap = scrollBarBitmap
 
-            val locs: List<Point> = entryComponent.findAllWithBitmap(
-                game.imageUtils,
-                sourceBitmap = bitmap,
-                region = componentRegion.toIntArray(),
-            )
-                .sortedBy { it.y }
-                .filter { it.y >= bboxEntries.y && it.y <= bboxEntries.y + bboxEntries.h }
+            val entries: MutableList<Pair<ComponentInterface, Point>> = mutableListOf()
+            for (component in entryComponents) {
+                val points: List<Point> = component.findAllWithBitmap(
+                    game.imageUtils,
+                    sourceBitmap = bitmap,
+                    region = component.template.region,
+                )
+                entries.addAll(points.map { Pair<ComponentInterface, Point>(component, it) })
+            }
+            entries.sortBy { it.second.y }
+            entries.retainAll { it.second.y >= bboxEntries.y && it.second.y <= bboxEntries.y + bboxEntries.h }
 
-            for ((index, loc) in locs.withIndex()) {
+            for ((index, entry) in entries.withIndex()) {
+                val (component, loc) = entry
+                MessageLog.e("REMOVEME", "ScrollList: [$index] ($loc) -> ${component.template.basename}")
                 val bboxEntry: BoundingBox = BoundingBox(
-                    x = 0,
+                    x = bboxEntries.x,
                     y = (loc.y - game.imageUtils.relHeight(entryHeight / 2)).toInt(),
-                    w = SharedData.displayWidth,
+                    w = bboxEntries.w,
                     h = game.imageUtils.relHeight(entryHeight).toInt(),
                 )
 
@@ -358,12 +361,12 @@ class ScrollList private constructor(
                     MessageLog.e(TAG, "Failed to create cropped bitmap for entry $index.")
                     return false
                 }
-                if (onEntry(this, index, loc, cropped)) {
+                if (onEntry(this, index, component, loc, cropped)) {
                     return true
                 }
             }
 
-            scrollDown(if (locs.isEmpty()) null else locs.last())
+            scrollDown(if (entries.isEmpty()) null else entries.last().second)
 
             // Slight delay to allow screen to settle before next iteration.
             game.wait(0.5, skipWaitingForLoading = true)
