@@ -331,6 +331,7 @@ object DialogObjects {
         DialogHelpAndGlossary,              // Anywhere (from options dialog)
         DialogInfirmary,                    // Career
         DialogInsufficientFans,             // Career
+        DialogItemExchangeExpired,          // Shop
         DialogItemRequest,                  // Club
         DialogItemRequestError,             // Club
         DialogItemsSelected,                // Team Trials, Special Events, Daily Races
@@ -933,6 +934,17 @@ object DialogInsufficientFans : DialogInterface {
     override val buttons: List<ComponentInterface> = listOf(
         ButtonCancel,
         ButtonRace,
+    )
+}
+
+object DialogItemExchangeExpired : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogItemExchangeExpired"
+    override val name: String = "item_exchange_expired"
+    override val title: String = "Item Exchange Expired"
+    override val closeButton = null
+    override val okButton = null
+    override val buttons: List<ComponentInterface> = listOf(
+        ButtonReturnToShops,
     )
 }
 

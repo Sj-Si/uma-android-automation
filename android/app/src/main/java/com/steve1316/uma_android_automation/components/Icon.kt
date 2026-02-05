@@ -151,3 +151,13 @@ object IconExtraRacePill : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]IconExtraRacePill"
     override val template = Template("components/icon/extra_race_pill")
 }
+
+object IconTeamTrialsHorseshoe : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]IconTeamTrialsHorseshoe"
+    override val template = Template("components/icon/team_trials_horseshoe")
+}
+
+object IconPleasingParfait : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]IconPleasingParfait"
+    override val template = Template("components/icon/pleasing_parfait")
+}

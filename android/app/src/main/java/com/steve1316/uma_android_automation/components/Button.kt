@@ -123,6 +123,16 @@ object ButtonDailyRacesMoonlightShoRaceSelection : ComponentInterface {
     override val template = Template("components/button/moonlight_sho_race_selection")
 }
 
+object ButtonDailyRacesReplay : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesReplay"
+    override val template = Template("components/button/daily_races_replay")
+}
+
+object ButtonDailyRacesPlacing : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesPlacing"
+    override val template = Template("components/button/daily_races_placing")
+}
+
 object ButtonComplete : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonComplete"
     override val template = Template("components/button/complete", region = Region.bottomHalf)
@@ -358,6 +368,11 @@ object ButtonShop : ComponentInterface {
     override val template = Template("components/button/shop")
 }
 
+object ButtonReturnToShops : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonReturnToShops"
+    override val template = Template("components/button/return_to_shops")
+}
+
 object ButtonClub : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonClub"
     override val template = Template("components/button/club")
@@ -482,6 +497,11 @@ object ButtonShopEndSale : ComponentInterface {
 object ButtonShopExchange : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonShopExchange"
     override val template = Template("components/button/shop_exchange", region = Region.rightHalf)
+}
+
+object ButtonShopExchangeDisabled : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonShopExchange"
+    override val template = Template("components/button/shop_exchange_disabled", region = Region.rightHalf)
 }
 
 object ButtonTitleScreen : ComponentInterface {
