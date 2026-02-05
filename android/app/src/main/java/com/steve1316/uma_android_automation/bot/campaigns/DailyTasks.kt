@@ -45,11 +45,28 @@ enum class ShoeType {
     }
 }
 
+// TODO: Add param for a common dialog handler for dialogs that can
+// appear at any time (i.e. date_changed)
 open class Routine(protected val game: Game) {
     protected open val TAG: String = "[${MainActivity.loggerTag}]Routine"
 
     protected var bIsComplete: Boolean = false
 
+    /**
+     * Detects and handles any dialog popups.
+     *
+     * To prevent the bot moving too fast, we add a 500ms delay to the
+     * exit of this function whenever we close the dialog.
+     * This gives the dialog time to close since there is a very short
+     * animation that plays when a dialog closes.
+     *
+     * @param dialog An optional dialog to evaluate. This allows chaining
+     * dialog handler calls for improved performance.
+     *
+     * @return A pair of a boolean and a nullable DialogInterface.
+     * The boolean is true when a dialog has been handled by this function.
+     * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
+     */
     open fun handleDialogs(dialog: DialogInterface? = null): Pair<Boolean, DialogInterface?> {
         val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
         return Pair(false, dialog)
@@ -125,21 +142,6 @@ class DailySaleRoutine(game: Game) : Routine(game) {
     private val bShouldBuyAlarmClock: Boolean = true
     private val bShouldBuyPleasingParfait: Boolean = true
 
-    /**
-     * Detects and handles any dialog popups.
-     *
-     * To prevent the bot moving too fast, we add a 500ms delay to the
-     * exit of this function whenever we close the dialog.
-     * This gives the dialog time to close since there is a very short
-     * animation that plays when a dialog closes.
-     *
-     * @param dialog An optional dialog to evaluate. This allows chaining
-     * dialog handler calls for improved performance.
-     *
-     * @return A pair of a boolean and a nullable DialogInterface.
-     * The boolean is true when a dialog has been handled by this function.
-     * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
-     */
     override fun handleDialogs(dialog: DialogInterface?): Pair<Boolean, DialogInterface?> {
         val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
         if (dialog == null) {
@@ -275,21 +277,6 @@ class TeamTrialsRoutine(game: Game) : Routine(game) {
         return true
     }
 
-    /**
-     * Detects and handles any dialog popups.
-     *
-     * To prevent the bot moving too fast, we add a 500ms delay to the
-     * exit of this function whenever we close the dialog.
-     * This gives the dialog time to close since there is a very short
-     * animation that plays when a dialog closes.
-     *
-     * @param dialog An optional dialog to evaluate. This allows chaining
-     * dialog handler calls for improved performance.
-     *
-     * @return A pair of a boolean and a nullable DialogInterface.
-     * The boolean is true when a dialog has been handled by this function.
-     * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
-     */
     override fun handleDialogs(dialog: DialogInterface?): Pair<Boolean, DialogInterface?> {
         val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
         if (dialog == null) {
@@ -438,21 +425,6 @@ class DailyRacesRoutine(game: Game) : Routine(game) {
         return true
     }
 
-    /**
-     * Detects and handles any dialog popups.
-     *
-     * To prevent the bot moving too fast, we add a 500ms delay to the
-     * exit of this function whenever we close the dialog.
-     * This gives the dialog time to close since there is a very short
-     * animation that plays when a dialog closes.
-     *
-     * @param dialog An optional dialog to evaluate. This allows chaining
-     * dialog handler calls for improved performance.
-     *
-     * @return A pair of a boolean and a nullable DialogInterface.
-     * The boolean is true when a dialog has been handled by this function.
-     * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
-     */
     override fun handleDialogs(dialog: DialogInterface?): Pair<Boolean, DialogInterface?> {
         val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
         if (dialog == null) {
@@ -572,21 +544,6 @@ class ClubActivityRoutine(game: Game) : Routine(game) {
         ShoeType.DIRT to ButtonShoesDirt,
     )
 
-    /**
-     * Detects and handles any dialog popups.
-     *
-     * To prevent the bot moving too fast, we add a 500ms delay to the
-     * exit of this function whenever we close the dialog.
-     * This gives the dialog time to close since there is a very short
-     * animation that plays when a dialog closes.
-     *
-     * @param dialog An optional dialog to evaluate. This allows chaining
-     * dialog handler calls for improved performance.
-     *
-     * @return A pair of a boolean and a nullable DialogInterface.
-     * The boolean is true when a dialog has been handled by this function.
-     * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
-     */
     override fun handleDialogs(dialog: DialogInterface?): Pair<Boolean, DialogInterface?> {
         val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
         if (dialog == null) {
@@ -655,6 +612,139 @@ class ClubActivityRoutine(game: Game) : Routine(game) {
     }
 }
 
+class SpecialMissionsRoutine(game: Game) : Routine(game) {
+    override val TAG: String = "[${MainActivity.loggerTag}]SpecialMissionsRoutine"
+
+    private val specialMissionsTabs: List<ComponentInterface> = listOf(
+        ButtonSpecialMissionsTabDaily,
+        ButtonSpecialMissionsTabMain,
+        ButtonSpecialMissionsTabTitles,
+        ButtonSpecialMissionsTabSpecial,
+    )
+
+    private val eventMissionsTabs: List<ComponentInterface> = listOf(
+        ButtonSpecialMissionsTabDaily,
+        ButtonSpecialMissionsTabTitles,
+        ButtonEventMissionsTabLimitedTime,
+    )
+
+    private var bHasHandledSpecialMissions: Boolean = false
+    private var bHasHandledEventMissions: Boolean = false
+
+    override fun handleDialogs(dialog: DialogInterface?): Pair<Boolean, DialogInterface?> {
+        val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
+        if (dialog == null) {
+            return Pair(false, null)
+        }
+
+        when (dialog.name) {
+            "event_exclusive_missions" -> {
+                ButtonEventExclusiveMissionsStoryEvent.click(game.imageUtils)
+            }
+            "rewards_collected" -> dialog.close(game.imageUtils)
+            "special_missions" -> dialog.ok(game.imageUtils)
+            "story_unlocked" -> dialog.close(game.imageUtils)
+            else -> return Pair(false, dialog)
+        }
+        game.wait(0.5, skipWaitingForLoading = true)
+        return Pair(true, dialog)
+    }
+
+    override fun checkPage(bitmap: Bitmap?): PageInterface? {
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+
+        return listOf<PageInterface>(
+            PageSpecialMissions,
+            PageEventMissions,
+        ).find { it.check(game.imageUtils, bitmap) }
+    }
+
+    fun handleSpecialMissionsTabs() {
+        for (tab in specialMissionsTabs) {
+            tab.click(game.imageUtils)
+            game.wait(0.1, skipWaitingForLoading = true)
+            ButtonCollectAll.click(game.imageUtils)
+            game.wait(0.5)
+            handleDialogs()
+        }
+
+        bHasHandledSpecialMissions = true
+    }
+
+    fun handleEventMissionsTabs() {
+        for (tab in eventMissionsTabs) {
+            tab.click(game.imageUtils)
+            game.wait(0.1, skipWaitingForLoading = true)
+            ButtonCollectAll.click(game.imageUtils)
+            game.wait(0.5)
+            handleDialogs()
+        }
+
+        bHasHandledEventMissions = true
+    }
+
+    override fun progress(bitmap: Bitmap?): PageInterface? {
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+
+        val currentPage: PageInterface? = checkPage(bitmap)
+        when (currentPage) {
+            PageSpecialMissions -> {
+                if (!bHasHandledSpecialMissions) {
+                    handleSpecialMissionsTabs()
+                } else {
+                    if (!ButtonEventMissions.click(game.imageUtils)) {
+                        bHasHandledEventMissions = true
+                    }
+                }
+            }
+            PageEventMissions -> {
+                handleEventMissionsTabs()
+                if (bHasHandledEventMissions) {
+                    ButtonBack.click(game.imageUtils)
+                }
+            }
+            else -> handleDialogs()
+        }
+
+        bIsComplete = bHasHandledSpecialMissions && bHasHandledEventMissions
+        if (bIsComplete) {
+            ButtonBack.click(game.imageUtils)
+        }
+
+        return checkPage()
+    }
+}
+
+class PresentsRoutine(game: Game) : Routine(game) {
+    override val TAG: String = "[${MainActivity.loggerTag}]PresentsRoutine"
+
+    override fun handleDialogs(dialog: DialogInterface?): Pair<Boolean, DialogInterface?> {
+        val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
+        if (dialog == null) {
+            return Pair(false, null)
+        }
+
+        when (dialog.name) {
+            "presents" -> dialog.ok(game.imageUtils)
+            "rewards_collected" -> {
+                dialog.close(game.imageUtils)
+                bIsComplete = true
+            }
+            else -> return Pair(false, dialog)
+        }
+        game.wait(0.5, skipWaitingForLoading = true)
+        return Pair(true, dialog)
+    }
+
+    override fun start(timeoutMs: Int): Boolean {
+        val startTime = System.currentTimeMillis()
+        while (!bIsComplete && System.currentTimeMillis() - startTime < timeoutMs) {
+            handleDialogs()
+        }
+        return bIsComplete
+    }
+}
+
 class DailyTasks(game: Game) : Campaign(game) {
     override val TAG: String = "[${MainActivity.loggerTag}]DailyTasks"
 
@@ -703,78 +793,9 @@ class DailyTasks(game: Game) : Campaign(game) {
         }
 
         when (dialog.name) {
-            "confirm_donations" -> dialog.ok(game.imageUtils)
-            "confirm_exchange" -> dialog.ok(game.imageUtils)
-            "confirm_restore_rp" -> {
-                dialog.close(game.imageUtils)
-                game.wait(0.5, skipWaitingForLoading = true)
-                // Return to the home screen.
-                ButtonTeamTrialsRaceResultsNext.click(game.imageUtils)
-                game.waitForLoading()
-                ButtonMenuBarHome.click(game.imageUtils)
-                game.waitForLoading()
-
-                bHasCompletedTeamTrials = true
-            }
-            "daily_sale" -> {
-                // TODO: Handle daily sales.
-                if (bShouldHandleDailySale) {
-                    dialog.ok(game.imageUtils)
-                    game.wait(0.5)
-                    handleDailySale()
-                } else {
-                    dialog.close(game.imageUtils)
-                }
-            }
             "date_changed" -> {
                 dialog.close(game.imageUtils)
                 handleTitleMenu()
-            }
-            "donation_complete" -> {
-                dialog.close(game.imageUtils)
-                game.wait(0.5, skipWaitingForLoading = true)
-
-                // Return to the home screen.
-                ButtonMenuBarHome.click(game.imageUtils)
-                game.waitForLoading()
-
-                bHasCompletedClubActivity = true
-            }
-            "end_sale_confirmation" -> dialog.ok(game.imageUtils)
-            // We want to handle this dialog elsewhere. So we don't do anything
-            // and just let the dialog get returned to the calling function
-            // for them to handle it.
-            "event_exclusive_missions" -> {}
-            "exchange_complete" -> dialog.close(game.imageUtils)
-            "item_request" -> {
-                val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
-                val shoeButtons: Map<ShoeType, ComponentInterface> = mapOf(
-                    ShoeType.SPRINT to ButtonShoesSprint,
-                    ShoeType.MILE to ButtonShoesMile,
-                    ShoeType.MEDIUM to ButtonShoesMedium,
-                    ShoeType.LONG to ButtonShoesLong,
-                    ShoeType.DIRT to ButtonShoesDirt,
-                )
-
-                if (shoeButtons.values.all { it.check(game.imageUtils, sourceBitmap = bitmap) }) {
-                    val button: ComponentInterface = shoeButtons[clubDonationShoeType]!!
-                    button.click(game.imageUtils, sourceBitmap = bitmap)
-                }
-                dialog.ok(game.imageUtils)
-            }
-            "item_request_error" -> {
-                if (ButtonHome.check(game.imageUtils)) {
-                    dialog.close(game.imageUtils)
-                    game.waitForLoading()
-                    return Pair(true, dialog)
-                }
-
-                dialog.close(game.imageUtils)
-                game.wait(0.5)
-            }
-            "items_selected" -> {
-                // TODO: Add option for selecting parfait when we have bonus rewards.
-                dialog.ok(game.imageUtils)
             }
             "notices" -> dialog.close(game.imageUtils)
             "open_soon" -> {
@@ -802,8 +823,7 @@ class DailyTasks(game: Game) : Campaign(game) {
             }
             "race_details" -> dialog.ok(game.imageUtils)
             "race_results" -> dialog.ok(game.imageUtils)
-            "rewards_collected" -> dialog.close(game.imageUtils)
-            "special_missions" -> dialog.ok(game.imageUtils)
+            
             "story_unlocked" -> dialog.close(game.imageUtils)
             else -> {
                 return Pair(false, dialog)

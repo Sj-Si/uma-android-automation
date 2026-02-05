@@ -268,3 +268,44 @@ object PageClubHome : PageInterface {
     override val prevButton: ComponentInterface? = null
     override val nextButton: ComponentInterface? = null
 }
+
+object PageSpecialMissions : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageClubHome"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        ButtonSpecialMissionsTabDaily,
+        ButtonSpecialMissionsTabMain,
+        ButtonSpecialMissionsTabTitles,
+        ButtonSpecialMissionsTabSpecial,
+    )
+
+    override val prevButton: ComponentInterface? = ButtonBack
+    override val nextButton: ComponentInterface? = null
+
+    override fun check(imageUtils: CustomImageUtils, bitmap: Bitmap?): Boolean {
+        val bitmap: Bitmap = bitmap ?: imageUtils.getSourceBitmap()
+        // One item will always be selected and can't be found.
+        // Thus the page exists if three of the four tabs exist.
+        return identifyingComponents.count { it.check(imageUtils, sourceBitmap = bitmap) } == 3
+    }
+}
+
+object PageEventMissions : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageClubHome"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        ButtonSpecialMissionsTabDaily,
+        ButtonSpecialMissionsTabTitles,
+        ButtonEventMissionsTabLimitedTime,
+    )
+
+    override val prevButton: ComponentInterface? = ButtonBack
+    override val nextButton: ComponentInterface? = null
+
+    override fun check(imageUtils: CustomImageUtils, bitmap: Bitmap?): Boolean {
+        val bitmap: Bitmap = bitmap ?: imageUtils.getSourceBitmap()
+        // One item will always be selected and can't be found.
+        // Thus the page exists if two of the three tabs exist.
+        return identifyingComponents.count { it.check(imageUtils, sourceBitmap = bitmap) } == 2
+    }
+}
