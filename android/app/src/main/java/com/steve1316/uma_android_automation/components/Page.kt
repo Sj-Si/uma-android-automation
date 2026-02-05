@@ -141,8 +141,6 @@ object PageTeamTrialsPreRaceResults : PageInterface {
         return !ButtonRaceAgain.check(imageUtils, sourceBitmap = bitmap) &&
             ButtonNextWithImage.check(imageUtils, sourceBitmap = bitmap)
     }
-
-    
 }
 
 object PageTeamTrialsRaceResults : PageInterface {
@@ -194,8 +192,8 @@ object PageDailyRacesDifficultySelection : PageInterface {
     override val nextButton: ComponentInterface? = null
 }
 
-object PageDailyRacesRunnerSelection : PageInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]PageDailyRacesRunnerSelection"
+object PageExtraRacesRunnerSelection : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageExtraRacesRunnerSelection"
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
     override val identifyingComponents: List<ComponentInterface> = listOf(
         ButtonBack,
@@ -308,4 +306,26 @@ object PageEventMissions : PageInterface {
         // Thus the page exists if two of the three tabs exist.
         return identifyingComponents.count { it.check(imageUtils, sourceBitmap = bitmap) } == 2
     }
+}
+
+object PageLegendRaceHome : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageLegendRaceHome"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        ButtonLegendRaceSpecialMissions,
+    )
+
+    override val prevButton: ComponentInterface? = ButtonBack
+    override val nextButton: ComponentInterface? = null
+}
+
+object PageHome : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageHome"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        ButtonMenuBarHomeSelected,
+    )
+
+    override val prevButton: ComponentInterface? = null
+    override val nextButton: ComponentInterface? = null
 }
