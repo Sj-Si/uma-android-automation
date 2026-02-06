@@ -191,6 +191,8 @@ class DailySale(
         if (!bSaleExpired) {
             ButtonShopEndSale.click(game.imageUtils, tries = 10)
             handleDialogs()
+            game.wait(0.5)
+            game.waitForLoading()
         }
         ButtonBack.click(game.imageUtils)
         return true
