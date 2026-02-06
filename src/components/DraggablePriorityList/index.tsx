@@ -171,7 +171,7 @@ const DraggablePriorityList: React.FC<DraggablePriorityListProps> = ({ items, se
             </ScrollView>
 
             {/* Show message below the list when no items are selected */}
-            {selectedItems.length === 0 && <Text style={{ fontSize: 12, color: colors.mutedForeground, paddingTop: 10 }}>No stats selected. Select stats to set priority order.</Text>}
+            {selectedItems.length === 0 && <Text style={{ fontSize: 12, color: colors.mutedForeground, paddingTop: 10 }}>No items selected. Select items to set priority order.</Text>}
         </View>
     )
 }

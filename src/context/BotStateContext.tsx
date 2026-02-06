@@ -57,6 +57,16 @@ export interface Settings {
         plans: Record<string, SkillPlanSettingsConfig>
     }
 
+    // Daily Tasks Settings
+    dailyTasks: {
+        plugins: string[]
+        saleItems: string[]
+        enableTeamTrialsUseParfaitOnExtraRewards: boolean
+        dailyRaceName: string
+        enableLegendRaceUseParfait: boolean
+        clubRequestShoeType: string
+    }
+
     // Training Event settings
     trainingEvent: {
         enablePrioritizeEnergyOptions: boolean
@@ -207,6 +217,27 @@ export const defaultSettings: Settings = {
             }
             return acc
         }, {} as Record<string, SkillPlanSettingsConfig>),
+    },
+    dailyTasks: {
+        plugins: [
+            "Team Trials",
+            "Daily Races",
+            "Legend Race",
+            "Champions Meeting",
+            "Club Activity",
+            "Special Missions",
+            "Presents",
+            "Daily Sale",
+        ],
+        saleItems: [
+            "Star Piece",
+            "Alarm Clock",
+            "Pleasing Parfait",
+        ],
+        enableTeamTrialsUseParfaitOnExtraRewards: true,
+        dailyRaceName: "Moonlight Sho",
+        enableLegendRaceUseParfait: true,
+        clubRequestShoeType: "medium",
     },
     trainingEvent: {
         enablePrioritizeEnergyOptions: false,

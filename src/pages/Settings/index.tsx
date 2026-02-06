@@ -148,6 +148,16 @@ const Settings = () => {
         )
     }
 
+    const renderDailyTasksLink = () => {
+        return (
+            <NavigationLink
+                title="Go to Daily Tasks Settings"
+                description="Configure daily tasks."
+                onPress={() => navigation.navigate("DailyTasksSettings" as never)}
+            />
+        )
+    }
+
     const renderEventLogVisualizerLink = () => {
         return (
             <NavigationLink
@@ -329,6 +339,7 @@ const Settings = () => {
                     {renderOCRLink()}
                     {renderRacingLink()}
                     {renderSkillsLink()}
+                    {renderDailyTasksLink()}
                     {renderEventLogVisualizerLink()}
                     {renderDebugLink()}
                     {renderMiscSettings()}
