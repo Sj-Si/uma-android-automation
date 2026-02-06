@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import org.opencv.core.Point
 
 import com.steve1316.automation_library.utils.MessageLog
+import com.steve1316.automation_library.utils.SettingsHelper
 
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
@@ -57,9 +58,9 @@ class DailyRaces(
 ) : Plugin(game, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]DailyRaces"
 
-    // TODO: Load from settings.
-    private val bShouldHandleDailySale: Boolean = false
-    private val dailyRaceName: DailyRaceName = DailyRaceName.MOONLIGHT_SHO
+    private val bShouldHandleDailySale: Boolean = SettingsHelper.getStringArraySetting("dailyTasks", "saleItems").isNotEmpty()
+    private val dailyRaceNameString: String = SettingsHelper.getStringSetting("dailyTasks", "dailyRaceName")
+    private val dailyRaceName: DailyRaceName = DailyRaceName.fromName(dailyRaceNameString)!!
 
     private val dailyRaceButton: ComponentInterface = when (dailyRaceName) {
         DailyRaceName.MOONLIGHT_SHO -> ButtonDailyRacesMoonlightSho
@@ -83,7 +84,7 @@ class DailyRaces(
             .mapNotNull {
                 val x: Int = (it.x - (pillBitmap.width / 2)).toInt()
                 val y: Int = (it.y - (pillBitmap.height / 2)).toInt()
-                val bIsEnabled: Boolean = game.imageUtils.checkColorAtCoordinates(x, y, intArrayOf(162, 159, 164))
+                val bIsEnabled: Boolean = !game.imageUtils.checkColorAtCoordinates(x, y, intArrayOf(162, 159, 164))
                 if (bIsEnabled) it else null
             }
             .sortedBy { it.y }
@@ -127,7 +128,10 @@ class DailyRaces(
             }
             "race_details" -> {
                 // Always try to enable multi-race.
-                ButtonDailyRacesMultiRaceOff.click(game.imageUtils)
+                if (!ButtonDailyRacesMultiRaceOff.click(game.imageUtils, tries = 5)) {
+                    return DialogHandlerResult.Unhandled(result.dialog)
+                }
+                game.wait(0.5, skipWaitingForLoading = true)
                 result.dialog.ok(game.imageUtils)
             }
             "race_results" -> result.dialog.ok(game.imageUtils)

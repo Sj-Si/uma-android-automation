@@ -4,12 +4,13 @@ import android.graphics.Bitmap
 
 import org.opencv.core.Point
 
+import com.steve1316.automation_library.data.SharedData
+import com.steve1316.automation_library.utils.MessageLog
+import com.steve1316.automation_library.utils.SettingsHelper
+
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.bot.Game
-
-import com.steve1316.automation_library.data.SharedData
-import com.steve1316.automation_library.utils.MessageLog
 
 import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
@@ -27,6 +28,9 @@ import com.steve1316.uma_android_automation.components.*
 class DailyTasks(game: Game) : Campaign(game) {
     override val TAG: String = "[${MainActivity.loggerTag}]DailyTasks"
 
+    val pluginsSetting: List<String> = SettingsHelper.getStringArraySetting("dailyTasks", "plugins")
+        .map { it.replace("\\s+".toRegex(), "") }
+
     private val bEnableChampionsMeeting: Boolean = true
     private val bEnableClubActivity: Boolean = true
     private val bEnableDailyRaces: Boolean = true
@@ -37,7 +41,8 @@ class DailyTasks(game: Game) : Campaign(game) {
     private val bEnableTeamTrials: Boolean = true
 
     override fun handleDialogs(dialog: DialogInterface?): Pair<Boolean, DialogInterface?> {
-        return super.handleDialogs(dialog)
+        val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
+        return Pair(false, dialog)
     }
 
     fun pluginDialogHandler(dialog: DialogInterface? = null): DialogHandlerResult {
@@ -98,7 +103,7 @@ class DailyTasks(game: Game) : Campaign(game) {
 		MessageLog.i(TAG, "[DAILY_TASKS] Starting process for handling the Daily Tasks.")
 
         // Order determines when each plugin is run.
-        // TODO: Maybe make this user configurable?
+        // Adding entries here must be reflected in App's BotStateContext.
         val plugins = listOf(
             ::TeamTrials,
             ::DailyRaces,
@@ -110,14 +115,34 @@ class DailyTasks(game: Game) : Campaign(game) {
             ::DailySale,
         )
 
-        for (plugin in plugins) {
+        // Sort by the user setting.
+        val orderMap: Map<String, Int> = pluginsSetting.mapIndexed { index, pluginName ->
+            pluginName.replace("\\s+".toRegex(), "") to index
+        }.toMap()
+
+        val sortedPlugins = plugins.sortedBy { it ->
+            // Need to retrieve the class name from the constructor reference.
+            val name = it.returnType.classifier?.let { classifier ->
+                (classifier as? kotlin.reflect.KClass<*>)?.simpleName
+            }
+            // Check the name's order, otherwise default to high value
+            // to drop it to the bottom of the list if it doesnt exist.
+            orderMap[name] ?: Int.MAX_VALUE
+        }
+
+        for (plugin in sortedPlugins) {
             val instance: Plugin = plugin(game, ::pluginDialogHandler)
-            val result: Boolean = instance.start()
             val className: String = instance::class.simpleName ?: "UNKNOWN"
+            if (!instance.bIsEnabled) {
+                MessageLog.i(TAG, "[DAILY_TASKS] [$className] Plugin is not enabled. Skipping...")
+                continue
+            }
+            MessageLog.i(TAG, "[DAILY_TASKS] [$className] Starting...")
+            val result: Boolean = instance.start()
             if (result) {
-                MessageLog.i(TAG, "[DAILY_TASKS] [$className] Completed.")
+                MessageLog.i(TAG, "[DAILY_TASKS] [$className] Completed successfully.")
             } else {
-                MessageLog.w(TAG, "[DAILY_TASKS] [$className] Timed out.")
+                MessageLog.w(TAG, "[DAILY_TASKS] [$className] Failed.")
             }
         }
 	}

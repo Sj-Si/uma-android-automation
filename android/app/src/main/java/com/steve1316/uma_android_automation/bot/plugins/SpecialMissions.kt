@@ -23,6 +23,7 @@ import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabT
 import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabSpecial
 import com.steve1316.uma_android_automation.components.ButtonEventMissionsTabLimitedTime
 import com.steve1316.uma_android_automation.components.ButtonEventExclusiveMissionsStoryEvent
+import com.steve1316.uma_android_automation.components.ButtonEventExclusiveMissionsRacingCarnival
 import com.steve1316.uma_android_automation.components.ButtonCollectAll
 import com.steve1316.uma_android_automation.components.ButtonEventMissions
 import com.steve1316.uma_android_automation.components.ButtonBack
@@ -47,8 +48,14 @@ class SpecialMissions(
         ButtonEventMissionsTabLimitedTime,
     )
 
+    private val racingCarnivalMissionsTabs: List<ComponentInterface> = listOf(
+        ButtonSpecialMissionsTabDaily,
+        ButtonEventMissionsTabLimitedTime,
+    )
+
     private var bHasHandledSpecialMissions: Boolean = false
     private var bHasHandledEventMissions: Boolean = false
+    private var bHasHandledRacingCarnivalMissions: Boolean = false
 
     override fun handleDialogs(dialog: DialogInterface?): DialogHandlerResult {
         val result: DialogHandlerResult = super.handleDialogs(dialog)
@@ -61,7 +68,31 @@ class SpecialMissions(
                 // TODO: Need to add logic for other entries in this dialog.
                 // Only event mission is currently in the dialog. Need to wait
                 // for legend races to become available again.
-                ButtonEventExclusiveMissionsStoryEvent.click(game.imageUtils)
+                if (!bHasHandledEventMissions) {
+                    // Event missions may not exist for this mode. If not, then
+                    // just mark it as complete.
+                    if (!ButtonEventExclusiveMissionsStoryEvent.click(game.imageUtils)) {
+                        bHasHandledEventMissions = true
+                    }
+                } else if (!bHasHandledRacingCarnivalMissions) {
+                    if (!ButtonEventExclusiveMissionsRacingCarnival.click(game.imageUtils)) {
+                        bHasHandledRacingCarnivalMissions = true
+                    }
+                } else {
+                    result.dialog.close(game.imageUtils)
+                }
+            }
+            "event_missions" -> {
+                if (!bHasHandledRacingCarnivalMissions) {
+                    // Need to set this ahead of time since this is a dialog and it
+                    // spawns more dialogs. Otherwise we get stuck in an infinite loop.
+                    bHasHandledRacingCarnivalMissions = true
+                    handleRacingCarnivalMissionsTabs()
+                    result.dialog.close(game.imageUtils)
+                    game.wait(0.5)
+                    game.waitForLoading()
+                    handleDialogs()
+                }
             }
             "rewards_collected" -> result.dialog.close(game.imageUtils)
             "special_missions" -> result.dialog.ok(game.imageUtils)
@@ -105,6 +136,18 @@ class SpecialMissions(
         bHasHandledEventMissions = true
     }
 
+    fun handleRacingCarnivalMissionsTabs() {
+        for (tab in racingCarnivalMissionsTabs) {
+            tab.click(game.imageUtils)
+            game.wait(0.1, skipWaitingForLoading = true)
+            ButtonCollectAll.click(game.imageUtils)
+            game.wait(0.5)
+            handleDialogs()
+        }
+
+        bHasHandledRacingCarnivalMissions = true
+    }
+
     override fun progress(bitmap: Bitmap?): PageInterface? {
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
 
@@ -123,12 +166,18 @@ class SpecialMissions(
                 handleEventMissionsTabs()
                 if (bHasHandledEventMissions) {
                     ButtonBack.click(game.imageUtils)
+                    game.wait(0.5)
+                    game.waitForLoading()
+                    handleDialogs()
                 }
             }
             else -> handleDialogs()
         }
 
-        bIsComplete = bHasHandledSpecialMissions && bHasHandledEventMissions
+        bIsComplete = bHasHandledSpecialMissions &&
+            bHasHandledEventMissions &&
+            bHasHandledRacingCarnivalMissions
+
         if (bIsComplete) {
             ButtonBack.click(game.imageUtils)
         }

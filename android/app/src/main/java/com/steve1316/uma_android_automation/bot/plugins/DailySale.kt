@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.data.SharedData
+import com.steve1316.automation_library.utils.SettingsHelper
 
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
@@ -21,11 +22,23 @@ import com.steve1316.uma_android_automation.components.ButtonShopExchange
 import com.steve1316.uma_android_automation.components.ButtonShopExchangeDisabled
 import com.steve1316.uma_android_automation.components.ButtonShopEndSale
 import com.steve1316.uma_android_automation.components.ButtonBack
-import com.steve1316.uma_android_automation.components.ButtonHomeShopDaily
+import com.steve1316.uma_android_automation.components.ButtonHomeShopDailySale
 import com.steve1316.uma_android_automation.components.ButtonShopDailySales
 import com.steve1316.uma_android_automation.components.LabelShopStarPiece
 import com.steve1316.uma_android_automation.components.LabelShopAlarmClock
 import com.steve1316.uma_android_automation.components.LabelShopPleasingParfait
+
+enum class SaleItem {
+    STAR_PIECE,
+    ALARM_CLOCK,
+    PLEASING_PARFAIT;
+
+    companion object {
+        private val nameMap = entries.associateBy { it.name }
+
+        fun fromName(value: String): SaleItem? = nameMap[value.replace(" ", "_").uppercase()]
+    }
+}
 
 class DailySale(
     game: Game,
@@ -33,10 +46,9 @@ class DailySale(
 ) : Plugin(game, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]DailySale"
 
-    // TODO: Load from settings.
-    private val bShouldBuyStarPieces: Boolean = true
-    private val bShouldBuyAlarmClock: Boolean = true
-    private val bShouldBuyPleasingParfait: Boolean = true
+    private val saleItemsToBuy: List<SaleItem> = SettingsHelper.getStringArraySetting("dailyTasks", "saleItems")
+        .mapNotNull { it -> SaleItem.fromName(it) }
+    override val bIsEnabled: Boolean = super.bIsEnabled && saleItemsToBuy.isNotEmpty()
 
     override fun handleDialogs(dialog: DialogInterface?): DialogHandlerResult {
         val result: DialogHandlerResult = super.handleDialogs(dialog)
@@ -79,7 +91,7 @@ class DailySale(
             return false
         }
 
-        if (!ButtonHomeShopDaily.click(game.imageUtils)) {
+        if (!ButtonHomeShopDailySale.click(game.imageUtils)) {
             MessageLog.i(TAG, "No daily sale available. Cannot proceed.")
             return false
         }
@@ -114,10 +126,10 @@ class DailySale(
         var prevNames: Set<String> = setOf()
 
         var numToHandle: Int = listOf<Boolean>(
-            bShouldBuyStarPieces,
-            bShouldBuyStarPieces,
-            bShouldBuyAlarmClock,
-            bShouldBuyPleasingParfait,
+            saleItemsToBuy.contains(SaleItem.STAR_PIECE),
+            saleItemsToBuy.contains(SaleItem.STAR_PIECE),
+            saleItemsToBuy.contains(SaleItem.ALARM_CLOCK),
+            saleItemsToBuy.contains(SaleItem.PLEASING_PARFAIT),
         ).count { it }
 
         var numHandled: Int = 0
@@ -128,18 +140,21 @@ class DailySale(
             ButtonShopExchange,
             ButtonShopExchangeDisabled,
         )
+
+        // Create a list of components to search for only if they are items
+        // which we actually want to buy.
+        val componentsToFind: List<ComponentInterface> = saleItemsToBuy.mapNotNull {
+            when (it) {
+                SaleItem.STAR_PIECE -> LabelShopStarPiece
+                SaleItem.ALARM_CLOCK -> LabelShopAlarmClock
+                SaleItem.PLEASING_PARFAIT -> LabelShopPleasingParfait
+                else -> null
+            }
+        }
+
         scrollList.process(entryComponents) { _, _, component, loc, bitmap ->
-            var bShouldBuyItem: Boolean = false
-            when {
-                LabelShopStarPiece.check(game.imageUtils, sourceBitmap = bitmap) -> {
-                    bShouldBuyItem = bShouldBuyStarPieces
-                }
-                LabelShopAlarmClock.check(game.imageUtils, sourceBitmap = bitmap) -> {
-                    bShouldBuyItem = bShouldBuyAlarmClock
-                }
-                LabelShopPleasingParfait.check(game.imageUtils, sourceBitmap = bitmap) -> {
-                    bShouldBuyItem = bShouldBuyPleasingParfait
-                }
+            val bShouldBuyItem: Boolean = componentsToFind.any {
+                it.check(game.imageUtils, sourceBitmap = bitmap)
             }
 
             if (bShouldBuyItem) {
@@ -162,13 +177,15 @@ class DailySale(
                             }
                         }
                     }
+                    game.wait(0.5)
                 }
 
                 numHandled++
             }
 
-            // Return true if we bought everything to stop the scroll list loop.
-            numHandled >= numToHandle
+            // Return true if we bought everything. Stops the scroll list loop.
+            //numHandled >= componentsToFind.size
+            false
         }
 
         if (!bSaleExpired) {

@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import org.opencv.core.Point
 
 import com.steve1316.automation_library.utils.MessageLog
+import com.steve1316.automation_library.utils.SettingsHelper
 
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
@@ -32,7 +33,7 @@ class LegendRace(
 ) : Plugin(game, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]LegendRace"
 
-    private val bShouldUseParfait: Boolean = false
+    private val bShouldUseParfait: Boolean = SettingsHelper.getBooleanSetting("dailyTasks", "enableLegendRaceUseParfait")
 
     private fun selectRace(bitmap: Bitmap? = null): Boolean {
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()

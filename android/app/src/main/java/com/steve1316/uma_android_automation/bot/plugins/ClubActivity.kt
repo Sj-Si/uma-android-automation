@@ -3,6 +3,7 @@ package com.steve1316.uma_android_automation.bot.plugins
 import android.graphics.Bitmap
 
 import com.steve1316.automation_library.utils.MessageLog
+import com.steve1316.automation_library.utils.SettingsHelper
 
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
@@ -27,6 +28,8 @@ import com.steve1316.uma_android_automation.components.ButtonShoesMile
 import com.steve1316.uma_android_automation.components.ButtonShoesMedium
 import com.steve1316.uma_android_automation.components.ButtonShoesLong
 import com.steve1316.uma_android_automation.components.ButtonShoesDirt
+import com.steve1316.uma_android_automation.components.LabelClubIneligibleDonation
+import com.steve1316.uma_android_automation.components.LabelCurrentItemRequestStatus
 
 enum class ShoeType {
     SPRINT,
@@ -50,9 +53,8 @@ class ClubActivity(
 ) : Plugin(game, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]ClubActivity"
 
-    // TODO: Load from settings.
-    private val clubDonationShoeTypeString: String = "medium"
-    private val clubDonationShoeType: ShoeType = ShoeType.fromName(clubDonationShoeTypeString) ?: ShoeType.MEDIUM
+    private val clubRequestShoeTypeString: String = SettingsHelper.getStringSetting("dailyTasks", "clubRequestShoeType")
+    private val clubRequestShoeType: ShoeType = ShoeType.fromName(clubRequestShoeTypeString)!!
 
     private var bHasSelectedShoes: Boolean = false
     private var bHasRequestedItems: Boolean = false
@@ -82,7 +84,7 @@ class ClubActivity(
                 val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
 
                 if (shoeButtons.values.all { it.check(game.imageUtils, sourceBitmap = bitmap) }) {
-                    val button: ComponentInterface = shoeButtons[clubDonationShoeType]!!
+                    val button: ComponentInterface = shoeButtons[clubRequestShoeType]!!
                     button.click(game.imageUtils, sourceBitmap = bitmap)
                     bHasSelectedShoes = true
                 }
@@ -90,7 +92,17 @@ class ClubActivity(
                 if (bHasSelectedShoes && ButtonConfirm.check(game.imageUtils)) {
                     bHasRequestedItems = true
                 }
+
+                if (LabelCurrentItemRequestStatus.check(game.imageUtils)) {
+                    bHasSelectedShoes = true
+                    bHasRequestedItems = true
+                }
+
                 result.dialog.ok(game.imageUtils)
+                if (LabelClubIneligibleDonation.check(game.imageUtils, tries = 5)) {
+                    bHasDonatedItems = true
+                    result.dialog.close(game.imageUtils)
+                }
             }
             "item_request_error" -> {
                 if (ButtonHome.check(game.imageUtils)) {

@@ -42,6 +42,12 @@ import org.opencv.core.Point
 import java.text.DecimalFormat
 import kotlin.intArrayOf
 
+import com.steve1316.uma_android_automation.bot.plugins.TeamTrials
+import com.steve1316.uma_android_automation.bot.plugins.DailySale
+import com.steve1316.uma_android_automation.bot.plugins.ClubActivity
+import com.steve1316.uma_android_automation.bot.plugins.SpecialMissions
+import com.steve1316.uma_android_automation.components.*
+
 /**
  * Main driver for bot activity and navigation.
  */

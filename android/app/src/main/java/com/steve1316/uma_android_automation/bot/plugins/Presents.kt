@@ -14,7 +14,8 @@ import com.steve1316.uma_android_automation.utils.ScrollList
 
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageHome
-import com.steve1316.uma_android_automation.components.ButtonHomeSpecialMissions
+import com.steve1316.uma_android_automation.components.ButtonHomePresents
+import com.steve1316.uma_android_automation.components.LabelNone
 
 class Presents(
     game: Game,
@@ -29,11 +30,15 @@ class Presents(
         }
 
         when (result.dialog.name) {
-            "presents" -> result.dialog.ok(game.imageUtils)
-            "rewards_collected" -> {
-                result.dialog.close(game.imageUtils)
-                bIsComplete = true
+            "presents" -> {
+                if (LabelNone.check(game.imageUtils)) {
+                    bIsComplete = true
+                    result.dialog.close(game.imageUtils)
+                } else {
+                    result.dialog.ok(game.imageUtils)
+                }
             }
+            "rewards_collected" -> result.dialog.close(game.imageUtils)
             else -> return DialogHandlerResult.Unhandled(result.dialog)
         }
         game.wait(0.5, skipWaitingForLoading = true)
@@ -60,8 +65,8 @@ class Presents(
             return false
         }
 
-        if (!waitForButton(ButtonHomeSpecialMissions, bShouldClickButton = false)) {
-            MessageLog.w(TAG, "Failed to find Special Missions button at home screen.")
+        if (!waitForButton(ButtonHomePresents, bShouldClickButton = false)) {
+            MessageLog.w(TAG, "Failed to find Presents button at home screen.")
             return false
         }
 
@@ -76,6 +81,7 @@ class Presents(
 
         val startTime = System.currentTimeMillis()
         while (!bIsComplete && System.currentTimeMillis() - startTime < timeoutMs) {
+            ButtonHomePresents.click(game.imageUtils)
             handleDialogs()
         }
         return bIsComplete

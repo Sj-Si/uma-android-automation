@@ -344,7 +344,6 @@ class ScrollList private constructor(
 
             for ((index, entry) in entries.withIndex()) {
                 val (component, loc) = entry
-                MessageLog.e("REMOVEME", "ScrollList: [$index] ($loc) -> ${component.template.basename}")
                 val bboxEntry: BoundingBox = BoundingBox(
                     x = bboxEntries.x,
                     y = (loc.y - game.imageUtils.relHeight(entryHeight / 2)).toInt(),

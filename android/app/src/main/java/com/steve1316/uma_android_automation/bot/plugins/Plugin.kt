@@ -3,6 +3,7 @@ package com.steve1316.uma_android_automation.bot.plugins
 import android.graphics.Bitmap
 
 import com.steve1316.automation_library.utils.MessageLog
+import com.steve1316.automation_library.utils.SettingsHelper
 
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
@@ -29,7 +30,9 @@ abstract class Plugin(
 ) {
     abstract val TAG: String
     // Should be set from settings.
-    abstract val bIsEnabled: Boolean
+    val pluginsSetting: List<String> = SettingsHelper.getStringArraySetting("dailyTasks", "plugins")
+        .map { it.replace("\\s+".toRegex(), "").lowercase() }
+    open val bIsEnabled: Boolean = pluginsSetting.contains(this::class.simpleName?.lowercase())
 
     protected var bIsComplete: Boolean = false
 
@@ -122,8 +125,16 @@ abstract class Plugin(
     }
 
     open fun start(timeoutMs: Int = 60000 * 5): Boolean {
+        if (!bIsEnabled) {
+            MessageLog.d(TAG, "Plugin is disabled.")
+            return false
+        }
+
+        MessageLog.i(TAG, "Starting plugin...")
+
         if (!goToStart()) {
             MessageLog.e(TAG, "Failed to go to start screen for plugin.")
+            goToHome()
             return false
         }
 
@@ -137,6 +148,11 @@ abstract class Plugin(
             return false
         }
 
+        if (bIsComplete) {
+            MessageLog.i(TAG, "Plugin completed successfully.")
+        } else {
+            MessageLog.i(TAG, "Plugin timed out.")
+        }
         return bIsComplete
     }
 }

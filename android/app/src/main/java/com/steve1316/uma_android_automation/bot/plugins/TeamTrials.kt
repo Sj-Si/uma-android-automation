@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import org.opencv.core.Point
 
 import com.steve1316.automation_library.utils.MessageLog
+import com.steve1316.automation_library.utils.SettingsHelper
 
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
@@ -41,9 +42,8 @@ class TeamTrials(
 ) : Plugin(game, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]TeamTrials"
 
-    // TODO: Load from settings.
-    private val bShouldHandleDailySale: Boolean = false
-    private val bShouldUseParfaitOnExtraRewards: Boolean = true
+    private val bShouldHandleDailySale: Boolean = SettingsHelper.getStringArraySetting("dailyTasks", "saleItems").isNotEmpty()
+    private val bShouldUseParfaitOnExtraRewards: Boolean = SettingsHelper.getBooleanSetting("dailyTasks", "enableTeamTrialsUseParfaitOnExtraRewards")
 
     private var bIsExtraRewards: Boolean = false
 
