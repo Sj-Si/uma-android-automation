@@ -55,10 +55,12 @@ class ClubActivity(
 
     private val clubRequestShoeTypeString: String = SettingsHelper.getStringSetting("dailyTasks", "clubRequestShoeType")
     private val clubRequestShoeType: ShoeType = ShoeType.fromName(clubRequestShoeTypeString)!!
+    private val bShouldDonateItems: Boolean = SettingsHelper.getBooleanSetting("dailyTasks", "enableClubDonation")
 
     private var bHasSelectedShoes: Boolean = false
     private var bHasRequestedItems: Boolean = false
-    private var bHasDonatedItems: Boolean = false
+    // If we arent supposed to donate, then we just say that it is already completed.
+    private var bHasDonatedItems: Boolean = !bShouldDonateItems
 
     private val shoeButtons: Map<ShoeType, ComponentInterface> = mapOf(
         ShoeType.SPRINT to ButtonShoesSprint,

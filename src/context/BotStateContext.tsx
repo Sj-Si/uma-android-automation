@@ -65,6 +65,7 @@ export interface Settings {
         dailyRaceName: string
         enableLegendRaceUseParfait: boolean
         clubRequestShoeType: string
+        enableClubDonation: boolean
     }
 
     // Training Event settings
@@ -238,6 +239,7 @@ export const defaultSettings: Settings = {
         dailyRaceName: "Moonlight Sho",
         enableLegendRaceUseParfait: true,
         clubRequestShoeType: "medium",
+        enableClubDonation: true,
     },
     trainingEvent: {
         enablePrioritizeEnergyOptions: false,

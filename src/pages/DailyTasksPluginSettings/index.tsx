@@ -234,6 +234,7 @@ const DailyTasksPluginSettings = () => {
         dailyRaceName,
         enableLegendRaceUseParfait,
         clubRequestShoeType,
+        enableClubDonation,
     } = dailyTasksSettings
 
     useEffect(() => {
@@ -431,6 +432,16 @@ const DailyTasksPluginSettings = () => {
                                 placeholder="Select Shoe Type"
                             />
                             <Text style={styles.inputDescription}>The shoe type to request from club members.</Text>
+                        </View>
+                        <View style={styles.inputContainer}>
+                            <CustomCheckbox
+                                id="enable-club-donation"
+                                checked={enableClubDonation}
+                                onCheckedChange={(checked) => updateSetting("enableClubDonation", checked)}
+                                label="Enable Donations to Club"
+                                description="When enabled, the bot will attempt to donate to all club members."
+                                className="my-2"
+                            />
                         </View>
                     </View>
                 )}
