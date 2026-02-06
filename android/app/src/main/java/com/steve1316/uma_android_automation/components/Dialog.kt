@@ -347,6 +347,7 @@ object DialogObjects {
         DialogOptions,                      // Anywhere
         DialogPerks,                        // Career -> Career Profile dialog
         DialogPlacing,                      // Career -> DialogTryAgain
+        DialogPracticePartnerList,          // Club
         DialogPresents,                     // Main Screen (i think?)
         DialogPurchaseAlarmClock,           // Career
         DialogPurchaseCarats,               // Anywhere (ALWAYS THROW ERROR)
@@ -378,6 +379,7 @@ object DialogObjects {
         DialogStrategy,                     // Race Screen
         DialogStoryUnlocked,                // Main Screen, end of career
         DialogTeamInfo,                     // Career (Unity Cup)
+        DialogTrainerInfo,                  // Anywhere
         DialogTrophyWon,                    // Career
         DialogTryAgain,                     // Career
         DialogUmamusumeClass,               // Career
@@ -1232,6 +1234,17 @@ object DialogPlacing : DialogInterface {
     )
 }
 
+object DialogPracticePartnerList : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogPracticePartnerList"
+    override val name: String = "practice_partner_list"
+    override val title: String = "Practice Partner List"
+    override val closeButton = null
+    override val okButton = null
+    override val buttons: List<ComponentInterface> = listOf(
+        ButtonClose,
+    )
+}
+
 object DialogPresents : DialogInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]DialogPresents"
     override val name: String = "presents"
@@ -1646,6 +1659,17 @@ object DialogTeamInfo : DialogInterface {
     override val buttons: List<ComponentInterface> = listOf(
         ButtonClose,
         ButtonEditTeam,
+    )
+}
+
+object DialogTrainerInfo : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogTrainerInfo"
+    override val name: String = "trainer_info"
+    override val title: String = "Trainer Info"
+    override val closeButton = null
+    override val okButton = null
+    override val buttons: List<ComponentInterface> = listOf(
+        ButtonClose,
     )
 }
 

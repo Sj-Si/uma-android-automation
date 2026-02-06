@@ -116,6 +116,8 @@ class ClubActivity(
                 }
                 result.dialog.close(game.imageUtils)
             }
+            "practice_partner_list" -> result.dialog.close(game.imageUtils)
+            "trainer_info" -> result.dialog.close(game.imageUtils)
             else -> return DialogHandlerResult.Unhandled(result.dialog)
         }
         game.wait(0.5, skipWaitingForLoading = true)
