@@ -312,6 +312,7 @@ object PageLegendRaceHome : PageInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]PageLegendRaceHome"
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
     override val identifyingComponents: List<ComponentInterface> = listOf(
+        ButtonBack,
         ButtonLegendRaceSpecialMissions,
     )
 
@@ -324,6 +325,7 @@ object PageHome : PageInterface {
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
     override val identifyingComponents: List<ComponentInterface> = listOf(
         ButtonMenuBarHomeSelected,
+        ButtonHomeShop,
     )
 
     override val prevButton: ComponentInterface? = null

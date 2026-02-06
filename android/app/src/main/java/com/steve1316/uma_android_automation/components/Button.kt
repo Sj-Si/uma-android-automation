@@ -479,9 +479,14 @@ object ButtonTeamTrialsSeeAllRaceResults : ComponentInterface {
     override val template = Template("components/button/team_trials_see_all_race_results")
 }
 
-object ButtonHomeShopDaily : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonHomeShopDaily"
-    override val template = Template("components/button/home_shop_daily")
+object ButtonHomeShop : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonHomeShop"
+    override val template = Template("components/button/home_shop")
+}
+
+object ButtonHomeShopDailySale : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonHomeShopDailySale"
+    override val template = Template("components/button/home_shop_daily_sale")
 }
 
 object ButtonShopDailySales : ComponentInterface {
@@ -567,6 +572,11 @@ object ButtonLegendRaceSpecialMissions : ComponentInterface {
 object ButtonEventExclusiveMissionsStoryEvent : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonEventExclusiveMissionsStoryEvent"
     override val template = Template("components/button/event_exclusive_missions_story_event")
+}
+
+object ButtonEventExclusiveMissionsRacingCarnival : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonEventExclusiveMissionsRacingCarnival"
+    override val template = Template("components/button/event_exclusive_missions_racing_carnival")
 }
 
 object ButtonExchange : ComponentInterface {

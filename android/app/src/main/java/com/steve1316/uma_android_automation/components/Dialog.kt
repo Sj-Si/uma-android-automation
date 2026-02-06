@@ -319,6 +319,7 @@ object DialogObjects {
         DialogEpithet,                      // Career End
         DialogEpithets,                     // Career DialogMenu -> Epithets button
         DialogEventExclusiveMissions,       // Missions Screen
+        DialogEventMissions,                // Unique event missions. (like racing carnival)
         DialogExchangeComplete,             // Shop
         DialogExternalLink,                 // Main Screen
         DialogFans,                         // Career DialogGoals
@@ -794,6 +795,18 @@ object DialogEventExclusiveMissions : DialogInterface {
     override val okButton = null
     override val buttons: List<ComponentInterface> = listOf(
         ButtonClose,
+    )
+}
+
+object DialogEventMissions : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogEventMissions"
+    override val name: String = "event_missions"
+    override val title: String = "Event Missions"
+    override val closeButton = null
+    override val okButton: ComponentInterface = ButtonCollectAll
+    override val buttons: List<ComponentInterface> = listOf(
+        ButtonClose,
+        ButtonCollectAll,
     )
 }
 

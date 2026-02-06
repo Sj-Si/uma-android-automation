@@ -134,3 +134,18 @@ object LabelTeamTrialsExtraRewardsOpponent : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]LabelTeamTrialsExtraRewardsOpponent"
     override val template = Template("components/label/team_trials_extra_reward_opponent", region = Region.rightHalf)
 }
+
+object LabelClubIneligibleDonation : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelClubIneligibleDonation"
+    override val template = Template("components/label/club_ineligible_donation", region = Region.middle)
+}
+
+object LabelCurrentItemRequestStatus : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelCurrentItemRequestStatus"
+    override val template = Template("components/label/current_item_request_status", region = Region.topHalf)
+}
+
+object LabelNone : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelNone"
+    override val template = Template("components/label/none", region = Region.middle)
+}
