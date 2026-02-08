@@ -6,6 +6,7 @@ import org.opencv.core.Point
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.utils.SettingsHelper
+import com.steve1316.automation_library.utils.TextUtils
 
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
@@ -13,6 +14,7 @@ import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 import com.steve1316.uma_android_automation.utils.ScrollList
+import com.steve1316.uma_android_automation.utils.ScrollListEntry
 import com.steve1316.uma_android_automation.utils.types.BoundingBox
 
 import com.steve1316.uma_android_automation.components.ComponentInterface
@@ -50,6 +52,7 @@ class DailySale(
 
     private val saleItemsToBuy: List<SaleItem> = SettingsHelper.getStringArraySetting("dailyTasks", "saleItems")
         .mapNotNull { it -> SaleItem.fromName(it) }
+
     override val bIsEnabled: Boolean = super.bIsEnabled && saleItemsToBuy.isNotEmpty()
 
     private var bSaleExpired: Boolean = false
@@ -116,95 +119,91 @@ class DailySale(
 
     private fun onListEntry(
         scrollList: ScrollList,
-        index: Int,
-        component: ComponentInterface,
-        point: Point,
-        bitmap: Bitmap,
+        entry: ScrollListEntry,
     ): Boolean {
+        fun extractText(bitmap: Bitmap): String {
+            try {
+                val detectedText = game.imageUtils.performOCROnRegion(
+                    bitmap,
+                    0,
+                    0,
+                    bitmap.width,
+                    bitmap.height,
+                    useThreshold = false,
+                    useGrayscale = true,
+                    scale = 2.0,
+                    ocrEngine = "mlkit",
+                    debugName = "DailySale.onListEntry: extractText",
+                    multiLine = true,
+                )
+                return detectedText
+            } catch (e: Exception) {
+                MessageLog.e(TAG, "Exception during text extraction: ${e.message}")
+                return ""
+            }
+        }
+
         var prevNames: Set<String> = setOf()
 
-        var numToHandle: Int = listOf<Boolean>(
-            saleItemsToBuy.contains(SaleItem.STAR_PIECE),
-            saleItemsToBuy.contains(SaleItem.STAR_PIECE),
-            saleItemsToBuy.contains(SaleItem.ALARM_CLOCK),
-            saleItemsToBuy.contains(SaleItem.PLEASING_PARFAIT),
-        ).count { it }
+        var buttonLoc: Point? = ButtonShopExchange.findImageWithBitmap(
+            game.imageUtils,
+            sourceBitmap = entry.bitmap,
+        )
 
-        var numHandled: Int = 0
+        var bIsDisabled: Boolean = false
 
-        // Create a list of components to search for only if they are items
-        // which we actually want to buy.
-        val componentsToFind: List<ComponentInterface> = saleItemsToBuy.mapNotNull {
-            when (it) {
-                SaleItem.STAR_PIECE -> LabelShopStarPiece
-                SaleItem.ALARM_CLOCK -> LabelShopAlarmClock
-                SaleItem.PLEASING_PARFAIT -> LabelShopPleasingParfait
-                else -> null
+        if (buttonLoc == null) {
+            buttonLoc = ButtonShopExchangeDisabled.findImageWithBitmap(
+                game.imageUtils,
+                sourceBitmap = entry.bitmap,
+            )
+            // If we still didn't find one, bail out.
+            if (buttonLoc == null) {
+                MessageLog.e(TAG, "Failed to find any Exchange button in bitmap.")
+                return false
+            }
+            bIsDisabled = true
+        }
+
+        // Translate the location to the screen coordinates.
+        buttonLoc = Point(buttonLoc.x + entry.bbox.x, buttonLoc.y + entry.bbox.y)
+
+        val text: String = extractText(entry.bitmap).lowercase().replace("\n", " ")
+        var match: SaleItem? = null
+        for (saleItem in saleItemsToBuy) {
+            val query: String = saleItem.name.lowercase().replace("_", " ")
+            if (text.contains(query)) {
+                match = saleItem
+                break
             }
         }
-        if (componentsToFind.isEmpty()) {
+
+        // Click the button if it is in our list of items to buy.
+        if (match != null && !bIsDisabled) {
+            game.tap(buttonLoc.x, buttonLoc.y, ButtonShopExchange.template.path)
+            game.wait(0.5)
+        } else {
             return false
         }
 
-        val componentToBuy: ComponentInterface? = componentsToFind.firstOrNull {
-            it.check(game.imageUtils)
-        }
-
-        if (componentToBuy == null) {
-            return false
-        }
-
-        if (component != ButtonShopExchangeDisabled) {
-            // Don't use the passed bitmap since we want to try and click
-            // on the most updated location.
-
-            // Find the component in question on the screen then crop
-            // that entry out of the image.
-            val (newLoc, bitmap) = componentToBuy.find(game.imageUtils)
-            if (newLoc == null) {
+        // Finally, handle any dialogs.
+        val startTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startTime < 5000) {
+            val dialogResult: DialogHandlerResult = handleDialogs()
+            // If the sale expired, then we need to break immediately
+            // and handle this case.
+            if (bSaleExpired) {
                 return false
             }
-            val bbox: BoundingBox = BoundingBox(
-                x = 0,
-                y = (point.y - (bitmap.height / 2)).toInt(),
-                w = (bitmap.width).toInt(),
-                h = (bitmap.height).toInt(),
-            )
-            val cropped: Bitmap? = game.imageUtils.createSafeBitmap(
-                game.imageUtils.getSourceBitmap(),
-                bbox,
-                "onListEntry",
-            )
-            if (cropped == null) {
+            // If we finished purchasing this item, break to proceed
+            // to the next entry in the list.
+            if (
+                dialogResult is DialogHandlerResult.Handled &&
+                dialogResult.dialog.name == "exchange_complete"
+            ) {
                 return false
-            }
-
-            // Finally, click the button in this entry.
-            if (!ButtonShopExchange.click(game.imageUtils, sourceBitmap = cropped)) {
-                return false
-            }
-
-            val startTime = System.currentTimeMillis()
-            while (System.currentTimeMillis() - startTime < 5000) {
-                val dialogResult: DialogHandlerResult = handleDialogs()
-                // If the sale expired, then we need to break immediately
-                // and handle this case.
-                if (bSaleExpired) {
-                    return false
-                }
-                // If we finished purchasing this item, break to proceed
-                // to the next entry in the list.
-                if (
-                    dialogResult is DialogHandlerResult.Handled &&
-                    dialogResult.dialog.name == "exchange_complete"
-                ) {
-                    return false
-                }
             }
         }
-
-        // Return true if we bought everything. Stops the scroll list loop.
-        //numHandled >= componentsToFind.size
         return false
     }
 
@@ -214,22 +213,14 @@ class DailySale(
             return false
         }
 
-        val scrollList: ScrollList? = ScrollList.create(
-            game,
-            entryHeight = (SharedData.displayHeight * 0.0979).toInt(),
-        )
+        val scrollList: ScrollList? = ScrollList.create(game)
 
         if (scrollList == null) {
             MessageLog.e(TAG, "[DAILY_SALE] Failed to detect sale list.")
             return false
         }
 
-        val entryComponents: List<ComponentInterface> = listOf(
-            ButtonShopExchange,
-            ButtonShopExchangeDisabled,
-        )
-
-        scrollList.process(entryComponents, onEntry = ::onListEntry)
+        scrollList.process(onEntry = ::onListEntry)
 
         if (!bSaleExpired) {
             ButtonShopEndSale.click(game.imageUtils, tries = 10)
