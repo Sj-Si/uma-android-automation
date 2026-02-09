@@ -12,6 +12,7 @@ import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 
+import com.steve1316.uma_android_automation.components.BaseComponentInterface
 import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageInterface
@@ -100,9 +101,13 @@ class LegendRace(
     }
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
-        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+        val currentPage: PageInterface? = super.progress(bitmap)
+        if (currentPage == null) {
+            return null
+        }
 
-        val currentPage: PageInterface? = checkPage(bitmap)
+        // We do this after super call to avoid taking unnecessary screenshots.
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
         when (currentPage) {
             PageLegendRaceHome -> {
                 selectRace()
@@ -111,11 +116,10 @@ class LegendRace(
                 PageExtraRacesRunnerSelection.next(game.imageUtils)
             }
             else -> {
-                if (handleDialogs() !is DialogHandlerResult.Handled &&
-                    !ButtonSkip.click(game.imageUtils) &&
+                if (!ButtonSkip.click(game.imageUtils) &&
                     !ButtonNext.click(game.imageUtils)
                 ) {
-                    game.tap(350.0, 750.0, "ok", taps = 3)
+                    game.tap(350.0, 750.0, "ok", taps = 1)
                 }
             }
         }
@@ -124,15 +128,7 @@ class LegendRace(
     }
 
     override fun goToStart(): Boolean {
-        var dialogResult: DialogHandlerResult = handleDialogs()
-        while (dialogResult is DialogHandlerResult.Handled) {
-            dialogResult = handleDialogs()
-        }
-
-        if (dialogResult is DialogHandlerResult.Unhandled) {
-            MessageLog.e(TAG, "Unhandled dialog prevented plugin execution: ${dialogResult.dialog.name}")
-            return false
-        }
+        super.goToStart()
 
         if (PageLegendRaceHome.check(game.imageUtils)) {
             return true
@@ -143,32 +139,33 @@ class LegendRace(
             return false
         }
 
-        if (!waitForButton(ButtonMenuBarRace)) {
+        if (waitForButton(ButtonMenuBarRace, bShouldClickButton = true) == null) {
             MessageLog.w(TAG, "Failed to find Race button on menu bar.")
             return false
         }
-
-        game.wait(0.5)
-        game.waitForLoading()
         
-        if (!waitForButton(ButtonRaceEvents)) {
+        if (waitForButton(ButtonRaceEvents, bShouldClickButton = true) == null) {
             MessageLog.w(TAG, "Failed to find Race Events button.")
             return false
         }
 
-        game.wait(0.5)
-        game.waitForLoading()
-
-        if (ButtonLegendRaceLocked.check(game.imageUtils)) {
-            MessageLog.i(TAG, "Legend Race is locked. Cannot proceed.")
-            return false
+        val button: BaseComponentInterface? = waitForButton(
+            listOf(ButtonLegendRaceLocked, ButtonLegendRace),
+        )
+        when (button) {
+            is ButtonLegendRaceLocked -> {
+                MessageLog.i(TAG, "Legend Race is locked. Cannot proceed.")
+                return false
+            }
+            is ButtonLegendRace -> {
+                button.click(game.imageUtils)
+            }
+            else -> {
+                MessageLog.w(TAG, "Failed to find Legend Race button.")
+                return false
+            }
         }
 
-        if (!waitForButton(ButtonLegendRace)) {
-            MessageLog.w(TAG, "Failed to find Legend Race button.")
-            return false
-        }
-
-        return waitForPage(PageLegendRaceHome)
+        return waitForPage(PageLegendRaceHome) != null
     }
 }

@@ -10,6 +10,7 @@ import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 
+import com.steve1316.uma_android_automation.components.BaseComponentInterface
 import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageInterface
@@ -45,9 +46,13 @@ class ChampionsMeeting(
     }
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
-        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+        val currentPage: PageInterface? = super.progress(bitmap)
+        if (currentPage == null) {
+            return null
+        }
 
-        val currentPage: PageInterface? = checkPage(bitmap)
+        // We do this after super call to avoid taking unnecessary screenshots.
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
         when (currentPage) {
             else -> handleDialogs()
         }
@@ -56,40 +61,36 @@ class ChampionsMeeting(
     }
 
     override fun goToStart(): Boolean {
-        var dialogResult: DialogHandlerResult = handleDialogs()
-        while (dialogResult is DialogHandlerResult.Handled) {
-            dialogResult = handleDialogs()
-        }
-
-        if (dialogResult is DialogHandlerResult.Unhandled) {
-            MessageLog.e(TAG, "Unhandled dialog prevented plugin execution: ${dialogResult.dialog.name}")
-            return false
-        }
+        super.goToStart()
 
         if (!PageHome.check(game.imageUtils)) {
             MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
             return false
         }
 
-        if (!waitForButton(ButtonMenuBarRace)) {
+        if (waitForButton(ButtonMenuBarRace, bShouldClickButton = true) == null) {
             MessageLog.w(TAG, "Failed to find Race button on menu bar.")
             return false
         }
-
-        game.wait(0.5)
-        game.waitForLoading()
         
-        if (!waitForButton(ButtonRaceEvents)) {
+        if (waitForButton(ButtonRaceEvents, bShouldClickButton = true) == null) {
             MessageLog.w(TAG, "Failed to find Race Events button.")
             return false
         }
 
-        game.wait(0.5)
-        game.waitForLoading()
-
-        if (ButtonChampionsMeetingLocked.check(game.imageUtils)) {
-            MessageLog.i(TAG, "Champions Meeting is locked. Cannot proceed.")
-            return false
+        // TODO: Add normal champions meeting button
+        val button: BaseComponentInterface? = waitForButton(
+            listOf(ButtonChampionsMeetingLocked),
+        )
+        when (button) {
+            is ButtonChampionsMeetingLocked -> {
+                MessageLog.i(TAG, "Champions Meeting is locked. Cannot proceed.")
+                return false
+            }
+            else -> {
+                MessageLog.e(TAG, "NOT IMPLEMENTED")
+                return false
+            }
         }
 
         MessageLog.e(TAG, "NOT IMPLEMENTED")

@@ -13,6 +13,7 @@ import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 import com.steve1316.uma_android_automation.utils.ScrollList
 
+import com.steve1316.uma_android_automation.components.BaseComponentInterface
 import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageInterface
@@ -156,9 +157,13 @@ class DailyRaces(
     }
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
-        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+        val currentPage: PageInterface? = super.progress(bitmap)
+        if (currentPage == null) {
+            return null
+        }
 
-        val currentPage: PageInterface? = checkPage(bitmap)
+        // We do this after super call to avoid taking unnecessary screenshots.
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
         when (currentPage) {
             PageDailyRacesRaceSelection -> {
                 dailyRaceButton.click(game.imageUtils)
@@ -191,12 +196,11 @@ class DailyRaces(
             }
             else -> {
                 // Catch-all for various intermediate screens.
-                if (handleDialogs() !is DialogHandlerResult.Handled &&
-                    !ButtonSkip.click(game.imageUtils) &&
+                if (!ButtonSkip.click(game.imageUtils) &&
                     !ButtonNext.click(game.imageUtils) &&
                     !ButtonRaceExclamation.click(game.imageUtils)
                 ) {
-                    game.tap(350.0, 750.0, "ok", taps = 3)
+                    game.tap(350.0, 750.0, "ok", taps = 1)
                 }
             }
         }
@@ -205,15 +209,7 @@ class DailyRaces(
     }
 
     override fun goToStart(): Boolean {
-        var dialogResult: DialogHandlerResult = handleDialogs()
-        while (dialogResult is DialogHandlerResult.Handled) {
-            dialogResult = handleDialogs()
-        }
-
-        if (dialogResult is DialogHandlerResult.Unhandled) {
-            MessageLog.e(TAG, "Unhandled dialog prevented plugin execution: ${dialogResult.dialog.name}")
-            return false
-        }
+        super.goToStart()
 
         if (PageDailyRacesRaceSelection.check(game.imageUtils)) {
             return true
@@ -224,24 +220,28 @@ class DailyRaces(
             return false
         }
 
-        if (!waitForButton(ButtonMenuBarRace)) {
+        if (waitForButton(ButtonMenuBarRace, bShouldClickButton = true) == null) {
             MessageLog.w(TAG, "Failed to find Race button on menu bar.")
             return false
         }
 
-        game.wait(0.5)
-        game.waitForLoading()
-
-        if (ButtonDailyRacesLocked.check(game.imageUtils)) {
-            MessageLog.i(TAG, "Daily Races are locked. Cannot proceed.")
-            return false
+        val button: BaseComponentInterface? = waitForButton(
+            listOf(ButtonDailyRacesLocked, ButtonDailyRaces),
+        )
+        when (button) {
+            is ButtonDailyRacesLocked -> {
+                MessageLog.i(TAG, "Daily Races are locked. Cannot proceed.")
+                return false
+            }
+            is ButtonDailyRaces -> {
+                button.click(game.imageUtils)
+            }
+            else -> {
+                MessageLog.e(TAG, "Failed to find Daily Races button.")
+                return false
+            }
         }
-        
-        if (!waitForButton(ButtonDailyRaces)) {
-            MessageLog.w(TAG, "Failed to find Daily Races button.")
-            return false
-        }
 
-        return waitForPage(PageDailyRacesRaceSelection)
+        return waitForPage(PageDailyRacesRaceSelection) != null
     }
 }

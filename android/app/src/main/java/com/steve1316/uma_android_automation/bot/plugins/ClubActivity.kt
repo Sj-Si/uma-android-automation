@@ -12,6 +12,7 @@ import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 import com.steve1316.uma_android_automation.utils.ScrollList
 
+import com.steve1316.uma_android_automation.components.BaseComponentInterface
 import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageInterface
@@ -28,7 +29,13 @@ import com.steve1316.uma_android_automation.components.ButtonShoesMile
 import com.steve1316.uma_android_automation.components.ButtonShoesMedium
 import com.steve1316.uma_android_automation.components.ButtonShoesLong
 import com.steve1316.uma_android_automation.components.ButtonShoesDirt
-import com.steve1316.uma_android_automation.components.LabelClubIneligibleDonation
+
+import com.steve1316.uma_android_automation.components.ButtonDonateToAll0
+import com.steve1316.uma_android_automation.components.LabelItemRequestExpired
+import com.steve1316.uma_android_automation.components.LabelItemRequestCooldown
+import com.steve1316.uma_android_automation.components.LabelItemRequestMaxDonations
+import com.steve1316.uma_android_automation.components.LabelItemRequestSelectItem
+import com.steve1316.uma_android_automation.components.LabelItemRequestConfirm
 import com.steve1316.uma_android_automation.components.LabelCurrentItemRequestStatus
 
 enum class ShoeType {
@@ -57,7 +64,6 @@ class ClubActivity(
     private val clubRequestShoeType: ShoeType = ShoeType.fromName(clubRequestShoeTypeString)!!
     private val bShouldDonateItems: Boolean = SettingsHelper.getBooleanSetting("dailyTasks", "enableClubDonation")
 
-    private var bHasSelectedShoes: Boolean = false
     private var bHasRequestedItems: Boolean = false
     // If we arent supposed to donate, then we just say that it is already completed.
     private var bHasDonatedItems: Boolean = !bShouldDonateItems
@@ -82,36 +88,87 @@ class ClubActivity(
                 result.dialog.close(game.imageUtils)
                 bHasDonatedItems = true
             }
+            // No dialog.ok() for this dialog.
+            // See note in [Dialog.kt::DialogItemRequest].
             "item_request" -> {
                 val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
 
-                if (shoeButtons.values.all { it.check(game.imageUtils, sourceBitmap = bitmap) }) {
-                    val button: ComponentInterface = shoeButtons[clubRequestShoeType]!!
-                    button.click(game.imageUtils, sourceBitmap = bitmap)
-                    bHasSelectedShoes = true
+                val identifiers: List<ComponentInterface> = listOf(
+                    LabelCurrentItemRequestStatus,
+                    LabelItemRequestExpired,
+                    LabelItemRequestCooldown,
+                    LabelItemRequestMaxDonations,
+                    LabelItemRequestSelectItem,
+                    LabelItemRequestConfirm,
+                    ButtonDonateToAll0,
+                )
+                val identifier: ComponentInterface? = identifiers.firstOrNull {
+                    it.check(game.imageUtils, sourceBitmap = bitmap)
                 }
-
-                if (bHasSelectedShoes && ButtonConfirm.check(game.imageUtils)) {
-                    bHasRequestedItems = true
-                }
-
-                if (LabelCurrentItemRequestStatus.check(game.imageUtils)) {
-                    bHasSelectedShoes = true
-                    bHasRequestedItems = true
-                }
-
-                result.dialog.ok(game.imageUtils)
-                if (LabelClubIneligibleDonation.check(game.imageUtils, tries = 5)) {
-                    bHasDonatedItems = true
-                    result.dialog.close(game.imageUtils)
+                when (identifier) {
+                    is LabelCurrentItemRequestStatus -> {
+                        MessageLog.d(TAG, "[DIALOG] ${result.dialog.name}: Item request still active.")
+                        bHasRequestedItems = true
+                        result.dialog.close(game.imageUtils)
+                    }
+                    is LabelItemRequestExpired -> {
+                        MessageLog.d(TAG, "[DIALOG] ${result.dialog.name}: Item request expired.")
+                        result.dialog.close(game.imageUtils)
+                    }
+                    is LabelItemRequestCooldown -> {
+                        MessageLog.d(TAG, "[DIALOG] ${result.dialog.name}: It hasn't been 8 hours since last item request.")
+                        // Can't request items yet so we just treat this
+                        // as if we successfully requested items.
+                        bHasRequestedItems = true
+                        result.dialog.close(game.imageUtils)
+                    }
+                    is LabelItemRequestMaxDonations -> {
+                        MessageLog.d(TAG, "[DIALOG] ${result.dialog.name}: Max donations received.")
+                        // This dialog appears one time after receiving all
+                        // requested items.
+                        // This doesn't necessarily mean that we can't request
+                        // any more items at this time.
+                        // Thus we just close the dialog then proceed.
+                        result.dialog.close(game.imageUtils)
+                    }
+                    is LabelItemRequestSelectItem -> {
+                        MessageLog.d(TAG, "[DIALOG] ${result.dialog.name}: Selecting shoe to request.")
+                        val shoeButton: ComponentInterface = shoeButtons[clubRequestShoeType]!!
+                        shoeButton.click(game.imageUtils, sourceBitmap = bitmap)
+                        ButtonConfirm.click(game.imageUtils, sourceBitmap = bitmap)
+                    }
+                    is LabelItemRequestConfirm -> {
+                        MessageLog.d(TAG, "[DIALOG] ${result.dialog.name}: Confirming item request.")
+                        ButtonConfirm.click(game.imageUtils, sourceBitmap = bitmap)
+                        bHasRequestedItems = true
+                    }
+                    is ButtonDonateToAll0 -> {
+                        // If we can't donate anything, then just treat this as if we
+                        // finished donating and back out.
+                        if (ButtonDonateToAll0.checkDisabled(game.imageUtils, bitmap)) {
+                            MessageLog.d(TAG, "[DIALOG] ${result.dialog.name}: DonateToAll button is disabled.")
+                            bHasDonatedItems = true
+                            result.dialog.close(game.imageUtils)
+                        } else {
+                            MessageLog.d(TAG, "[DIALOG] ${result.dialog.name}: Clicking DonateToAll button.")
+                            ButtonDonateToAll0.click(game.imageUtils, sourceBitmap = bitmap)
+                        }
+                    }
+                    else -> MessageLog.w(TAG, "[DIALOG] ${result.dialog.name}: Could not determine which variant of this dialog is on screen.")
                 }
             }
             "item_request_error" -> {
                 if (ButtonHome.check(game.imageUtils)) {
                     result.dialog.close(game.imageUtils)
-                    game.waitForLoading()
-                    // We want to return to the club menu if we get this error.
-                    waitForButton(ButtonClub)
+                    // Handling this dialog sends us back to the home screen.
+                    if (waitForPage(PageHome) == null) {
+                        throw IllegalStateException("Failed to detect Home screen after handling item_request_error dialog.")
+                    }
+                    // We want to return to the club menu since we aren't
+                    // done with our tasks yet.
+                    if (!goToStart()) {
+                        throw IllegalStateException("Failed to go to club home page after handling item_request_error dialog.")
+                    }
                     return DialogHandlerResult.Handled(result.dialog)
                 }
                 result.dialog.close(game.imageUtils)
@@ -130,35 +187,31 @@ class ClubActivity(
     }
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
-        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+        val currentPage: PageInterface? = super.progress(bitmap)
+        if (currentPage == null) {
+            return null
+        }
 
-        val currentPage: PageInterface? = checkPage(bitmap)
+        // We do this after super call to avoid taking unnecessary screenshots.
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
         when (currentPage) {
             PageClubHome -> {
                 if (!bHasRequestedItems) {
-                    ButtonClubItemRequest.click(game.imageUtils)
+                    waitForButton(ButtonClubItemRequest, bShouldClickButton = true)
                 } else if (!bHasDonatedItems) {
-                    ButtonClubViewRequests.click(game.imageUtils)
+                    waitForButton(ButtonClubViewRequests, bShouldClickButton = true)
                 } else if (bHasRequestedItems && bHasDonatedItems) {
                     bIsComplete = true
                 }
             }
-            else -> handleDialogs()
+            else -> {}
         }
 
         return checkPage()
     }
 
     override fun goToStart(): Boolean {
-        var dialogResult: DialogHandlerResult = handleDialogs()
-        while (dialogResult is DialogHandlerResult.Handled) {
-            dialogResult = handleDialogs()
-        }
-
-        if (dialogResult is DialogHandlerResult.Unhandled) {
-            MessageLog.e(TAG, "Unhandled dialog prevented plugin execution: ${dialogResult.dialog.name}")
-            return false
-        }
+        super.goToStart()
 
         if (PageClubHome.check(game.imageUtils)) {
             return true
@@ -169,19 +222,23 @@ class ClubActivity(
             return false
         }
 
-        if (ButtonClubLocked.check(game.imageUtils)) {
-            MessageLog.i(TAG, "Club is locked. Cannot proceed.")
-            return false
+        val button: BaseComponentInterface? = waitForButton(
+            listOf(ButtonClubLocked, ButtonClub),
+        )
+        when (button) {
+            is ButtonClubLocked -> {
+                MessageLog.i(TAG, "Club is locked. Cannot proceed.")
+                return false
+            }
+            is ButtonClub -> {
+                button.click(game.imageUtils)
+            }
+            else -> {
+                MessageLog.e(TAG, "Failed to find Club button.")
+                return false
+            }
         }
 
-        if (!waitForButton(ButtonClub)) {
-            MessageLog.w(TAG, "Failed to find Club button.")
-            return false
-        }
-
-        game.wait(0.5)
-        game.waitForLoading()
-
-        return waitForPage(PageClubHome)
+        return waitForPage(PageClubHome) != null
     }
 }

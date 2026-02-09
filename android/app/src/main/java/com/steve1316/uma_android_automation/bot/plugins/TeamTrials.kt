@@ -13,6 +13,7 @@ import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 import com.steve1316.uma_android_automation.utils.ScrollList
 
+import com.steve1316.uma_android_automation.components.BaseComponentInterface
 import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageInterface
@@ -32,7 +33,7 @@ import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonMenuBarRace
 import com.steve1316.uma_android_automation.components.ButtonTeamTrialsTallying
 import com.steve1316.uma_android_automation.components.ButtonTeamTrials
-import com.steve1316.uma_android_automation.components.IconTeamTrialsOpponentSelectionLaurelRight
+import com.steve1316.uma_android_automation.components.IconTeamTrialsOpponentSelectionTeamRank
 import com.steve1316.uma_android_automation.components.IconPleasingParfait
 import com.steve1316.uma_android_automation.components.LabelTeamTrialsExtraRewardsOpponent
 
@@ -58,7 +59,7 @@ class TeamTrials(
         }
 
         // Otherwise always select the hardest opponent.
-        val locs: ArrayList<Point> = IconTeamTrialsOpponentSelectionLaurelRight.findAll(
+        val locs: ArrayList<Point> = IconTeamTrialsOpponentSelectionTeamRank.findAll(
             game.imageUtils,
             sourceBitmap = bitmap,
         )
@@ -70,7 +71,7 @@ class TeamTrials(
         game.tap(
             locs.first().x,
             locs.first().y,
-            IconTeamTrialsOpponentSelectionLaurelRight.template.path,
+            IconTeamTrialsOpponentSelectionTeamRank.template.path,
         )
         return true
     }
@@ -83,7 +84,6 @@ class TeamTrials(
 
         when (result.dialog.name) {
             "daily_sale" -> {
-                // TODO: Handle daily sales.
                 if (bShouldHandleDailySale) {
                     result.dialog.ok(game.imageUtils)
                     game.wait(0.5)
@@ -101,6 +101,9 @@ class TeamTrials(
                 result.dialog.ok(game.imageUtils)
                 // Reset this flag every time we handle this dialog.
                 bIsExtraRewards = false
+
+                game.wait(0.5)
+                game.waitForLoading()
             }
             "confirm_restore_rp" -> {
                 result.dialog.close(game.imageUtils)
@@ -129,9 +132,13 @@ class TeamTrials(
     }
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
-        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+        val currentPage: PageInterface? = super.progress(bitmap)
+        if (currentPage == null) {
+            return null
+        }
 
-        val currentPage: PageInterface? = checkPage(bitmap)
+        // We do this after super call to avoid taking unnecessary screenshots.
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
         when (currentPage) {
             PageTeamTrialsHome -> {
                 PageTeamTrialsHome.next(game.imageUtils, bitmap)
@@ -142,85 +149,99 @@ class TeamTrials(
                     MessageLog.e(TAG, "progress: Failed to select opponent.")
                     return checkPage()
                 }
+                waitForPage(PageTeamTrialsPreRace)
             }
             PageTeamTrialsPreRace -> {
-                bIsExtraRewards = LabelTeamTrialsExtraRewardsOpponent.check(game.imageUtils, tries=10)
+                bIsExtraRewards = LabelTeamTrialsExtraRewardsOpponent.check(game.imageUtils, tries = 5)
+                // This Next button will open a dialog.
                 PageTeamTrialsPreRace.next(game.imageUtils, bitmap)
             }
             PageTeamTrialsRaceQuickModeOff -> {
                 ButtonTeamTrialsQuickModeOff.click(game.imageUtils, sourceBitmap = bitmap)
+                waitForPage(PageTeamTrialsRaceQuickModeOn)
             }
             PageTeamTrialsRaceQuickModeOn -> {
                 PageTeamTrialsRaceQuickModeOn.next(game.imageUtils, bitmap)
+                waitForButton(ButtonSkip, bShouldClickButton = true)
+                waitForPage(PageTeamTrialsRaceFinished)
             }
             PageTeamTrialsRaceFinished -> {
                 PageTeamTrialsRaceFinished.next(game.imageUtils, bitmap)
+                waitForPage(
+                    listOf(PageTeamTrialsPreRaceResults, PageTeamTrialsRaceResults),
+                    bShouldTapWhileWaiting = true,
+                )
             }
             PageTeamTrialsPreRaceResults -> {
                 PageTeamTrialsPreRaceResults.next(game.imageUtils, bitmap)
+                waitForPage(PageTeamTrialsRaceResults, bShouldTapWhileWaiting = true)
             }
             PageTeamTrialsRaceResults -> {
                 if (bIsComplete) {
-                    PageTeamTrialsRaceResults.next(game.imageUtils)
+                    PageTeamTrialsRaceResults.next(game.imageUtils, bitmap)
+                    waitForPage(PageTeamTrialsHome)
                 } else {
+                    // Clicking RaceAgain can either pop up the Out of RP dialog,
+                    // or bring us to the Select Opponent page.
+                    // We don't want to wait for the Select Opponents page since
+                    // if the dialog pops up, then we'll be stuck waiting for a
+                    // page that won't exist.
                     ButtonRaceAgain.click(game.imageUtils)
                 }
             }
             else -> {
-                if (handleDialogs() !is DialogHandlerResult.Handled &&
+                // Try and catch any other intermediate overlays or buttons
+                // that may pop up. If none are caught, then just click the screen
+                // to progress to next screens.
+                if (
                     !ButtonSkip.click(game.imageUtils) &&
                     !ButtonNext.click(game.imageUtils)
                 ) {
-                    game.tap(350.0, 750.0, "ok", taps = 3)
+                    game.tap(350.0, 750.0, "ok", taps = 1)
                 }
             }
-        }
-
-        if (bIsComplete) {
-            PageTeamTrialsRaceResults.next(game.imageUtils)
         }
 
         return checkPage()
     }
 
-    override fun goToStart(): Boolean {
-        var dialogResult: DialogHandlerResult = handleDialogs()
-        while (dialogResult is DialogHandlerResult.Handled) {
-            dialogResult = handleDialogs()
+    override fun goToHome(): Boolean {
+        if (PageTeamTrialsRaceResults.check(game.imageUtils)) {
+            PageTeamTrialsRaceResults.next(game.imageUtils)
         }
 
-        if (dialogResult is DialogHandlerResult.Unhandled) {
-            MessageLog.e(TAG, "Unhandled dialog prevented plugin execution: ${dialogResult.dialog.name}")
-            return false
-        }
+        return super.goToHome()
+    }
+
+    override fun goToStart(): Boolean {
+        super.goToStart()
 
         if (PageTeamTrialsHome.check(game.imageUtils)) {
             return true
         }
 
-        if (!PageHome.check(game.imageUtils)) {
-            MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
-            return false
-        }
-
-        if (!waitForButton(ButtonMenuBarRace)) {
+        if (waitForButton(ButtonMenuBarRace, bShouldClickButton = true) == null) {
             MessageLog.w(TAG, "Failed to find Race button on menu bar.")
             return false
         }
 
-        game.wait(0.5)
-        game.waitForLoading()
-
-        if (ButtonTeamTrialsTallying.check(game.imageUtils)) {
-            MessageLog.i(TAG, "Team Trials are tallying. Cannot proceed.")
-            return false
+        val button: BaseComponentInterface? = waitForButton(
+            listOf(ButtonTeamTrials, ButtonTeamTrialsTallying),
+        )
+        when (button) {
+            is ButtonTeamTrialsTallying -> {
+                MessageLog.i(TAG, "Team Trials are tallying. Cannot proceed.")
+                return false
+            }
+            is ButtonTeamTrials -> {
+                button.click(game.imageUtils)
+            }
+            else -> {
+                MessageLog.e(TAG, "Failed to find Team Trials button.")
+                return false
+            }
         }
-        
-        if (!waitForButton(ButtonTeamTrials)) {
-            MessageLog.w(TAG, "Failed to find Team Trials button.")
-            return false
-        }
 
-        return waitForPage(PageTeamTrialsHome)
+        return waitForPage(PageTeamTrialsHome) != null
     }
 }

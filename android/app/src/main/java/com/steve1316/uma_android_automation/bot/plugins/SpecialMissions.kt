@@ -149,9 +149,13 @@ class SpecialMissions(
     }
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
-        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
+        val currentPage: PageInterface? = super.progress(bitmap)
+        if (currentPage == null) {
+            return null
+        }
 
-        val currentPage: PageInterface? = checkPage(bitmap)
+        // We do this after super call to avoid taking unnecessary screenshots.
+        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
         when (currentPage) {
             PageSpecialMissions -> {
                 if (!bHasHandledSpecialMissions) {
@@ -171,7 +175,7 @@ class SpecialMissions(
                     handleDialogs()
                 }
             }
-            else -> handleDialogs()
+            else -> {}
         }
 
         bIsComplete = bHasHandledSpecialMissions &&
@@ -186,15 +190,7 @@ class SpecialMissions(
     }
 
      override fun goToStart(): Boolean {
-        var dialogResult: DialogHandlerResult = handleDialogs()
-        while (dialogResult is DialogHandlerResult.Handled) {
-            dialogResult = handleDialogs()
-        }
-
-        if (dialogResult is DialogHandlerResult.Unhandled) {
-            MessageLog.e(TAG, "Unhandled dialog prevented plugin execution: ${dialogResult.dialog.name}")
-            return false
-        }
+        super.goToStart()
 
         if (PageSpecialMissions.check(game.imageUtils)) {
             return true
@@ -205,14 +201,11 @@ class SpecialMissions(
             return false
         }
 
-        if (!waitForButton(ButtonHomeSpecialMissions)) {
+        if (waitForButton(ButtonHomeSpecialMissions, bShouldClickButton = true) == null) {
             MessageLog.w(TAG, "Failed to find Special Missions button.")
             return false
         }
 
-        game.wait(0.5)
-        game.waitForLoading()
-
-        return waitForPage(PageSpecialMissions)
+        return waitForPage(PageSpecialMissions) != null
     }
 }

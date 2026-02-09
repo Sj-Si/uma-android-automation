@@ -50,22 +50,14 @@ class Presents(
     }
 
     override fun goToStart(): Boolean {
-        var dialogResult: DialogHandlerResult = handleDialogs()
-        while (dialogResult is DialogHandlerResult.Handled) {
-            dialogResult = handleDialogs()
-        }
-
-        if (dialogResult is DialogHandlerResult.Unhandled) {
-            MessageLog.e(TAG, "Unhandled dialog prevented plugin execution: ${dialogResult.dialog.name}")
-            return false
-        }
+        super.goToStart()
 
         if (!PageHome.check(game.imageUtils)) {
             MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
             return false
         }
 
-        if (!waitForButton(ButtonHomePresents, bShouldClickButton = false)) {
+        if (waitForButton(ButtonHomePresents) == null) {
             MessageLog.w(TAG, "Failed to find Presents button at home screen.")
             return false
         }

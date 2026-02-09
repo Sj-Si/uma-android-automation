@@ -82,39 +82,28 @@ class DailySale(
     }
 
     override fun goToStart(): Boolean {
-        var dialogResult: DialogHandlerResult = handleDialogs()
-        while (dialogResult is DialogHandlerResult.Handled) {
-            dialogResult = handleDialogs()
-        }
-
-        if (dialogResult is DialogHandlerResult.Unhandled) {
-            MessageLog.e(TAG, "Unhandled dialog prevented plugin execution: ${dialogResult.dialog.name}")
-            return false
-        }
+        super.goToStart()
 
         if (PageDailySale.check(game.imageUtils)) {
             return true
         }
 
         if (!PageHome.check(game.imageUtils)) {
-            MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
+            MessageLog.w(TAG, "Not at home screen. Cannot proceed.")
             return false
         }
 
-        if (!ButtonHomeShopDailySale.click(game.imageUtils)) {
+        if (waitForButton(ButtonHomeShopDailySale, bShouldClickButton = true) == null) {
             MessageLog.i(TAG, "No daily sale available. Cannot proceed.")
             return false
         }
 
-        if (!waitForButton(ButtonShopDailySales)) {
-            MessageLog.w(TAG, "No daily sale available. Cannot proceed.")
+        if (waitForButton(ButtonShopDailySales, bShouldClickButton = true) == null) {
+            MessageLog.w(TAG, "No daily sale available in shop. Cannot proceed.")
             return false
         }
 
-        game.wait(0.5)
-        game.waitForLoading()
-
-        return waitForPage(PageDailySale)
+        return waitForPage(PageDailySale) != null
     }
 
     private fun onListEntry(
@@ -223,15 +212,21 @@ class DailySale(
         scrollList.process(onEntry = ::onListEntry)
 
         if (!bSaleExpired) {
-            ButtonShopEndSale.click(game.imageUtils, tries = 10)
+            if (waitForButton(ButtonShopEndSale, bShouldClickButton = true) == null) {
+                MessageLog.e(TAG, "[DAILY_SALE] Failed to find End Sale button.")
+                return false
+            }
             handleDialogs()
-            game.wait(0.5)
-            game.waitForLoading()
         }
-        game.wait(0.5)
-        ButtonBack.click(game.imageUtils)
+
+        waitForButton(ButtonBack, bShouldClickButton = true)
+
+        // Allow the game to load. We don't know where the Back button will take
+        // us since we may have come here via a dialog so we need to ensure that
+        // we are back where we came from before returning to the calling function.
         game.wait(0.5)
         game.waitForLoading()
+
         return true
     }
 }
