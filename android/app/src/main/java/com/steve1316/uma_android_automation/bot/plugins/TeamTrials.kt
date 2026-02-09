@@ -135,9 +135,10 @@ class TeamTrials(
         when (currentPage) {
             PageTeamTrialsHome -> {
                 PageTeamTrialsHome.next(game.imageUtils, bitmap)
+                waitForPage(PageTeamTrialsSelectOpponent)
             }
             PageTeamTrialsSelectOpponent -> {
-                if (!handleSelectOpponent()) {
+                if (!handleSelectOpponent(bitmap)) {
                     MessageLog.e(TAG, "progress: Failed to select opponent.")
                     return checkPage()
                 }

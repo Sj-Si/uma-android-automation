@@ -19,7 +19,6 @@ sealed class DialogHandlerResult {
     data class Handled(val dialog: DialogInterface) : DialogHandlerResult()
     data class Unhandled(val dialog: DialogInterface) : DialogHandlerResult()
     data object NoDialogDetected : DialogHandlerResult()
-    data class Error(val message: String) : DialogHandlerResult()
 }
 
 typealias DialogHandlerCallback = (DialogInterface?) -> DialogHandlerResult
@@ -68,19 +67,22 @@ abstract class Plugin(
         bShouldTapWhileWaiting: Boolean = false,
     ): Boolean {
         val startTime = System.currentTimeMillis()
-        var result: Boolean = false
         while (System.currentTimeMillis() - startTime < timeoutMs) {
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
-            if (pages.any { it.check(game.imageUtils, bitmap) }) {
-                result = true
-                break
-            }
-            if (bShouldTapWhileWaiting) {
-                game.tap(350.0, 750.0, "ok", taps = 3)
+            when {
+                // If we detect any of the screens, then we're done here.
+                pages.any { it.check(game.imageUtils, bitmap) } -> return true
+                // If we failed to handle a dialog then we're stuck on this page.
+                handleDialogs() == DialogHandlerResult.Unhandled -> return false
+                // Handle any overlay screen buttons.
+                // i.e. Rewards, Tutorials, etc.
+                ButtonNext.click(game.imageUtils, sourceBitmap = bitmap) -> {}
+                ButtonClose.click(game.imageUtils, sourceBitmap = bitmap) -> {}
+                // Otherwise, tap the screen to progress past any intermediate screens.
+                bShouldTapWhileWaiting -> game.tap(350.0, 750.0, "ok", taps = 1)
             }
         }
-        checkPage()
-        return result
+        return false
     }
 
     fun waitForPage(
@@ -99,17 +101,16 @@ abstract class Plugin(
     ): Boolean {
         val startTime = System.currentTimeMillis()
         while (System.currentTimeMillis() - startTime < timeoutMs) {
-            if (bShouldClickButton) {
-                if (button.click(game.imageUtils)) {
-                    return true
-                }
-            } else {
-                if (button.check(game.imageUtils)) {
-                    return true
-                }
-            }
-            if (bShouldTapWhileWaiting) {
-                game.tap(350.0, 750.0, "ok", taps = 3)
+            when {
+                bShouldClickButton && button.click(game.imageUtils) -> return true
+                !bShouldClickButton && button.check(game.imageUtils) -> return true
+                // If we failed to handle a dialog then we're stuck on this page.
+                handleDialogs() == DialogHandlerResult.Unhandled -> return false
+                // Handle any overlay screen buttons.
+                // i.e. Rewards, Tutorials, etc.
+                ButtonNext.click(game.imageUtils, sourceBitmap = bitmap) -> {}
+                ButtonClose.click(game.imageUtils, sourceBitmap = bitmap) -> {}
+                bShouldTapWhileWaiting -> game.tap(350.0, 750.0, "ok", taps = 1)
             }
         }
         return false
