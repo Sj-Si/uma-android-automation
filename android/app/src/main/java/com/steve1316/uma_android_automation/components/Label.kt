@@ -135,11 +135,6 @@ object LabelTeamTrialsExtraRewardsOpponent : ComponentInterface {
     override val template = Template("components/label/team_trials_extra_reward_opponent", region = Region.rightHalf)
 }
 
-object LabelClubIneligibleDonation : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]LabelClubIneligibleDonation"
-    override val template = Template("components/label/club_ineligible_donation", region = Region.middle)
-}
-
 object LabelCurrentItemRequestStatus : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]LabelCurrentItemRequestStatus"
     override val template = Template("components/label/current_item_request_status", region = Region.topHalf)
@@ -148,4 +143,29 @@ object LabelCurrentItemRequestStatus : ComponentInterface {
 object LabelNone : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]LabelNone"
     override val template = Template("components/label/none", region = Region.middle)
+}
+
+object LabelItemRequestExpired : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelItemRequestExpired"
+    override val template = Template("components/label/the_item_request_has_expired", region = Region.bottomHalf)
+}
+
+object LabelItemRequestCooldown : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelItemRequestCooldown"
+    override val template = Template("components/label/it_hasnt_been_8_hours_since_your_last_request", region = Region.middle)
+}
+
+object LabelItemRequestMaxDonations : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelItemRequestMaxDonations"
+    override val template = Template("components/label/the_item_request_ended_because_it_reached_max_donations", region = Region.bottomHalf)
+}
+
+object LabelItemRequestSelectItem : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelItemRequestSelectItem"
+    override val template = Template("components/label/select_an_item_to_request", region = Region.bottomHalf)
+}
+
+object LabelItemRequestConfirm : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelItemRequestConfirm"
+    override val template = Template("components/label/ask_for_donations_of_the_selected_item", region = Region.middle)
 }
