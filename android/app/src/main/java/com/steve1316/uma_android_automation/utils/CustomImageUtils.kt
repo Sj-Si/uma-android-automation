@@ -2413,4 +2413,195 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 
 		return result
 	}
+
+    /** Converts ConvexHull indices to actual points.
+     *
+     * @param contour The contour to apply this translation to.
+     * @param hullIndices The indices to convert.
+     *
+     * @return The MatOfPoint containing the converted points.
+     */
+    private fun getHullFromIndices(
+        contour: MatOfPoint,
+        hullIndices: MatOfInt,
+    ): MatOfPoint {
+        val points = contour.toArray()
+        val hullPoints = hullIndices.toArray().map { points[it] }
+        return MatOfPoint(*hullPoints.toTypedArray())
+    }
+
+    /** Detects rectangles with rounded corners on the screen.
+     *
+     * This uses traditional image processing algorithms to detect
+     * all rectangles with rounded corners on the screen.
+     *
+     * For this to work, the rectangle must either have an outline or
+     * be easily differentiable from the background color. Play around with
+     * the `src/data/imageDetection.py` test script to see what parameters
+     * work best for the items you're trying to detect.
+     *
+     * @param bitmap Optional bitmap containing the rectangles you want to detect.
+     * If NULL, then a screenshot will be used.
+     * @param region A bounding box region to limit the detection to.
+     * If not specified, then the entire bitmap will be used.
+     * @param minArea Filters out any rectangles with an area smaller than this parameter.
+     * If not specified, then no lower bound filter will be applied.
+     * @param maxArea Filters out any rectangles with an area larger than this parameter.
+     * If not specified, then no upper bound filter will be applied.
+     * @param epsilonScalar A small value used to scale the detection of rounded
+     * corners on the rectangles. Defaults to 0.02 which works in most cases.
+     * @param cannyLowerThreshold First threshold for hysteresis procedure for
+     * Canny edge detection. Not applicable if [bUseAdaptiveThreshold] is enabled.
+     * @param cannyUpperThreshold Second threshold for hysteresis procedure for
+     * Canny edge detection. Not applicable if [bUseAdaptiveThreshold] is enabled.
+     * @param blurSize The size of the kernel to use for the gaussian blur.
+     * Must be a positive and odd integer. A value of 1 will effectively be no blur.
+     * @param bUseAdaptiveThreshold Whether to use an adaptive threshold instead
+     * of Canny edge detection. Can provide better results in some cases.
+     * @param adaptiveThresholdBlockSize The size of a pixel neighborhood that is used
+     * to calculate the threshold value. Must be an odd integer with a value of
+     * 3 or higher.
+     * @param adaptiveThresholdConstant A constant that is subtracted from the mean
+     * or weighted mean. Can be any real number.
+     *
+     * @return A list of BoundingBox objects for detected rectangles, sorted by their
+     * y-position in the bitmap (from top to bottom on screen).
+     */
+    fun detectRoundedRectangles(
+        bitmap: Bitmap? = null,
+        region: BoundingBox? = null,
+        minArea: Int? = null,
+        maxArea: Int? = null,
+        blurSize: Int = 5,
+        epsilonScalar: Double = 0.02,
+        cannyLowerThreshold: Int = 30,
+        cannyUpperThreshold: Int = 50,
+        bUseAdaptiveThreshold: Boolean = false,
+        adaptiveThresholdBlockSize: Int = 11,
+        adaptiveThresholdConstant: Double = 2.0,
+    ): List<BoundingBox> {
+        val bitmap: Bitmap = if (region == null) {
+            bitmap ?: getSourceBitmap()
+        } else if (bitmap == null) {
+            getRegionBitmap(region)
+        } else {
+            createSafeBitmap(bitmap, region, "detectRoundedRectangles") ?: getSourceBitmap()
+        }
+
+        // Input sanitization
+
+        val cannyLowerThreshold: Double = cannyLowerThreshold.coerceIn(0, 255).toDouble()
+        val cannyUpperThreshold: Double = cannyUpperThreshold.coerceIn(0, 255).toDouble()
+
+        val screenArea: Int = SharedData.displayWidth * SharedData.displayHeight
+        val minArea: Int = (minArea ?: 0).coerceIn(0, screenArea)
+        val maxArea: Int = (maxArea ?: screenArea).coerceIn(minArea, screenArea)
+
+        if (minArea > maxArea) {
+            throw IllegalArgumentException("minArea ($minArea) > maxArea ($maxArea)")
+        }
+
+        if (blurSize <= 0 || blurSize % 2 == 0) {
+            throw IllegalArgumentException("blurSize must be a positive odd integer. Got: $blurSize.")
+        }
+
+        val blurKernel = Size(blurSize.toDouble(), blurSize.toDouble())
+
+        val result: MutableList<BoundingBox> = mutableListOf()
+
+        val srcImage = Mat()
+		Utils.bitmapToMat(bitmap, srcImage)
+
+        val image = Mat()
+        Imgproc.cvtColor(srcImage, image, Imgproc.COLOR_BGR2GRAY)
+        Imgproc.GaussianBlur(image, image, blurKernel, 0.0)
+        if (bUseAdaptiveThreshold) {
+            Imgproc.adaptiveThreshold(
+                image,
+                image,
+                255.0, // maxValue
+                Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C,
+                Imgproc.THRESH_BINARY_INV,
+                adaptiveThresholdBlockSize, // blockSize (must be odd)
+                adaptiveThresholdConstant, // C (constant to subtract)
+            )
+        } else {
+            Imgproc.Canny(
+                image,
+                image,
+                cannyLowerThreshold,
+                cannyUpperThreshold,
+                3,
+                false,
+            )
+        }
+
+        if (debugMode) {
+            val resultBitmap = createBitmap(image.cols(), image.rows())
+            Utils.matToBitmap(image, resultBitmap)
+            saveBitmap(resultBitmap, "detectRoundedRectangles_canny", fullRes = true)
+        }
+
+        val contours: MutableList<MatOfPoint> = mutableListOf()
+        val hierarchy = Mat()
+        Imgproc.findContours(
+            image,
+            contours,
+            hierarchy,
+            Imgproc.RETR_EXTERNAL,
+            Imgproc.CHAIN_APPROX_SIMPLE,
+        )
+
+        for (cnt in contours) {
+            val area = Imgproc.contourArea(cnt)
+
+            // Filter out contours with invalid areas.
+            if (area < minArea || area > maxArea) {
+                continue
+            }
+
+            // Use convex hull to ignore rounded corners.
+            val hullPoints = MatOfInt()
+            Imgproc.convexHull(cnt, hullPoints)
+            // Convert hull indices back to MatOfPoint
+            val hullContour = getHullFromIndices(cnt, hullPoints)
+
+            // Approximate shape.
+            val approx = MatOfPoint2f()
+            val cnt2f = MatOfPoint2f(*hullContour.toArray())
+            val peri = Imgproc.arcLength(cnt2f, true)
+            Imgproc.approxPolyDP(cnt2f, approx, epsilonScalar * peri, true)
+
+            // Check for four vertices.
+            if (approx.total() == 4L) {
+                val rect = Imgproc.boundingRect(cnt)
+                if (debugMode) {
+                    Imgproc.rectangle(srcImage, rect.tl(), rect.br(), Scalar(0.0, 255.0, 0.0), 2)
+                }
+                result.add(BoundingBox(rect.x, rect.y, rect.width, rect.height))
+            }
+
+            // Free memory for each mat.
+            hullPoints.release()
+            hullContour.release()
+            approx.release()
+            cnt2f.release()
+        }
+
+        if (debugMode) {
+            val resultBitmap = createBitmap(srcImage.cols(), srcImage.rows())
+            Imgproc.cvtColor(srcImage, srcImage, Imgproc.COLOR_BGR2RGB)
+            Utils.matToBitmap(srcImage, resultBitmap)
+            saveBitmap(resultBitmap, "detectRoundedRectangles", fullRes = true)
+        }
+
+        // Free memory for each mat.
+        contours.forEach { it.release() }
+        contours.clear()
+        hierarchy.release()
+        image.release()
+        srcImage.release()
+
+        return result.toList()
+    }
 }
