@@ -300,6 +300,20 @@ interface ComponentInterface: BaseComponentInterface {
         tap(point.x, point.y, template.path, taps=taps)
         return true
     }
+
+    /** Whether the component is in its disabled state.
+     *
+     * Not all components have a disabled state, so there is no need to override
+     * this function in most cases.
+     *
+     * @param imageUtils A reference to a CustomImageUtils instance.
+     * @param sourceBitmap The source bitmap to search within.
+     *
+     * @return Whether this component is currently disabled.
+     */
+    fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap? = null): Boolean {
+        return false
+    }
 }
 
 /** Defines a component which has multiple templates.

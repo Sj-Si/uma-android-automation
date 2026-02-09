@@ -12,10 +12,14 @@
 
 package com.steve1316.uma_android_automation.components
 
+import android.graphics.Bitmap
+import org.opencv.core.Point
+
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.Template
 import com.steve1316.uma_android_automation.components.Region
+import com.steve1316.uma_android_automation.utils.CustomImageUtils
 
 object ButtonAgenda : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonAgenda"
@@ -402,6 +406,24 @@ object ButtonClubViewRequests : ComponentInterface {
 object ButtonDonateToAll0 : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonDonateToAll0"
     override val template = Template("components/button/donate_to_all_0")
+
+    override fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap?): Boolean {
+        val sourceBitmap: Bitmap = sourceBitmap ?: imageUtils.getSourceBitmap()
+        // Check color toward the left of the button's bitmap region.
+        val templateBitmap: Bitmap = template.getBitmap(imageUtils)!!
+        val point: Point? = findImageWithBitmap(imageUtils, sourceBitmap = sourceBitmap)
+        if (point == null) {
+            return false
+        }
+        // Get an x-value slightly offset from the left edge. This is a region
+        // where there isn't any text so we know it will be a solid color.
+        val x: Int = (
+            (point.x - (templateBitmap.width / 2.0)) +
+            (templateBitmap.width * 0.1)
+        ).toInt()
+        val y: Int = point.y.toInt()
+        return imageUtils.checkColorAtCoordinates(x, y, intArrayOf(154, 151, 159))
+    }
 }
 
 object ButtonDonateToAll1 : ComponentInterface {
