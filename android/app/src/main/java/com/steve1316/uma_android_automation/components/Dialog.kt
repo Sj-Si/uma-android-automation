@@ -963,80 +963,38 @@ object DialogItemExchangeExpired : DialogInterface {
     )
 }
 
+/**
+ * This dialog has many variants.
+ * We cannot handle any of the OK buttons due to the complexity.
+ * Thus the logic for handling this dialog must be done by the dialog handler.
+ */
 object DialogItemRequest : DialogInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]DialogItemRequest"
     override val name: String = "item_request"
     override val title: String = "Item Request"
     override val closeButton = null
     override val okButton: ComponentInterface? = null
-    override val buttons: List<ComponentInterface> = listOf(
-        ButtonClose,
-        ButtonOk,
-        ButtonDonateToAll0,
-        ButtonCancel,
-        ButtonConfirm,
-        ButtonShoesSprint,
-        ButtonShoesMile,
-        ButtonShoesMedium,
-        ButtonShoesLong,
-        ButtonShoesDirt,
-    )
+    override val buttons: List<ComponentInterface> = listOf()
 
-    // This dialog is unique in that there are five variants of it.
-    override fun ok(imageUtils: CustomImageUtils, tries: Int): Boolean {
-        val bitmap: Bitmap = imageUtils.getSourceBitmap()
-
-        // The order of these versions matters.
-
-        // Select the item to request.
-        val v1: List<ComponentInterface> = listOf(
-            ButtonCancel,
-            ButtonConfirm,
-            ButtonShoesSprint,
-            ButtonShoesMile,
-            ButtonShoesMedium,
-            ButtonShoesLong,
-            ButtonShoesDirt,
-        )
-        // Confirmation after selecting item you want to request.
-        val v2: List<ComponentInterface> = listOf(ButtonCancel, ButtonConfirm)
-        // Donate to club members.
-        val v3: List<ComponentInterface> = listOf(ButtonClose, ButtonDonateToAll0)
-        // Shows the total items received.
-        val v4: List<ComponentInterface> = listOf(ButtonClose)
-        // "It hasn't been 8 hours since your last request."
-        // Replaces the dialog that shows items received after you've received
-        // all requested items.
-        val v5: List<ComponentInterface> = listOf(ButtonClose)
-
-        when {
-            v1.all { it.check(imageUtils, sourceBitmap = bitmap) } -> {
-                return ButtonConfirm.click(imageUtils, sourceBitmap = bitmap)
-            }
-            v2.all { it.check(imageUtils, sourceBitmap = bitmap) } -> {
-                return ButtonConfirm.click(imageUtils, sourceBitmap = bitmap)
-            }
-            v3.all { it.check(imageUtils, sourceBitmap = bitmap) } -> {
-                return ButtonDonateToAll0.click(imageUtils, sourceBitmap = bitmap)
-            }
-            v4.all { it.check(imageUtils, sourceBitmap = bitmap) } -> {
-                return ButtonClose.click(imageUtils, sourceBitmap = bitmap)
-            }
-            v5.all { it.check(imageUtils, sourceBitmap = bitmap) } -> {
-                return ButtonClose.click(imageUtils, sourceBitmap = bitmap)
-            }
-            else -> return false
-        }
-    }
-
-    // This dialog is unique in that there are two versions for its close button.
     override fun close(imageUtils: CustomImageUtils, tries: Int): Boolean {
         val bitmap: Bitmap = imageUtils.getSourceBitmap()
-        if (ButtonClose.click(imageUtils, sourceBitmap = bitmap)) {
-            return true
+        val buttons: List<ComponentInterface> = listOf(
+            ButtonClose,
+            ButtonCancel,
+            ButtonOk,
+        )
+        val button: ComponentInterface? = buttons.firstOrNull {
+            it.check(imageUtils, sourceBitmap = bitmap)
+        }
+        if (button == null) {
+            return false
         }
 
-        return ButtonCancel.click(imageUtils, sourceBitmap = bitmap)
+        return button.click(imageUtils, sourceBitmap = bitmap)
+    }
+
+    override fun ok(imageUtils: CustomImageUtils, tries: Int): Boolean {
+        return false
     }
 }
 
