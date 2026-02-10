@@ -299,7 +299,13 @@ abstract class Plugin(
     open fun goToHome(): Boolean {
         waitForButton(ButtonMenuBarHome, bShouldClickButton = true)
         ButtonMenuBarHome.click(game.imageUtils)
-        return waitForPage(PageHome) != null
+        val res: Boolean = waitForPage(PageHome) != null
+        if (res) {
+            // Small delay to ensure that home elements are interactive
+            // by the time we return from this function.
+            game.wait(0.5)
+        }
+        return res
     }
 
     open fun start(timeoutMs: Int = 60000 * 5): Boolean {

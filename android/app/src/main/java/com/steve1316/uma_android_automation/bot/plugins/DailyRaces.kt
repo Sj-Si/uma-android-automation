@@ -126,13 +126,15 @@ class DailyRaces(
                     ButtonDailyRacesMultiRaceOn.checkDisabled(game.imageUtils)
                 ) {
                     result.dialog.ok(game.imageUtils)
+                    game.wait(0.5)
+                    game.waitForLoading()
                     return DialogHandlerResult.Handled(result.dialog)
                 }
                 
                 ButtonDailyRacesMultiRaceOff.click(game.imageUtils)
-                // Small delay to ensure the button click was registered.
-                game.wait(0.5, skipWaitingForLoading = true)
                 result.dialog.ok(game.imageUtils)
+                game.wait(0.5)
+                game.waitForLoading()
             }
             "race_results" -> result.dialog.ok(game.imageUtils)
             else -> return DialogHandlerResult.Unhandled(result.dialog)

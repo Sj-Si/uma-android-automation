@@ -196,6 +196,9 @@ class ClubActivity(
                     waitForButton(ButtonClubItemRequest, bShouldClickButton = true)
                 } else if (!bHasDonatedItems) {
                     waitForButton(ButtonClubViewRequests, bShouldClickButton = true)
+                    // After timing out, we can assume that this button just doesn't
+                    // exist meaning there are no available requests.
+                    bHasDonatedItems = true
                 } else if (bHasRequestedItems && bHasDonatedItems) {
                     bIsComplete = true
                 }
