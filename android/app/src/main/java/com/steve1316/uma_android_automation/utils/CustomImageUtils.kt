@@ -35,6 +35,7 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.math.sqrt
 import kotlin.text.replace
+import kotlin.random.Random
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -2603,5 +2604,54 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
         srcImage.release()
 
         return result.toList()
+    }
+
+    fun getLuminanceAtCoordinates(x: Int, y: Int, bitmap: Bitmap? = null): Double {
+        val bitmap: Bitmap = bitmap ?: getSourceBitmap()
+        val pixel = bitmap.getPixel(x, y)
+        val r = Color.red(pixel)
+        val g = Color.green(pixel)
+        val b = Color.blue(pixel)
+        val luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0
+        return luminance
+    }
+
+    fun compareBitmapLuminance(
+        a: Bitmap,
+        b: Bitmap,
+        samples: Int = 100,
+        tolerance: Double = 0.05,
+    ): Int {
+        if (a.width != b.width || a.height != b.height) {
+            return 0
+        }
+
+        var lumA: Double = 0.0
+        var lumB: Double = 0.0
+
+        // Clamp number of samples based on bitmap size.
+        val samples: Int = minOf(samples, a.width * a.height)
+
+        for (i in 0 until samples) {
+            // We want to sample at the same coordinates for each bitmap.
+            val x = Random.nextInt(0, a.width)
+            val y = Random.nextInt(0, a.height)
+
+            lumA += getLuminanceAtCoordinates(x, y, a)
+            lumB += getLuminanceAtCoordinates(x, y, b)
+        }
+
+        lumA /= samples
+        lumB /= samples
+
+        MessageLog.e("REMOVEME", "compareLuminance: $lumA vs $lumB")
+
+        return if (lumA < lumB - tolerance) {
+            return 1
+        } else if (lumB < lumA - tolerance) {
+            return -1
+        } else {
+            return 0
+        }
     }
 }

@@ -16,6 +16,8 @@ import com.steve1316.uma_android_automation.utils.CustomImageUtils
 
 import com.steve1316.automation_library.data.SharedData
 
+import com.steve1316.automation_library.utils.MessageLog // REMOVEME
+
 /** Defines various screen regions.
  *
  * Used to refine search areas during OCR for performance.
@@ -169,6 +171,31 @@ interface BaseComponentInterface {
     fun tap(x: Double, y: Double, imageName: String? = null, taps: Int = 1) {
         MyAccessibilityService.getInstance().tap(x, y, imageName, taps=taps)
     }
+
+    /** Whether the component is in its disabled state.
+     *
+     * Not all components have a disabled state, so there is no need to override
+     * this function in most cases.
+     *
+     * The base implementation simply compares the luminance between the template
+     * and the detected bitmap on screen. If the luminance between the two is not
+     * within a small threshold, then we return false.
+     *
+     * NOTE: Not all components are just darkened when disabled.
+     * For example, in the shop, the Exchange button when disabled is not just
+     * a grayscale version of the enabled button. Thus we are unable to detect
+     * both states of this button with a single template.
+     *
+     * @param imageUtils A reference to a CustomImageUtils instance.
+     * @param sourceBitmap The source bitmap to search within.
+     *
+     * @return Whether this component is currently disabled.
+     * All errors in this function will cause the function to return TRUE.
+     * This way, we don't think we're clicking a valid button when there is an error.
+     */
+    fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap? = null): Boolean {
+        return false
+    }
 }
 
 /** This is an interface for the most common components seen throughout the game.
@@ -301,18 +328,30 @@ interface ComponentInterface: BaseComponentInterface {
         return true
     }
 
-    /** Whether the component is in its disabled state.
-     *
-     * Not all components have a disabled state, so there is no need to override
-     * this function in most cases.
-     *
-     * @param imageUtils A reference to a CustomImageUtils instance.
-     * @param sourceBitmap The source bitmap to search within.
-     *
-     * @return Whether this component is currently disabled.
-     */
-    fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap? = null): Boolean {
-        return false
+    override fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap?): Boolean {
+        val sourceBitmap: Bitmap = sourceBitmap ?: imageUtils.getSourceBitmap()
+        // Check color toward the left of the button's bitmap region.
+        val templateBitmap: Bitmap = template.getBitmap(imageUtils)!!
+        val point: Point? = findImageWithBitmap(imageUtils, sourceBitmap = sourceBitmap)
+        if (point == null) {
+            return true
+        }
+
+        val bitmap: Bitmap? = imageUtils.createSafeBitmap(
+            sourceBitmap,
+            (point.x - (templateBitmap.width / 2)).toInt(),
+            (point.y - (templateBitmap.height / 2)).toInt(),
+            templateBitmap.width,
+            templateBitmap.height,
+            "checkDisabled cropped",
+        )
+        if (bitmap == null) {
+            return true
+        }
+        val res: Int = imageUtils.compareBitmapLuminance(bitmap, templateBitmap)
+        MessageLog.e("REMOVEME", "LUM RESULT: $res")
+        // If templateBitmap is darker than the detected bitmap, we return true.
+        return res > 0
     }
 }
 
