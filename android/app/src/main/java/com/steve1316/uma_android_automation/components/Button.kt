@@ -232,9 +232,12 @@ object ButtonNo : ComponentInterface {
     override val template = Template("components/button/no", region = Region.bottomHalf)
 }
 
-object ButtonOk : ComponentInterface {
+object ButtonOk : MultiStateButtonInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonOk"
-    override val template = Template("components/button/ok", region = Region.bottomHalf)
+    override val templates: List<Template> = listOf(
+        Template("components/button/ok", region = Region.bottomHalf),
+        Template("components/button/ok_gray", region = Region.bottomHalf),
+    )
 }
 
 object ButtonOptions : ComponentInterface {
