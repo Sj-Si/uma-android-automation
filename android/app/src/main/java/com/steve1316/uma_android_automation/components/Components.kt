@@ -16,8 +16,6 @@ import com.steve1316.uma_android_automation.utils.CustomImageUtils
 
 import com.steve1316.automation_library.data.SharedData
 
-import com.steve1316.automation_library.utils.MessageLog // REMOVEME
-
 /** Defines various screen regions.
  *
  * Used to refine search areas during OCR for performance.
@@ -349,7 +347,6 @@ interface ComponentInterface: BaseComponentInterface {
             return true
         }
         val res: Int = imageUtils.compareBitmapLuminance(bitmap, templateBitmap)
-        MessageLog.e("REMOVEME", "LUM RESULT: $res")
         // If templateBitmap is darker than the detected bitmap, we return true.
         return res > 0
     }
