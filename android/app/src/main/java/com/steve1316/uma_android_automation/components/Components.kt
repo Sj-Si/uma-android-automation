@@ -239,6 +239,8 @@ interface ComponentInterface: BaseComponentInterface {
      * @param imageUtils A reference to a CustomImageUtils instance.
      * @param region The screen region to search in.
      * @param confidence The threshold (0.0, 1.0] to use when performing image matching.
+     * @param ignoreDisabled Whether to drop disabled items from the list of results.
+     *
      * @return A list of Points where the component was found.
      */
     fun findAll(
@@ -246,21 +248,43 @@ interface ComponentInterface: BaseComponentInterface {
         region: IntArray? = null,
         sourceBitmap: Bitmap? = null,
         confidence: Double? = null,
+        ignoreDisabled: Boolean = false,
     ): ArrayList<Point> {
-        return if (sourceBitmap == null) {
-            imageUtils.findAll(
-                template.path,
-                region = region ?: template.region,
-                confidence = (confidence ?: template.confidence),
-            )
-        } else {
-            imageUtils.findAllWithBitmap(
-                template.path,
-                region = region ?: template.region,
-                sourceBitmap = sourceBitmap,
-                customConfidence = (confidence ?: template.confidence),
-            )
+        val bitmap: Bitmap = sourceBitmap ?: imageUtils.getSourceBitmap()
+
+        val points: ArrayList<Point> = imageUtils.findAllWithBitmap(
+            template.path,
+            region = region ?: template.region,
+            sourceBitmap = bitmap,
+            customConfidence = (confidence ?: template.confidence),
+        )
+
+        if (!ignoreDisabled) {
+            return points
         }
+
+        val templateBitmap: Bitmap = template.getBitmap(imageUtils)!!
+        val enabledPoints: List<Point> = points.mapNotNull {
+            val x: Int = (it.x - (templateBitmap.width / 2)).toInt()
+            val y: Int = (it.y - (templateBitmap.height / 2)).toInt()
+            val cropped: Bitmap? = imageUtils.createSafeBitmap(
+                bitmap,
+                x,
+                y,
+                templateBitmap.width,
+                templateBitmap.height,
+                "component: findAll enabled",
+            )
+            if (cropped == null) {
+                null
+            } else if (checkDisabled(imageUtils, cropped)) {
+                null
+            } else {
+                it
+            }
+        }.sortedBy { it.y }
+
+        return ArrayList(enabledPoints)
     }
 
     /** Finds all occurrences of the component within a source bitmap.
@@ -388,6 +412,64 @@ interface ComplexComponentInterface: BaseComponentInterface {
             }
         }
         return null
+    }
+
+    /** Finds all occurrences of the components on screen.
+     *
+     * @param imageUtils A reference to a CustomImageUtils instance.
+     * @param region The screen region to search in.
+     * @param confidence The threshold (0.0, 1.0] to use when performing image matching.
+     * @param ignoreDisabled Whether to drop disabled items from the list of results.
+     *
+     * @return A list of Points where the component was found.
+     */
+    fun findAll(
+        imageUtils: CustomImageUtils,
+        region: IntArray? = null,
+        sourceBitmap: Bitmap? = null,
+        confidence: Double? = null,
+        ignoreDisabled: Boolean = false,
+    ): ArrayList<Point> {
+        val res: MutableList<Point> = mutableListOf()
+        val bitmap: Bitmap = sourceBitmap ?: imageUtils.getSourceBitmap()
+
+        for (template in templates) {
+            val points: ArrayList<Point> = imageUtils.findAllWithBitmap(
+                template.path,
+                region = region ?: template.region,
+                sourceBitmap = bitmap,
+                customConfidence = (confidence ?: template.confidence),
+            )
+
+            if (!ignoreDisabled) {
+                res.addAll(points)
+                continue
+            }
+
+            val templateBitmap: Bitmap = template.getBitmap(imageUtils)!!
+            val enabledPoints: List<Point> = points.mapNotNull {
+                val x: Int = (it.x - (templateBitmap.width / 2)).toInt()
+                val y: Int = (it.y - (templateBitmap.height / 2)).toInt()
+                val cropped: Bitmap? = imageUtils.createSafeBitmap(
+                    bitmap,
+                    x,
+                    y,
+                    templateBitmap.width,
+                    templateBitmap.height,
+                    "component: findAll enabled",
+                )
+                if (cropped == null) {
+                    null
+                } else if (checkDisabled(imageUtils, cropped)) {
+                    null
+                } else {
+                    it
+                }
+            }
+            res.addAll(enabledPoints)
+        }
+
+        return ArrayList(res.sortedBy { it.y })
     }
 
     override fun check(
