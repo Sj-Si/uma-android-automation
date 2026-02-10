@@ -28,6 +28,7 @@ import com.steve1316.uma_android_automation.components.ButtonCollectAll
 import com.steve1316.uma_android_automation.components.ButtonEventMissions
 import com.steve1316.uma_android_automation.components.ButtonBack
 import com.steve1316.uma_android_automation.components.ButtonHomeSpecialMissions
+import com.steve1316.uma_android_automation.components.ButtonMenuBarHome
 
 class SpecialMissions(
     game: Game,
@@ -140,9 +141,6 @@ class SpecialMissions(
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
         val currentPage: PageInterface? = super.progress(bitmap)
-        if (currentPage == null) {
-            return null
-        }
 
         // We do this after super call to avoid taking unnecessary screenshots.
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
@@ -186,7 +184,7 @@ class SpecialMissions(
             return true
         }
 
-        if (!PageHome.check(game.imageUtils)) {
+        if (!goToHome()) {
             MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
             return false
         }

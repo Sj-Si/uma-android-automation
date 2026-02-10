@@ -28,6 +28,7 @@ import com.steve1316.uma_android_automation.components.PageDailyRacesResultsRewa
 import com.steve1316.uma_android_automation.components.ButtonDailyRacesMoonlightSho
 import com.steve1316.uma_android_automation.components.ButtonDailyRacesJupiterCup
 import com.steve1316.uma_android_automation.components.ButtonDailyRacesMultiRaceOff
+import com.steve1316.uma_android_automation.components.ButtonDailyRacesMultiRaceOn
 import com.steve1316.uma_android_automation.components.ButtonRaceManual
 import com.steve1316.uma_android_automation.components.ButtonViewResults
 import com.steve1316.uma_android_automation.components.ButtonRaceAgain
@@ -35,6 +36,7 @@ import com.steve1316.uma_android_automation.components.ButtonSkip
 import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonRaceExclamation
 import com.steve1316.uma_android_automation.components.ButtonMenuBarRace
+import com.steve1316.uma_android_automation.components.ButtonMenuBarHome
 import com.steve1316.uma_android_automation.components.ButtonDailyRaces
 import com.steve1316.uma_android_automation.components.IconExtraRacePill
 
@@ -72,29 +74,20 @@ class DailyRaces(
         val pillBitmap: Bitmap = IconExtraRacePill.template.getBitmap(game.imageUtils)!!
 
         // Always select the hardest available race.
-        val locs: ArrayList<Point> = IconExtraRacePill.findAll(game.imageUtils, sourceBitmap = bitmap)
-        if (locs.isEmpty()) {
-            return false
-        }
-
-        // Check color at the top left of the pill bitmap region. If it is greyed
-        // out, then the race isn't available.
-        val enabledLocs: List<Point> = locs
-            .mapNotNull {
-                val x: Int = (it.x - (pillBitmap.width / 2)).toInt()
-                val y: Int = (it.y - (pillBitmap.height / 2)).toInt()
-                val bIsEnabled: Boolean = !game.imageUtils.checkColorAtCoordinates(x, y, intArrayOf(162, 159, 164))
-                if (bIsEnabled) it else null
-            }
-            .sortedBy { it.y }
+        val locs: List<Point> = IconExtraRacePill.findAll(
+            game.imageUtils,
+            sourceBitmap = bitmap,
+            ignoreDisabled = true,
+        ).toList().sortedBy { it.y }
 
         // If there are no available races, then we've completed them all.
-        if (enabledLocs.isEmpty()) {
+        if (locs.isEmpty()) {
             bIsComplete = true
+            MessageLog.w(TAG, "[DAILY_RACES] No more races available today. Finishing up.")
             return true
         }
 
-        val loc: Point = enabledLocs.first()
+        val loc: Point = locs.first()
         game.tap(loc.x, loc.y, IconExtraRacePill.template.path)
         game.waitForLoading()
 
@@ -126,14 +119,18 @@ class DailyRaces(
                 bIsComplete = true
             }
             "race_details" -> {
-                // Always try to enable multi-race.
-                if (ButtonDailyRacesMultiRaceOff.checkDisabled(game.imageUtils)) {
+                // If the multi race button is disabled, we just need to proceed.
+                // This happens if the player hasn't completed this race before.
+                // Multi-race is disabled until they win the race for the first time.
+                if (ButtonDailyRacesMultiRaceOff.checkDisabled(game.imageUtils) ||
+                    ButtonDailyRacesMultiRaceOn.checkDisabled(game.imageUtils)
+                ) {
                     result.dialog.ok(game.imageUtils)
+                    return DialogHandlerResult.Handled(result.dialog)
                 }
                 
-                if (!ButtonDailyRacesMultiRaceOff.click(game.imageUtils, tries = 5)) {
-                    return DialogHandlerResult.Unhandled(result.dialog)
-                }
+                ButtonDailyRacesMultiRaceOff.click(game.imageUtils)
+                // Small delay to ensure the button click was registered.
                 game.wait(0.5, skipWaitingForLoading = true)
                 result.dialog.ok(game.imageUtils)
             }
@@ -160,9 +157,6 @@ class DailyRaces(
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
         val currentPage: PageInterface? = super.progress(bitmap)
-        if (currentPage == null) {
-            return null
-        }
 
         // We do this after super call to avoid taking unnecessary screenshots.
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
@@ -190,17 +184,19 @@ class DailyRaces(
                 PageDailyRacesResultsPlacing.next(game.imageUtils)
             }
             PageDailyRacesResultsRewards -> {
-                if (!bIsComplete) {
-                    ButtonRaceAgain.click(game.imageUtils)
-                } else {
-                    PageDailyRacesResultsRewards.next(game.imageUtils)
-                }
+                // We don't want to click the RaceAgain button in this instance.
+                // This is because we will only be here if multi-race is disabled
+                // which means the player hasn't beaten this race yet.
+                // So if they DO beat the race, we want to go to the next
+                // difficulty up or enable multi-race if possible.
+                // Thus we want to go back to the daily races menu.
+                PageDailyRacesResultsRewards.next(game.imageUtils)
             }
             else -> {
                 // Catch-all for various intermediate screens.
-                if (!ButtonSkip.click(game.imageUtils) &&
-                    !ButtonNext.click(game.imageUtils) &&
-                    !ButtonRaceExclamation.click(game.imageUtils)
+                if (!ButtonSkip.click(game.imageUtils, sourceBitmap = bitmap) &&
+                    !ButtonNext.click(game.imageUtils, sourceBitmap = bitmap) &&
+                    !ButtonRaceExclamation.click(game.imageUtils, sourceBitmap = bitmap)
                 ) {
                     game.tap(350.0, 750.0, "ok", taps = 1)
                 }
@@ -217,13 +213,18 @@ class DailyRaces(
             return true
         }
 
-        if (!PageHome.check(game.imageUtils)) {
+        if (!goToHome()) {
             MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
             return false
         }
 
         if (waitForButton(ButtonMenuBarRace, bShouldClickButton = true) == null) {
             MessageLog.w(TAG, "Failed to find Race button on menu bar.")
+            return false
+        }
+
+        if (waitForButton(ButtonDailyRaces, bShouldClickButton = false) == null) {
+            MessageLog.e(TAG, "Failed to find Daily Races button. Cannot proceed.")
             return false
         }
 

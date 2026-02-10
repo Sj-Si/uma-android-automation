@@ -28,7 +28,7 @@ import com.steve1316.uma_android_automation.components.ButtonShoesMile
 import com.steve1316.uma_android_automation.components.ButtonShoesMedium
 import com.steve1316.uma_android_automation.components.ButtonShoesLong
 import com.steve1316.uma_android_automation.components.ButtonShoesDirt
-
+import com.steve1316.uma_android_automation.components.ButtonMenuBarHome
 import com.steve1316.uma_android_automation.components.ButtonDonateToAll0
 import com.steve1316.uma_android_automation.components.LabelItemRequestExpired
 import com.steve1316.uma_android_automation.components.LabelItemRequestCooldown
@@ -187,9 +187,6 @@ class ClubActivity(
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
         val currentPage: PageInterface? = super.progress(bitmap)
-        if (currentPage == null) {
-            return null
-        }
 
         // We do this after super call to avoid taking unnecessary screenshots.
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
@@ -216,8 +213,13 @@ class ClubActivity(
             return true
         }
 
-        if (!PageHome.check(game.imageUtils)) {
+        if (!goToHome()) {
             MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
+            return false
+        }
+
+        if (waitForButton(ButtonClub, bShouldClickButton = false) == null) {
+            MessageLog.e(TAG, "Failed to find Club button. Cannot proceed.")
             return false
         }
 

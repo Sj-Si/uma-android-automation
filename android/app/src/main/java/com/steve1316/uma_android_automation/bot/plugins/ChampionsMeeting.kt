@@ -16,6 +16,7 @@ import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageInterface
 import com.steve1316.uma_android_automation.components.PageHome
 import com.steve1316.uma_android_automation.components.ButtonMenuBarRace
+import com.steve1316.uma_android_automation.components.ButtonMenuBarHome
 import com.steve1316.uma_android_automation.components.ButtonRaceEvents
 import com.steve1316.uma_android_automation.components.ButtonChampionsMeeting
 
@@ -47,9 +48,6 @@ class ChampionsMeeting(
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
         val currentPage: PageInterface? = super.progress(bitmap)
-        if (currentPage == null) {
-            return null
-        }
 
         // We do this after super call to avoid taking unnecessary screenshots.
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
@@ -63,7 +61,7 @@ class ChampionsMeeting(
     override fun goToStart(): Boolean {
         super.goToStart()
 
-        if (!PageHome.check(game.imageUtils)) {
+        if (!goToHome()) {
             MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
             return false
         }
@@ -75,6 +73,11 @@ class ChampionsMeeting(
         
         if (waitForButton(ButtonRaceEvents, bShouldClickButton = true) == null) {
             MessageLog.w(TAG, "Failed to find Race Events button.")
+            return false
+        }
+
+        if (waitForButton(ButtonChampionsMeeting, bShouldClickButton = false) == null) {
+            MessageLog.e(TAG, "Failed to find Champions Meeting button. Cannot proceed.")
             return false
         }
 

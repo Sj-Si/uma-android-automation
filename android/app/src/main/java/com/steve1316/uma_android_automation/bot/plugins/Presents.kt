@@ -15,6 +15,7 @@ import com.steve1316.uma_android_automation.utils.ScrollList
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageHome
 import com.steve1316.uma_android_automation.components.ButtonHomePresents
+import com.steve1316.uma_android_automation.components.ButtonMenuBarHome
 import com.steve1316.uma_android_automation.components.ButtonCollectAll
 
 class Presents(
@@ -52,7 +53,7 @@ class Presents(
     override fun goToStart(): Boolean {
         super.goToStart()
 
-        if (!PageHome.check(game.imageUtils)) {
+        if (!goToHome()) {
             MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
             return false
         }

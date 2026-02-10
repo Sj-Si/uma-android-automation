@@ -31,6 +31,7 @@ import com.steve1316.uma_android_automation.components.ButtonRaceAgain
 import com.steve1316.uma_android_automation.components.ButtonSkip
 import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonMenuBarRace
+import com.steve1316.uma_android_automation.components.ButtonMenuBarHome
 import com.steve1316.uma_android_automation.components.ButtonTeamTrialsTallying
 import com.steve1316.uma_android_automation.components.ButtonTeamTrials
 import com.steve1316.uma_android_automation.components.IconTeamTrialsOpponentSelectionTeamRank
@@ -133,9 +134,6 @@ class TeamTrials(
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
         val currentPage: PageInterface? = super.progress(bitmap)
-        if (currentPage == null) {
-            return null
-        }
 
         // We do this after super call to avoid taking unnecessary screenshots.
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
@@ -220,6 +218,11 @@ class TeamTrials(
             return true
         }
 
+        if (!goToHome()) {
+            MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
+            return false
+        }
+
         if (waitForButton(ButtonMenuBarRace, bShouldClickButton = true) == null) {
             MessageLog.w(TAG, "Failed to find Race button on menu bar.")
             return false
@@ -227,13 +230,19 @@ class TeamTrials(
 
         val button: BaseComponentInterface? = waitForButton(
             listOf(ButtonTeamTrials, ButtonTeamTrialsTallying),
+            bShouldClickButton = false,
         )
+
         when (button) {
             is ButtonTeamTrialsTallying -> {
                 MessageLog.i(TAG, "Team Trials are tallying. Cannot proceed.")
                 return false
             }
             is ButtonTeamTrials -> {
+                if (button.checkDisabled(game.imageUtils)) {
+                    MessageLog.i(TAG, "Team Trials are locked. Cannot proceed.")
+                    return false
+                }
                 button.click(game.imageUtils)
             }
             else -> {

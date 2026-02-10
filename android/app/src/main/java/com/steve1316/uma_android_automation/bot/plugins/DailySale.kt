@@ -27,9 +27,8 @@ import com.steve1316.uma_android_automation.components.ButtonShopEndSale
 import com.steve1316.uma_android_automation.components.ButtonBack
 import com.steve1316.uma_android_automation.components.ButtonHomeShopDailySale
 import com.steve1316.uma_android_automation.components.ButtonShopDailySales
-import com.steve1316.uma_android_automation.components.LabelShopStarPiece
-import com.steve1316.uma_android_automation.components.LabelShopAlarmClock
-import com.steve1316.uma_android_automation.components.LabelShopPleasingParfait
+import com.steve1316.uma_android_automation.components.ButtonMenuBarHome
+import com.steve1316.uma_android_automation.components.ButtonHomeShop
 
 enum class SaleItem {
     STAR_PIECE,
@@ -87,8 +86,13 @@ class DailySale(
             return true
         }
 
-        if (!PageHome.check(game.imageUtils)) {
-            MessageLog.w(TAG, "Not at home screen. Cannot proceed.")
+        if (!goToHome()) {
+            MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
+            return false
+        }
+
+        if (waitForButton(ButtonHomeShop, bShouldClickButton = false) == null) {
+            MessageLog.e(TAG, "Failed to find Shop button. Cannot proceed.")
             return false
         }
 
