@@ -162,11 +162,124 @@ def detectRectangles(
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     
-    cap.release()
+    if is_video:
+        cap.release()
+    cv2.destroyAllWindows()
+
+def detectRectanglesGeneric(
+    fp, # can be .png or .mp4
+    min_area=0,
+    max_area=1e+7,
+    blur_size=7,
+    lo_diff_val=1,
+    up_diff_val=1,
+    kernel_size=100,
+    crop_x=10,
+    crop_y=700,
+    crop_w=1055,
+    crop_h=840,
+    window_name="detectRectanglesGeneric"
+):
+    is_video = os.path.splitext(fp)[-1] == ".mp4"
+    
+    if is_video:
+        cap = cv2.VideoCapture(fp)
+
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    # Set the window to fullscreen mode
+    cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+    cv2.createTrackbar("Blur Size", window_name, blur_size, 32, nothing)
+    cv2.createTrackbar("loDiff", window_name, lo_diff_val, 100, nothing)
+    cv2.createTrackbar("upDiff", window_name, up_diff_val, 100, nothing)
+    cv2.createTrackbar("Kernel", window_name, kernel_size, 1000, nothing)
+
+    while(True):
+        blur_size = cv2.getTrackbarPos("Blur Size", window_name)
+        lo_diff_val = cv2.getTrackbarPos("loDiff", window_name)
+        up_diff_val = cv2.getTrackbarPos("upDiff", window_name)
+        kernel_size = cv2.getTrackbarPos("Kernel", window_name)
+        
+        blur_size = max(1, blur_size)
+        if blur_size % 2 == 0:
+            blur_size += 1
+    
+        # Process Image
+        if is_video:
+            ret, image = cap.read()
+            if not ret:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                ret, image = cap.read()
+        else:
+            image = cv2.imread(fp)
+
+        image = image[crop_y:crop_y+crop_h, crop_x:crop_x+crop_w]
+        image = cv2.GaussianBlur(image, (blur_size, blur_size), 0)
+        #image = cv2.bilateralFilter(image, blur_size, 75, 75)
+        image_h, image_w = image.shape[:2]
+        mask = np.zeros((image_h+2, image_w+2), np.uint8)
+
+        loDiff = (lo_diff_val, lo_diff_val, lo_diff_val)
+        upDiff = (up_diff_val, up_diff_val, up_diff_val)
+        cv2.floodFill(image, mask, (15, 15), (0, 0, 0), loDiff, upDiff)
+
+        mask[mask != 0] = 255
+        mask = cv2.bitwise_not(mask)
+        
+        kernel = np.ones((kernel_size, kernel_size), np.uint8)
+        morphed = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        #closed = cv2.erode(mask, kernel, iterations=1)
+        
+        #edges = cv2.Canny(morphed, canny_lower_threshold, canny_upper_threshold)
+        
+        tmp = morphed
+
+        out_img = mask
+        if len(out_img.shape) == 2 or out_img.shape[2] == 1:
+            out_img = cv2.cvtColor(out_img, cv2.COLOR_GRAY2BGR)
+        
+        # Find and filter contours
+        contours, _ = cv2.findContours(tmp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for cnt in contours:
+            # Filter out invalid sized contours.
+            area = cv2.contourArea(cnt)
+            if area < min_area or area > max_area:
+                continue
+
+            # Use Convex Hull to ignore rounded corners
+            hull = cv2.convexHull(cnt)
+            
+            # Approximate the hull shape
+            peri = cv2.arcLength(hull, True)
+            approx = cv2.approxPolyDP(hull, 0.02 * peri, True)
+            
+            # If 4 vertices are found, it's a candidate for a rounded rectangle
+            if len(approx) == 4:
+                x, y, w, h = cv2.boundingRect(cnt)
+                # Do not include any rects that are touching the bounding region.
+                if (x <= 0 or
+                    y <= 0 or
+                    x + w >= image_w - 1 or
+                    y + h >= image_h - 1
+                ):
+                    continue
+
+                # Draw rectangle for visualization.
+                cv2.rectangle(out_img, (x, y), (x + w, y + h), (0, 255, 0), 1)
+
+        res = display_fullscreen_no_stretch(out_img, SCREEN_WIDTH, SCREEN_HEIGHT)
+        cv2.imshow(window_name, res)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    if is_video:
+        cap.release()
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    fp = "./imageDetectionSample.mp4"
+    fp = "./imageDetectionSample.png"
+    #fp = "./imageDetectionSample2.png"
+
     detectRectangles(
         fp,
         min_area=200*900,
@@ -175,7 +288,22 @@ if __name__ == "__main__":
         epsilon_scalar=0.02,
         canny_lower_threshold=30,
         canny_upper_threshold=50,
-        use_adaptive_threshold=False,
+        use_adaptive_threshold=True,
         adaptive_threshold_block_size=11,
         adaptive_threshold_constant=2.0,
+    )
+    
+    detectRectanglesGeneric(
+        fp,
+        min_area=0,
+        max_area=1e+7,
+        blur_size=7,
+        lo_diff_val=1,
+        up_diff_val=1,
+        kernel_size=100,
+        crop_x=10,
+        crop_y=700,
+        crop_w=1055,
+        crop_h=840,
+        window_name="detectRectanglesGeneric"
     )

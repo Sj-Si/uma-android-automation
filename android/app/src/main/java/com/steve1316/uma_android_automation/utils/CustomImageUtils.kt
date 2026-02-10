@@ -2606,6 +2606,221 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
         return result.toList()
     }
 
+    /** Detects rectangles with on the screen.
+     *
+     * A more robust version of [detectRoundedRectangles] with slightly less
+     * accurate rectangle boundaries in favor of higher chance of detection.
+     *
+     * This uses traditional image processing algorithms to detect
+     * all rectangles on the screen.
+     *
+     * For this to work, the rectangle must either have an outline or
+     * be easily differentiable from the background color. Play around with
+     * the `src/data/imageDetection.py` test script to see what parameters
+     * work best for the items you're trying to detect.
+     *
+     * @param bitmap Optional bitmap containing the rectangles you want to detect.
+     * If NULL, then a screenshot will be used.
+     * @param region A bounding box region to limit the detection to.
+     * If not specified, then the entire bitmap will be used.
+     * @param minArea Filters out any rectangles with an area smaller than this parameter.
+     * If not specified, then no lower bound filter will be applied.
+     * @param maxArea Filters out any rectangles with an area larger than this parameter.
+     * If not specified, then no upper bound filter will be applied.
+     * @param blurSize The size of the kernel to use for the gaussian blur.
+     * Must be a positive and odd integer. A value of 1 will effectively be no blur.
+     * @param epsilonScalar A small value used to scale the detection of rounded
+     * corners on the rectangles. Defaults to 0.02 which works in most cases.
+     * @param fillSeedPoint The location within the [bitmap] or [region] that is part
+     * of the background on which the rectangles are located. Think of this like
+     * the fill (paint bucket) tool in image editing software. So if the rectangles
+     * are all against a white background, then [fillSeedPoint] should be the location
+     * of one of the white pixels in the background.
+     * @param fillLoDiffValue Maximum lower brightness/color difference for fill.
+     * Higher values cause the [fillSeedPoint] color fill to spread further.
+     * @param fillUpDiffValue Maximum upper brightness/color difference for fill.
+     * Higher values cause the [fillSeedPoint] color fill to spread further.
+     * @param morphKernelSize The size of the kernel used for the opening morphology
+     * operation. Higher values will cause detected rectangles to be more accurate,
+     * but too high of values can cause rectangles to not be detected at all.
+     *
+     * @return A list of BoundingBox objects for detected rectangles, sorted by their
+     * y-position in the bitmap (from top to bottom on screen).
+     */
+    fun detectRectanglesGeneric(
+        bitmap: Bitmap? = null,
+        region: BoundingBox? = null,
+        minArea: Int? = null,
+        maxArea: Int? = null,
+        blurSize: Int = 7,
+        epsilonScalar: Double = 0.02,
+        fillSeedPoint: Point = Point(10.0, 10.0),
+        fillLoDiffValue: Int = 1,
+        fillUpDiffValue: Int = 1,
+        morphKernelSize: Int = 100,
+    ): List<BoundingBox> {
+        val bitmap: Bitmap = if (region == null) {
+            bitmap ?: getSourceBitmap()
+        } else if (bitmap == null) {
+            getRegionBitmap(region)
+        } else {
+            createSafeBitmap(bitmap, region, "detectRoundedRectangles") ?: getSourceBitmap()
+        }
+
+        // Input sanitization
+
+        val screenArea: Int = SharedData.displayWidth * SharedData.displayHeight
+        val minArea: Int = (minArea ?: 0).coerceIn(0, screenArea)
+        val maxArea: Int = (maxArea ?: screenArea).coerceIn(minArea, screenArea)
+
+        if (minArea > maxArea) {
+            throw IllegalArgumentException("minArea ($minArea) > maxArea ($maxArea)")
+        }
+
+        if (blurSize <= 0 || blurSize % 2 == 0) {
+            throw IllegalArgumentException("blurSize must be a positive odd integer. Got: $blurSize.")
+        }
+
+        val blurKernel = Size(blurSize.toDouble(), blurSize.toDouble())
+
+        val fillLoDiffValue: Int = fillLoDiffValue.coerceIn(0, 255)
+        val loDiff = Scalar(fillLoDiffValue.toDouble(), fillLoDiffValue.toDouble(), fillLoDiffValue.toDouble())
+
+        val fillUpDiffValue: Int = fillUpDiffValue.coerceIn(0, 255)
+        val upDiff = Scalar(fillUpDiffValue.toDouble(), fillUpDiffValue.toDouble(), fillUpDiffValue.toDouble())
+
+        val morphKernelSize: Int = morphKernelSize.coerceIn(0, 250)
+        val morphKernel = Imgproc.getStructuringElement(
+            Imgproc.MORPH_RECT,
+            Size(morphKernelSize.toDouble(), morphKernelSize.toDouble()),
+        )
+
+        val result: MutableList<BoundingBox> = mutableListOf()
+
+        val srcImage = Mat()
+		Utils.bitmapToMat(bitmap, srcImage)
+
+        val image = Mat()
+        Imgproc.cvtColor(srcImage, image, Imgproc.COLOR_BGR2GRAY)
+        Imgproc.GaussianBlur(image, image, blurKernel, 0.0)
+        
+        val rect = Rect()
+        val fillColor = Scalar(0.0, 0.0, 0.0)
+        Imgproc.floodFill(
+            image,
+            Mat(),
+            fillSeedPoint,
+            fillColor,
+            rect,
+            loDiff,
+            upDiff,
+        )
+
+        if (debugMode) {
+            val resultBitmap = createBitmap(image.cols(), image.rows())
+            Utils.matToBitmap(image, resultBitmap)
+            saveBitmap(resultBitmap, "detectRectanglesGeneric_floodFill", fullRes = true)
+        }
+
+        // Set all non-black pixels to white.
+        val blackMask = Mat()
+        Core.compare(image, fillColor, blackMask, Core.CMP_EQ)
+        val nonBlackMask = Mat()
+        Core.bitwise_not(blackMask, nonBlackMask)
+        image.setTo(Scalar(255.0, 255.0, 255.0), nonBlackMask)
+        blackMask.release()
+        nonBlackMask.release()
+
+        if (debugMode) {
+            val resultBitmap = createBitmap(image.cols(), image.rows())
+            Utils.matToBitmap(image, resultBitmap)
+            saveBitmap(resultBitmap, "detectRectanglesGeneric_masked", fullRes = true)
+        }
+
+        Imgproc.morphologyEx(image, image, Imgproc.MORPH_OPEN, morphKernel)
+
+        if (debugMode) {
+            val resultBitmap = createBitmap(image.cols(), image.rows())
+            Utils.matToBitmap(image, resultBitmap)
+            saveBitmap(resultBitmap, "detectRectanglesGeneric_opened", fullRes = true)
+        }
+
+        // Invert binary image.
+        //Core.bitwise_not(image, image)
+
+        val contours: MutableList<MatOfPoint> = mutableListOf()
+        val hierarchy = Mat()
+        Imgproc.findContours(
+            image,
+            contours,
+            hierarchy,
+            Imgproc.RETR_EXTERNAL,
+            Imgproc.CHAIN_APPROX_SIMPLE,
+        )
+
+        for (cnt in contours) {
+            val area = Imgproc.contourArea(cnt)
+
+            // Filter out contours with invalid areas.
+            if (area < minArea || area > maxArea) {
+                continue
+            }
+
+            // Use convex hull to ignore rounded corners.
+            val hullPoints = MatOfInt()
+            Imgproc.convexHull(cnt, hullPoints)
+            // Convert hull indices back to MatOfPoint
+            val hullContour = getHullFromIndices(cnt, hullPoints)
+
+            // Approximate shape.
+            val approx = MatOfPoint2f()
+            val cnt2f = MatOfPoint2f(*hullContour.toArray())
+            val peri = Imgproc.arcLength(cnt2f, true)
+            Imgproc.approxPolyDP(cnt2f, approx, epsilonScalar * peri, true)
+
+            // Check for four vertices.
+            if (approx.total() == 4L) {
+                val rect = Imgproc.boundingRect(cnt)
+
+                // Do not include any rects that are touching the bounding region.
+                if (rect.x <= 0 ||
+                    rect.y <= 0 ||
+                    rect.x + rect.width >= bitmap.width - 1 ||
+                    rect.y + rect.height >= bitmap.height - 1
+                ) {
+                    continue
+                }
+
+                if (debugMode) {
+                    Imgproc.rectangle(srcImage, rect.tl(), rect.br(), Scalar(0.0, 255.0, 0.0), 2)
+                }
+                result.add(BoundingBox(rect.x, rect.y, rect.width, rect.height))
+            }
+
+            // Free memory for each mat.
+            hullPoints.release()
+            hullContour.release()
+            approx.release()
+            cnt2f.release()
+        }
+
+        if (debugMode) {
+            val resultBitmap = createBitmap(srcImage.cols(), srcImage.rows())
+            Imgproc.cvtColor(srcImage, srcImage, Imgproc.COLOR_BGR2RGB)
+            Utils.matToBitmap(srcImage, resultBitmap)
+            saveBitmap(resultBitmap, "detectRectanglesGeneric_result", fullRes = true)
+        }
+
+        // Free memory for each mat.
+        contours.forEach { it.release() }
+        contours.clear()
+        hierarchy.release()
+        image.release()
+        srcImage.release()
+
+        return result.toList()
+    }
+
     /** Returns the luminance at a pixel in a bitmap.
      *
      * @param x The x-coordinate to test.
