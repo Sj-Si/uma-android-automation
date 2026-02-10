@@ -13,13 +13,13 @@ import org.opencv.core.Point
 import android.util.Log
 import android.graphics.Bitmap
 
-import com.steve1316.uma_android_automation.utils.types.Aptitude
-import com.steve1316.uma_android_automation.utils.types.TrackSurface
-import com.steve1316.uma_android_automation.utils.types.TrackDistance
-import com.steve1316.uma_android_automation.utils.types.RunningStyle
-import com.steve1316.uma_android_automation.utils.types.RaceGrade
-import com.steve1316.uma_android_automation.utils.types.DateYear
-import com.steve1316.uma_android_automation.utils.types.BoundingBox
+import com.steve1316.uma_android_automation.types.Aptitude
+import com.steve1316.uma_android_automation.types.TrackSurface
+import com.steve1316.uma_android_automation.types.TrackDistance
+import com.steve1316.uma_android_automation.types.RunningStyle
+import com.steve1316.uma_android_automation.types.RaceGrade
+import com.steve1316.uma_android_automation.types.DateYear
+import com.steve1316.uma_android_automation.types.BoundingBox
 
 import com.steve1316.uma_android_automation.components.*
 

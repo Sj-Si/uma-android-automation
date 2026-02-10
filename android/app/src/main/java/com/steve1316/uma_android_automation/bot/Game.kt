@@ -18,9 +18,9 @@ import com.steve1316.uma_android_automation.bot.Trainee
 import com.steve1316.uma_android_automation.bot.SkillPlan
 import com.steve1316.uma_android_automation.bot.SkillDatabase
 
-import com.steve1316.uma_android_automation.utils.types.BoundingBox
-import com.steve1316.uma_android_automation.utils.types.Aptitude
-import com.steve1316.uma_android_automation.utils.types.Mood
+import com.steve1316.uma_android_automation.types.BoundingBox
+import com.steve1316.uma_android_automation.types.Aptitude
+import com.steve1316.uma_android_automation.types.Mood
 
 import com.steve1316.uma_android_automation.components.DialogUtils
 import com.steve1316.uma_android_automation.components.DialogInterface

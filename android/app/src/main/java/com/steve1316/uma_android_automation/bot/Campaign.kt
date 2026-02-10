@@ -6,11 +6,11 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.BotService
 import com.steve1316.automation_library.data.SharedData
 
-import com.steve1316.uma_android_automation.utils.types.DateYear
-import com.steve1316.uma_android_automation.utils.types.DateMonth
-import com.steve1316.uma_android_automation.utils.types.DatePhase
-import com.steve1316.uma_android_automation.utils.types.FanCountClass
-import com.steve1316.uma_android_automation.utils.types.BoundingBox
+import com.steve1316.uma_android_automation.types.DateYear
+import com.steve1316.uma_android_automation.types.DateMonth
+import com.steve1316.uma_android_automation.types.DatePhase
+import com.steve1316.uma_android_automation.types.FanCountClass
+import com.steve1316.uma_android_automation.types.BoundingBox
 
 import com.steve1316.uma_android_automation.components.*
 
