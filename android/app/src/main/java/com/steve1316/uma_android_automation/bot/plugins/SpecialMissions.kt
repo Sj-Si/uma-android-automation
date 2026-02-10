@@ -112,39 +112,29 @@ class SpecialMissions(
         ).find { it.check(game.imageUtils, bitmap) }
     }
 
-    fun handleSpecialMissionsTabs() {
-        for (tab in specialMissionsTabs) {
-            tab.click(game.imageUtils)
-            game.wait(0.1, skipWaitingForLoading = true)
-            ButtonCollectAll.click(game.imageUtils)
-            game.wait(0.5)
-            handleDialogs()
+    private fun handleTab(tab: ComponentInterface) {
+        tab.click(game.imageUtils)
+        game.wait(0.1, skipWaitingForLoading = true)
+        if (ButtonCollectAll.checkDisabled(game.imageUtils)) {
+            return
         }
+        ButtonCollectAll.click(game.imageUtils)
+        game.wait(0.5)
+        handleDialogs()
+    }
 
+    private fun handleSpecialMissionsTabs() {
+        specialMissionsTabs.forEach { handleTab(it) }
         bHasHandledSpecialMissions = true
     }
 
-    fun handleEventMissionsTabs() {
-        for (tab in eventMissionsTabs) {
-            tab.click(game.imageUtils)
-            game.wait(0.1, skipWaitingForLoading = true)
-            ButtonCollectAll.click(game.imageUtils)
-            game.wait(0.5)
-            handleDialogs()
-        }
-
+    private fun handleEventMissionsTabs() {
+        eventMissionsTabs.forEach { handleTab(it) }
         bHasHandledEventMissions = true
     }
 
-    fun handleRacingCarnivalMissionsTabs() {
-        for (tab in racingCarnivalMissionsTabs) {
-            tab.click(game.imageUtils)
-            game.wait(0.1, skipWaitingForLoading = true)
-            ButtonCollectAll.click(game.imageUtils)
-            game.wait(0.5)
-            handleDialogs()
-        }
-
+    private fun handleRacingCarnivalMissionsTabs() {
+        racingCarnivalMissionsTabs.forEach { handleTab(it) }
         bHasHandledRacingCarnivalMissions = true
     }
 

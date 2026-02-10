@@ -23,7 +23,6 @@ import com.steve1316.uma_android_automation.components.ButtonSkip
 import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonMenuBarRace
 import com.steve1316.uma_android_automation.components.ButtonRaceEvents
-import com.steve1316.uma_android_automation.components.ButtonLegendRaceLocked
 import com.steve1316.uma_android_automation.components.ButtonLegendRace
 import com.steve1316.uma_android_automation.components.IconExtraRacePill
 import com.steve1316.uma_android_automation.components.IconPleasingParfait
@@ -149,21 +148,14 @@ class LegendRace(
             return false
         }
 
-        val button: BaseComponentInterface? = waitForButton(
-            listOf(ButtonLegendRaceLocked, ButtonLegendRace),
-        )
-        when (button) {
-            is ButtonLegendRaceLocked -> {
-                MessageLog.i(TAG, "Legend Race is locked. Cannot proceed.")
-                return false
-            }
-            is ButtonLegendRace -> {
-                button.click(game.imageUtils)
-            }
-            else -> {
-                MessageLog.w(TAG, "Failed to find Legend Race button.")
-                return false
-            }
+        if (ButtonLegendRace.checkDisabled(game.imageUtils)) {
+            MessageLog.i(TAG, "Legend Race is locked. Cannot proceed.")
+            return false
+        }
+
+        if (!ButtonLegendRace.click(game.imageUtils)) {
+            MessageLog.w(TAG, "Failed to click Legend Race button.")
+            return false
         }
 
         return waitForPage(PageLegendRaceHome) != null

@@ -23,7 +23,6 @@ import com.steve1316.uma_android_automation.components.PageInterface
 import com.steve1316.uma_android_automation.components.PageHome
 import com.steve1316.uma_android_automation.components.PageDailySale
 import com.steve1316.uma_android_automation.components.ButtonShopExchange
-import com.steve1316.uma_android_automation.components.ButtonShopExchangeDisabled
 import com.steve1316.uma_android_automation.components.ButtonShopEndSale
 import com.steve1316.uma_android_automation.components.ButtonBack
 import com.steve1316.uma_android_automation.components.ButtonHomeShopDailySale
@@ -139,20 +138,12 @@ class DailySale(
             sourceBitmap = entry.bitmap,
         )
 
-        var bIsDisabled: Boolean = false
-
         if (buttonLoc == null) {
-            buttonLoc = ButtonShopExchangeDisabled.findImageWithBitmap(
-                game.imageUtils,
-                sourceBitmap = entry.bitmap,
-            )
-            // If we still didn't find one, bail out.
-            if (buttonLoc == null) {
-                MessageLog.e(TAG, "Failed to find any Exchange button in bitmap.")
-                return false
-            }
-            bIsDisabled = true
+            MessageLog.e(TAG, "Failed to find any Exchange button in bitmap.")
+            return false
         }
+
+        var bIsDisabled: Boolean = ButtonShopExchange.checkDisabled(game.imageUtils, entry.bitmap)
 
         // Translate the location to the screen coordinates.
         buttonLoc = Point(buttonLoc.x + entry.bbox.x, buttonLoc.y + entry.bbox.y)
@@ -169,7 +160,7 @@ class DailySale(
 
         // Click the button if it is in our list of items to buy.
         if (match != null && !bIsDisabled) {
-            game.tap(buttonLoc.x, buttonLoc.y, ButtonShopExchange.template.path)
+            game.tap(buttonLoc.x, buttonLoc.y, ButtonShopExchange.templates.first()?.path ?: "ok")
             game.wait(0.5)
         } else {
             return false

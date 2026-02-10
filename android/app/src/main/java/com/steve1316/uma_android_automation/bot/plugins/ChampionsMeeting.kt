@@ -17,7 +17,7 @@ import com.steve1316.uma_android_automation.components.PageInterface
 import com.steve1316.uma_android_automation.components.PageHome
 import com.steve1316.uma_android_automation.components.ButtonMenuBarRace
 import com.steve1316.uma_android_automation.components.ButtonRaceEvents
-import com.steve1316.uma_android_automation.components.ButtonChampionsMeetingLocked
+import com.steve1316.uma_android_automation.components.ButtonChampionsMeeting
 
 class ChampionsMeeting(
     game: Game,
@@ -78,19 +78,14 @@ class ChampionsMeeting(
             return false
         }
 
-        // TODO: Add normal champions meeting button
-        val button: BaseComponentInterface? = waitForButton(
-            listOf(ButtonChampionsMeetingLocked),
-        )
-        when (button) {
-            is ButtonChampionsMeetingLocked -> {
-                MessageLog.i(TAG, "Champions Meeting is locked. Cannot proceed.")
-                return false
-            }
-            else -> {
-                MessageLog.e(TAG, "NOT IMPLEMENTED")
-                return false
-            }
+        if (ButtonChampionsMeeting.checkDisabled(game.imageUtils)) {
+            MessageLog.i(TAG, "Champions Meeting is locked. Cannot proceed.")
+            return false
+        }
+
+        if (!ButtonChampionsMeeting.click(game.imageUtils)) {
+            MessageLog.w(TAG, "Failed to click Champions Meeting button.")
+            return false
         }
 
         MessageLog.e(TAG, "NOT IMPLEMENTED")

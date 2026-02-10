@@ -15,7 +15,7 @@ import com.steve1316.uma_android_automation.utils.ScrollList
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageHome
 import com.steve1316.uma_android_automation.components.ButtonHomePresents
-import com.steve1316.uma_android_automation.components.LabelNone
+import com.steve1316.uma_android_automation.components.ButtonCollectAll
 
 class Presents(
     game: Game,
@@ -31,7 +31,7 @@ class Presents(
 
         when (result.dialog.name) {
             "presents" -> {
-                if (LabelNone.check(game.imageUtils)) {
+                if (ButtonCollectAll.checkDisabled(game.imageUtils)) {
                     bIsComplete = true
                     result.dialog.close(game.imageUtils)
                 } else {

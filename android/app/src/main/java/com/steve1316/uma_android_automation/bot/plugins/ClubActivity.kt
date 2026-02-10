@@ -19,7 +19,6 @@ import com.steve1316.uma_android_automation.components.PageInterface
 import com.steve1316.uma_android_automation.components.PageClubHome
 import com.steve1316.uma_android_automation.components.PageHome
 import com.steve1316.uma_android_automation.components.ButtonClub
-import com.steve1316.uma_android_automation.components.ButtonClubLocked
 import com.steve1316.uma_android_automation.components.ButtonClubItemRequest
 import com.steve1316.uma_android_automation.components.ButtonClubViewRequests
 import com.steve1316.uma_android_automation.components.ButtonConfirm
@@ -222,21 +221,14 @@ class ClubActivity(
             return false
         }
 
-        val button: BaseComponentInterface? = waitForButton(
-            listOf(ButtonClubLocked, ButtonClub),
-        )
-        when (button) {
-            is ButtonClubLocked -> {
-                MessageLog.i(TAG, "Club is locked. Cannot proceed.")
-                return false
-            }
-            is ButtonClub -> {
-                button.click(game.imageUtils)
-            }
-            else -> {
-                MessageLog.e(TAG, "Failed to find Club button.")
-                return false
-            }
+        if (ButtonClub.checkDisabled(game.imageUtils)) {
+            MessageLog.i(TAG, "Club is locked. Cannot proceed.")
+            return false
+        }
+
+        if (!ButtonClub.click(game.imageUtils)) {
+            MessageLog.w(TAG, "Failed to click Club button.")
+            return false
         }
 
         return waitForPage(PageClubHome) != null

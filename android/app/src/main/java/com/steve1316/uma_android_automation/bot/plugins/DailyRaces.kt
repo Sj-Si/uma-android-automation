@@ -28,7 +28,6 @@ import com.steve1316.uma_android_automation.components.PageDailyRacesResultsRewa
 import com.steve1316.uma_android_automation.components.ButtonDailyRacesMoonlightSho
 import com.steve1316.uma_android_automation.components.ButtonDailyRacesJupiterCup
 import com.steve1316.uma_android_automation.components.ButtonDailyRacesMultiRaceOff
-import com.steve1316.uma_android_automation.components.ButtonViewResultsLocked
 import com.steve1316.uma_android_automation.components.ButtonRaceManual
 import com.steve1316.uma_android_automation.components.ButtonViewResults
 import com.steve1316.uma_android_automation.components.ButtonRaceAgain
@@ -36,7 +35,6 @@ import com.steve1316.uma_android_automation.components.ButtonSkip
 import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonRaceExclamation
 import com.steve1316.uma_android_automation.components.ButtonMenuBarRace
-import com.steve1316.uma_android_automation.components.ButtonDailyRacesLocked
 import com.steve1316.uma_android_automation.components.ButtonDailyRaces
 import com.steve1316.uma_android_automation.components.IconExtraRacePill
 
@@ -129,6 +127,10 @@ class DailyRaces(
             }
             "race_details" -> {
                 // Always try to enable multi-race.
+                if (ButtonDailyRacesMultiRaceOff.checkDisabled(game.imageUtils)) {
+                    result.dialog.ok(game.imageUtils)
+                }
+                
                 if (!ButtonDailyRacesMultiRaceOff.click(game.imageUtils, tries = 5)) {
                     return DialogHandlerResult.Unhandled(result.dialog)
                 }
@@ -178,7 +180,7 @@ class DailyRaces(
                 PageDailyRacesPreRacePrep.next(game.imageUtils)
             }
             PageDailyRacesRacePrep -> {
-                if (ButtonViewResultsLocked.check(game.imageUtils)) {
+                if (ButtonViewResults.checkDisabled(game.imageUtils)) {
                     ButtonRaceManual.click(game.imageUtils)
                 } else {
                     ButtonViewResults.click(game.imageUtils)
@@ -225,21 +227,14 @@ class DailyRaces(
             return false
         }
 
-        val button: BaseComponentInterface? = waitForButton(
-            listOf(ButtonDailyRacesLocked, ButtonDailyRaces),
-        )
-        when (button) {
-            is ButtonDailyRacesLocked -> {
-                MessageLog.i(TAG, "Daily Races are locked. Cannot proceed.")
-                return false
-            }
-            is ButtonDailyRaces -> {
-                button.click(game.imageUtils)
-            }
-            else -> {
-                MessageLog.e(TAG, "Failed to find Daily Races button.")
-                return false
-            }
+        if (ButtonDailyRaces.checkDisabled(game.imageUtils)) {
+            MessageLog.i(TAG, "Daily Races are locked. Cannot proceed.")
+            return false
+        }
+
+        if (!ButtonDailyRaces.click(game.imageUtils)) {
+            MessageLog.e(TAG, "Failed to click Daily Races button.")
+            return false
         }
 
         return waitForPage(PageDailyRacesRaceSelection) != null
