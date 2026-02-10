@@ -29,6 +29,8 @@ class Racing (private val game: Game) {
     private val enableFarmingFans = SettingsHelper.getBooleanSetting("racing", "enableFarmingFans")
     private val daysToRunExtraRaces: Int = SettingsHelper.getIntSetting("racing", "daysToRunExtraRaces")
     val disableRaceRetries: Boolean = SettingsHelper.getBooleanSetting("racing", "disableRaceRetries")
+    val enableFreeRaceRetry: Boolean = SettingsHelper.getBooleanSetting("racing", "enableFreeRaceRetry")
+    val enableCompleteCareerOnFailure: Boolean = SettingsHelper.getBooleanSetting("racing", "enableCompleteCareerOnFailure")
     val enableForceRacing = SettingsHelper.getBooleanSetting("racing", "enableForceRacing")
 
     private val enableRacingPlan = SettingsHelper.getBooleanSetting("racing", "enableRacingPlan")
@@ -179,6 +181,13 @@ class Racing (private val game: Game) {
                 bIgnoreConsecutiveRaceWarning = false
             }
             "race_details" -> dialog.ok(imageUtils = game.imageUtils)
+            "race_playback" -> {
+                // Select portrait mode to prevent game from switching to landscape.
+                RadioPortrait.click(game.imageUtils)
+                // Click the checkbox to prevent this popup in the future.
+                Checkbox.click(game.imageUtils)
+                dialog.ok(game.imageUtils)
+            }
             "runners" -> dialog.close(imageUtils = game.imageUtils)
             "strategy" -> {
                 if (!game.trainee.bHasUpdatedAptitudes) {
@@ -199,7 +208,6 @@ class Racing (private val game: Game) {
                         MessageLog.i(TAG, "[DIALOG] strategy:: Using the default running style.")
                         dialog.ok(imageUtils = game.imageUtils)
                         game.trainee.bHasSetRunningStyle = true
-                        game.wait(0.5, skipWaitingForLoading = true)
                         return Pair(true, dialog)
                     }
                     // Auto-select the optimal running style based on trainee aptitudes.
@@ -223,7 +231,6 @@ class Racing (private val game: Game) {
                         MessageLog.e(TAG, "[DIALOG] strategy:: Invalid running style: $runningStyle")
                         dialog.close(imageUtils = game.imageUtils)
                         game.trainee.bHasSetRunningStyle = false
-                        game.wait(0.5, skipWaitingForLoading = true)
                         return Pair(true, dialog)
                     }
                 }
@@ -238,6 +245,38 @@ class Racing (private val game: Game) {
                 }
                 dialog.ok(imageUtils = game.imageUtils)
             }
+            "trophy_won" -> dialog.close(imageUtils = game.imageUtils)
+            "try_again" -> {
+                // All branches need a slight delay to allow the dialog to close
+                // since the runRaceWithRetries loop handles dialogs at the start
+                // of each iteration. Can cause problem where we handle one branch
+                // then immediately handle dialogs again and handle a second branch
+                // for the same dialog instance.
+                if (disableRaceRetries) {
+                    if (enableFreeRaceRetry && IconOneFreePerDayTooltip.check(game.imageUtils)) {
+                        MessageLog.i(TAG, "[RACE] Failed mandatory race. Using daily free race retry...")
+                        raceRetries--
+                        dialog.ok(game.imageUtils)
+                        game.wait(0.5, skipWaitingForLoading = true)
+                        return Pair(true, dialog)
+                    }
+                    if (enableCompleteCareerOnFailure) {
+                        MessageLog.i(TAG, "[RACE] Failed a mandatory race and no retries remaining. Completing career...")
+                        // Manually set retries to -1 to break the race retry loop.
+                        raceRetries = -1
+                        dialog.close(game.imageUtils)
+                        game.wait(0.5, skipWaitingForLoading = true)
+                        return Pair(true, dialog)
+                    }
+                    MessageLog.i(TAG, "\n[END] Stopping the bot due to failing a mandatory race.")
+                    MessageLog.i(TAG, "********************")
+                    game.notificationMessage = "Stopping the bot due to failing a mandatory race."
+                    throw IllegalStateException()
+                }
+                raceRetries--
+                dialog.ok(game.imageUtils)
+                game.wait(0.5, skipWaitingForLoading = true)
+            }
             "unlock_requirements" -> dialog.close(imageUtils = game.imageUtils)
             // This dialog shows runner details other than our own.
             // We have to make sure we're handling this before handling dialogs
@@ -249,7 +288,6 @@ class Racing (private val game: Game) {
             }
         }
 
-        game.wait(0.5, skipWaitingForLoading = true)
         return Pair(true, dialog)
     }
 
@@ -423,7 +461,7 @@ class Racing (private val game: Game) {
             game.wait(1.0, skipWaitingForLoading = true)
             // Check for the consecutive race dialog before proceeding.
             handleDialogs()
-            // In case we didn't get the we still want to reset this flag.
+            // In case we didn't get the dialog we still want to reset this flag.
             bIgnoreConsecutiveRaceWarning = false
             return handleMaidenRace()
         } else if ((!game.currentDate.bIsPreDebut && ButtonRaceSelectExtra.click(imageUtils = game.imageUtils)) || isScheduledRace) {
@@ -457,8 +495,8 @@ class Racing (private val game: Game) {
         MessageLog.i(TAG, "[RACE] Starting Standalone Racing process...")
 
         // Skip the race if possible, otherwise run it manually.
-        val resultCheck = runRaceWithRetries()
-        finalizeRaceResults(resultCheck)
+        runRaceWithRetries()
+        finalizeRaceResults()
 
         MessageLog.i(TAG, "[RACE] Racing process for Standalone Race is completed.")
         MessageLog.i(TAG, "********************")
@@ -504,8 +542,8 @@ class Racing (private val game: Game) {
         game.wait(1.0)
 
         // Skip the race if possible, otherwise run it manually.
-        val resultCheck = runRaceWithRetries()
-        finalizeRaceResults(resultCheck)
+        runRaceWithRetries()
+        finalizeRaceResults()
 
         MessageLog.i(TAG, "[RACE] Racing process for Mandatory Race is completed.")
         MessageLog.i(TAG, "********************")
@@ -705,8 +743,8 @@ class Racing (private val game: Game) {
         game.wait(1.0)
 
         // Skip the race if possible, otherwise run it manually.
-        val resultCheck = runRaceWithRetries()
-        finalizeRaceResults(resultCheck, isExtra = true)
+        runRaceWithRetries()
+        finalizeRaceResults(isExtra = true)
 
         // Clear the next smart race day tracker since we just completed a race.
         nextSmartRaceDay = null
@@ -860,13 +898,13 @@ class Racing (private val game: Game) {
         game.wait(1.0)
 
         // Skip the race if possible, otherwise run it manually.
-        val resultCheck = runRaceWithRetries()
-        finalizeRaceResults(resultCheck, isExtra = true)
+        runRaceWithRetries()
+        finalizeRaceResults(isExtra = true)
 
         // Clear the next smart race day tracker since we just completed a race.
         nextSmartRaceDay = null
 
-        MessageLog.i(TAG, "[RACE] Racing process for Extra Race ${if (isScheduledRace) "(scheduled)" else ""} is completed.")
+        MessageLog.i(TAG, "[RACE] Racing process for Extra Race${if (isScheduledRace) " (scheduled) " else " "}is completed.")
         MessageLog.i(TAG, "********************")
         return true
     }
@@ -1886,177 +1924,107 @@ class Racing (private val game: Game) {
      * @return True if the bot completed the race with retry attempts remaining. Otherwise false.
      */
     fun runRaceWithRetries(): Boolean {
+        // We can check this outside the loop since retrying a race won't change
+        // the fact that it can be skipped.
         val canSkip = !ButtonViewResultsLocked.check(game.imageUtils, tries = 5)
-        
-        while (raceRetries >= 0) {
-            if (canSkip) {
-                MessageLog.i(TAG, "[RACE] Skipping race...")
-
-                // Press the skip button and then wait for your result of the race to show.
-                if (ButtonViewResults.click(game.imageUtils, tries = 30)) {
-                    MessageLog.i(TAG, "[RACE] Race was able to be skipped.")
-                }
-
-                game.waitForLoading()
-                game.wait(1.0)
-
-                // Now tap on the screen to get past the Race Result screen.
-                game.tap(350.0, 450.0, "ok", taps = 5)
-                game.wait(0.1)
-                game.tap(350.0, 450.0, "ok", taps = 5)
-                game.waitForLoading()
-                game.wait(1.0)
-
-                // Check if the race needed to be retried.
-                if (game.imageUtils.findImage("race_retry", tries = 5, region = game.imageUtils.regionBottomHalf, suppressError = true).first != null) {
-                    if (disableRaceRetries) {
-                        MessageLog.i(TAG, "\n[END] Stopping the bot due to failing a mandatory race.")
-                        MessageLog.i(TAG, "********************")
-                        game.notificationMessage = "Stopping the bot due to failing a mandatory race."
-                        throw IllegalStateException()
-                    }
-                    game.findAndTapImage("race_retry", tries = 1, region = game.imageUtils.regionBottomHalf, suppressError = true)
-                    MessageLog.i(TAG, "[RACE] The skipped race failed and needs to be run again. Attempting to retry...")
-                    game.wait(3.0)
-                    raceRetries--
-                } else {
-                    return true
-                }
-            } else {
-                MessageLog.i(TAG, "[RACE] Unable to skip the race. Proceeding to handle the race manually...")
-
-                // Press the manual button.
-                if (game.findAndTapImage("race_manual", tries = 30, region = game.imageUtils.regionBottomHalf)) {
-                    MessageLog.i(TAG, "[RACE] Started the manual race.")
-                }
-                game.wait(2.0)
-
-                // Confirm the Race Playback popup if it appears.
-                if (game.findAndTapImage("ok", tries = 1, region = game.imageUtils.regionMiddle, suppressError = true)) {
-                    MessageLog.i(TAG, "[RACE] Confirmed the Race Playback popup.")
-                    game.wait(5.0)
-                }
-
-                game.waitForLoading()
-                game.wait(2.0)
-
-                // Now press the confirm button to get past the list of participants.
-                if (game.findAndTapImage("race_confirm", tries = 30, region = game.imageUtils.regionBottomHalf)) {
-                    MessageLog.i(TAG, "[RACE] Dismissed the list of participants.")
-                }
-                game.wait(1.0)
-                // Skip the part where it reveals the name of the race.
-                if (ButtonSkip.click(game.imageUtils, tries = 30)) {
-                    MessageLog.i(TAG, "[RACE] Skipped the name reveal of the race.")
-                }
-                game.wait(1.0)
-                // Skip the walkthrough of the starting gate.
-                if (ButtonSkip.click(game.imageUtils, tries = 30)) {
-                    MessageLog.i(TAG, "[RACE] Skipped the walkthrough of the starting gate.")
-                }
-                game.wait(1.0)
-                // Skip the start of the race.
-                if (ButtonSkip.click(game.imageUtils, tries = 30)) {
-                    MessageLog.i(TAG, "[RACE] Skipped the start of the race.")
-                }
-                game.wait(1.0)
-                // Skip the lead up to the finish line.
-                if (ButtonSkip.click(game.imageUtils, tries = 30)) {
-                    MessageLog.i(TAG, "[RACE] Skipped the lead up to the finish line.")
-                }
-                game.wait(1.0)
-                // Skip crossing the finish line.
-                if (ButtonSkip.click(game.imageUtils, tries = 30)) {
-                    MessageLog.i(TAG, "[RACE] Skipped crossing the finish line.")
-                }
-                game.wait(2.0)
-                // Skip the result screen.
-                if (ButtonSkip.click(game.imageUtils, tries = 30)) {
-                    MessageLog.i(TAG, "[RACE] Skipped the results screen.")
-                }
-
-                // Now wait for the race result screen to appear which may come with the race retry popup if we failed the race.
-                game.wait(2.0)
-                game.waitForLoading()
-                game.wait(1.0)
-
-                // Check if the race needed to be retried.
-                if (game.imageUtils.findImage("race_retry", tries = 5, region = game.imageUtils.regionBottomHalf, suppressError = true).first != null) {
-                    if (disableRaceRetries) {
-                        MessageLog.i(TAG, "\n[END] Stopping the bot due to failing a mandatory race.")
-                        MessageLog.i(TAG, "********************")
-                        game.notificationMessage = "Stopping the bot due to failing a mandatory race."
-                        throw IllegalStateException()
-                    }
-                    game.findAndTapImage("race_retry", tries = 1, region = game.imageUtils.regionBottomHalf, suppressError = true)
-                    MessageLog.i(TAG, "[RACE] Manual race failed and needs to be run again. Attempting to retry...")
-                    game.wait(5.0)
-                    raceRetries--
-                } else {
-                    // Check if a Trophy was acquired.
-                    if (game.findAndTapImage("close", tries = 5, region = game.imageUtils.regionBottomHalf, suppressError = true)) {
-                        MessageLog.i(TAG, "[RACE] Closing popup to claim trophy...")
-                    }
-
-                    return true
-                }
-            }
+        if (canSkip) {
+            MessageLog.i(TAG, "[RACE] Race can be skipped. Proceeding to handle the race with skips...")
+        } else {
+            MessageLog.i(TAG, "[RACE] Unable to skip the race. Proceeding to handle the race manually...")
         }
 
+        do {
+            if (game.tryHandleAllDialogs()) {
+                continue
+            }
+
+            val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
+            if (canSkip) {
+                when {
+                    // Attempt to skip the race.
+                    ButtonViewResults.click(game.imageUtils, sourceBitmap = bitmap) -> {
+                        MessageLog.i(TAG, "[RACE] Clicked ViewResults button to skip race.")
+                    }
+                    ButtonNext.check(game.imageUtils, sourceBitmap = bitmap) -> {
+                        MessageLog.i(TAG, "[RACE] Reached race results screen. Exiting race retry loop...")
+                        return true
+                    }
+                    // Otherwise click to progress through screens.
+                    else -> game.tap(350.0, 450.0, "ok", taps = 3)
+                }
+            } else {
+                when {
+                    ButtonRaceManual.click(game.imageUtils, sourceBitmap = bitmap) -> {
+                        MessageLog.i(TAG, "[RACE] Started the manual race.")
+                    }
+                    ButtonRace.click(game.imageUtils, sourceBitmap = bitmap) -> {
+                        MessageLog.i(TAG, "[RACE] Dismissed the list of participants.")
+                    }
+                    ButtonRaceExclamation.click(game.imageUtils, sourceBitmap = bitmap) -> {
+                        MessageLog.i(TAG, "[RACE] Dismissed the list of participants.")
+                    }
+                    ButtonSkip.click(game.imageUtils, sourceBitmap = bitmap) -> {
+                        MessageLog.i(TAG, "[RACE] Clicked skip button.")
+                    }
+                    ButtonNext.check(game.imageUtils, sourceBitmap = bitmap) -> {
+                        MessageLog.i(TAG, "[RACE] Reached race results screen. Exiting race retry loop...")
+                        return true
+                    }
+                    // Otherwise click to progress through screens.
+                    else -> game.tap(350.0, 450.0, "ok", taps = 3)
+                }
+            }
+        } while (raceRetries >= 0)
+
+        MessageLog.d(TAG, "runRaceWithRetries: No retries remaining ($raceRetries). Returning FALSE.")
         return false
     }
 
     /**
      * Finishes up and confirms the results of the race and its success.
      *
-     * @param resultCheck Flag to see if the race was completed successfully. Throws an IllegalStateException if it did not.
      * @param isExtra Flag to determine the following actions to finish up this mandatory or extra race.
      */
-    fun finalizeRaceResults(resultCheck: Boolean, isExtra: Boolean = false) {
-        MessageLog.i(TAG, "\n[RACE] Now performing cleanup and finishing the race.")
-        if (!resultCheck) {
-            game.notificationMessage = "Bot has run out of retry attempts for racing. Stopping the bot now..."
-            throw IllegalStateException()
-        }
+    fun finalizeRaceResults(isExtra: Boolean = false): Boolean {
+        MessageLog.i(TAG, "[RACE] Now performing cleanup and finishing the race.")
 
         // Always reset flags after successful race completion, regardless of UI flow.
         firstTimeRacing = false
         clearRacingRequirementFlags()
 
-        // Bot will be at the screen where it shows the final positions of all participants.
-        // Press the confirm button and wait to see the triangle of fans.
-        MessageLog.i(TAG, "[RACE] Now attempting to confirm the final positions of all participants and number of gained fans")
-        if (game.findAndTapImage("next", tries = 30, region = game.imageUtils.regionBottomHalf)) {
-            game.wait(0.5)
-
-            // Now tap on the screen to get to the next screen.
-            game.tap(350.0, 750.0, "ok", taps = 3)
-
-            // Now press the end button to finish the race.
-            game.findAndTapImage("race_end", tries = 30, region = game.imageUtils.regionBottomHalf)
-
-            if (!isExtra) {
-                MessageLog.i(TAG, "[RACE] Seeing if a Training Goal popup will appear.")
-                // Wait until the popup showing the completion of a Training Goal appears and confirm it.
-                // There will be dialog before it so the delay should be longer.
-                game.wait(5.0)
-                if (game.findAndTapImage("next", tries = 10, region = game.imageUtils.regionBottomHalf)) {
-                    game.wait(2.0)
-
-                    // Now confirm the completion of a Training Goal popup.
-                    if (game.scenario != "Unity Cup") {
-                        MessageLog.i(TAG, "[RACE] There was a Training Goal popup. Confirming it now.")
-                        game.findAndTapImage("next", tries = 10, region = game.imageUtils.regionBottomHalf)
-                    }
-                }
-            } else if (game.findAndTapImage("next", tries = 10, region = game.imageUtils.regionBottomHalf)) {
-                // Same as above but without the longer delay.
-                game.wait(2.0)
-                game.findAndTapImage("race_end", tries = 10, region = game.imageUtils.regionBottomHalf)
-            }
-        } else {
+        // Bot should be at the screen where it shows the final positions of all participants.
+        if (!ButtonNext.check(game.imageUtils, tries = 30)) {
             MessageLog.e(TAG, "Cannot start the cleanup process for finishing the race. Moving on...")
+            return false
         }
+        
+        // Max time limit for the while loop to attempt to finalize race results.
+        // It really shouldn't ever take this long.
+        val startTime: Long = System.currentTimeMillis()
+        val maxTimeMs: Long = 30000
+        while (System.currentTimeMillis() - startTime < maxTimeMs) {
+            if (game.tryHandleAllDialogs()) {
+                // Don't want to start next iteration too quick since dialogs
+                // may still be in process of closing.
+                game.wait(0.5, skipWaitingForLoading = true)
+                continue
+            }
+            val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
+            when {
+                ButtonNext.click(game.imageUtils, sourceBitmap = bitmap) -> {
+                    MessageLog.i(TAG, "[RACE] Clicked on Next (race results) button.")
+                }
+                // If we see this button, click it a bunch to ensure we get a valid click.
+                // This is also the exit point for this function.
+                ButtonNextRaceEnd.click(game.imageUtils, sourceBitmap = bitmap, taps = 5) -> {
+                    MessageLog.i(TAG, "[RACE] Clicked on Next (race end) button.")
+                    return true
+                }
+                // Tap on the screen to progress through screens.
+                else -> game.tap(350.0, 750.0, "ok", taps = 3)
+            }
+        }
+        return false
     }
 
     /**

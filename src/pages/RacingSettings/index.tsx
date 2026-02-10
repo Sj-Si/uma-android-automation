@@ -5,6 +5,7 @@ import { useTheme } from "../../context/ThemeContext"
 import { BotStateContext, defaultSettings } from "../../context/BotStateContext"
 import CustomCheckbox from "../../components/CustomCheckbox"
 import CustomSelect from "../../components/CustomSelect"
+import CustomTitle from "../../components/CustomTitle"
 import { Input } from "../../components/ui/input"
 import NavigationLink from "../../components/NavigationLink"
 import PageHeader from "../../components/PageHeader"
@@ -21,6 +22,8 @@ const RacingSettings = () => {
         enableFarmingFans,
         daysToRunExtraRaces,
         disableRaceRetries,
+        enableFreeRaceRetry,
+        enableCompleteCareerOnFailure,
         enableStopOnMandatoryRaces,
         enableForceRacing,
         juniorYearRaceStrategy,
@@ -141,7 +144,9 @@ const RacingSettings = () => {
                         </Text>
                     </View>
 
-                    <View style={styles.section}>
+                    <CustomTitle title="Mandatory Race Settings" />
+
+                    <View style={styles.inputContainer}>
                         <CustomCheckbox
                             id="disable-race-retries"
                             checked={disableRaceRetries}
@@ -150,9 +155,25 @@ const RacingSettings = () => {
                             description="When enabled, the bot will not retry mandatory races if they fail and will stop."
                             className="my-2"
                         />
-                    </View>
-
-                    <View style={styles.section}>
+                        {disableRaceRetries && (
+                            <View style={{ marginTop: 8, marginLeft: 20 }}>
+                                <CustomCheckbox
+                                    id="enable-free-race-retry"
+                                    checked={enableFreeRaceRetry}
+                                    onCheckedChange={(checked) => updateRacingSetting("enableFreeRaceRetry", checked)}
+                                    label="Allow Daily Free Race Retry"
+                                    description="When enabled, the bot will attempt to retry a failed mandatory race only if the daily free race retry is available."
+                                />
+                            </View>
+                        )}
+                        <CustomCheckbox
+                            id="enable-complete-career-on-failure"
+                            checked={enableCompleteCareerOnFailure}
+                            onCheckedChange={(checked) => updateRacingSetting("enableCompleteCareerOnFailure", checked)}
+                            label="Complete Career on Failure"
+                            description="When enabled, the bot will proceed to the career completion screen when a mandatory race is failed and it has run out of retries (or if retries are disabled). This is as opposed to the bot stopping at the Try Again dialog."
+                            className="my-2"
+                        />
                         <CustomCheckbox
                             id="enable-stop-on-mandatory-races"
                             checked={enableStopOnMandatoryRaces}
