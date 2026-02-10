@@ -140,11 +140,6 @@ object LabelCurrentItemRequestStatus : ComponentInterface {
     override val template = Template("components/label/current_item_request_status", region = Region.topHalf)
 }
 
-object LabelNone : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]LabelNone"
-    override val template = Template("components/label/none", region = Region.middle)
-}
-
 object LabelItemRequestExpired : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]LabelItemRequestExpired"
     override val template = Template("components/label/the_item_request_has_expired", region = Region.bottomHalf)

@@ -102,11 +102,6 @@ object ButtonDailyRacesDoneForToday : ComponentInterface {
     override val template = Template("components/button/daily_races_done_for_today")
 }
 
-object ButtonDailyRacesLocked : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesLocked"
-    override val template = Template("components/button/daily_races_locked")
-}
-
 object ButtonDailyRacesJupiterCup : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesJupiterCup"
     override val template = Template("components/button/jupiter_cup")
@@ -382,11 +377,6 @@ object ButtonClub : ComponentInterface {
     override val template = Template("components/button/club")
 }
 
-object ButtonClubLocked : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonClubLocked"
-    override val template = Template("components/button/club_locked")
-}
-
 object ButtonClubItemRequest : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonClubItemRequest"
     override val template = Template("components/button/club_item_request")
@@ -406,24 +396,6 @@ object ButtonClubViewRequests : ComponentInterface {
 object ButtonDonateToAll0 : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonDonateToAll0"
     override val template = Template("components/button/donate_to_all_0")
-
-    override fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap?): Boolean {
-        val sourceBitmap: Bitmap = sourceBitmap ?: imageUtils.getSourceBitmap()
-        // Check color toward the left of the button's bitmap region.
-        val templateBitmap: Bitmap = template.getBitmap(imageUtils)!!
-        val point: Point? = findImageWithBitmap(imageUtils, sourceBitmap = sourceBitmap)
-        if (point == null) {
-            return false
-        }
-        // Get an x-value slightly offset from the left edge. This is a region
-        // where there isn't any text so we know it will be a solid color.
-        val x: Int = (
-            (point.x - (templateBitmap.width / 2.0)) +
-            (templateBitmap.width * 0.1)
-        ).toInt()
-        val y: Int = point.y.toInt()
-        return imageUtils.checkColorAtCoordinates(x, y, intArrayOf(154, 151, 159))
-    }
 }
 
 object ButtonDonateToAll1 : ComponentInterface {
@@ -521,14 +493,31 @@ object ButtonShopEndSale : ComponentInterface {
     override val template = Template("components/button/end_sale", region = Region.bottomHalf)
 }
 
-object ButtonShopExchange : ComponentInterface {
+object ButtonShopExchange : MultiStateButtonInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonShopExchange"
-    override val template = Template("components/button/shop_exchange", region = Region.rightHalf)
-}
+    override val templates: List<Template> = listOf(
+        Template("components/button/shop_exchange", region = Region.rightHalf),
+        Template("components/button/shop_exchange_disabled", region = Region.rightHalf),
+    )
 
-object ButtonShopExchangeDisabled : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonShopExchange"
-    override val template = Template("components/button/shop_exchange_disabled", region = Region.rightHalf)
+    // Special case since this component's disabled state actually requires a
+    // different template to detect.
+    override fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap?): Boolean {
+        val sourceBitmap: Bitmap = sourceBitmap ?: imageUtils.getSourceBitmap()
+        for ((index, template) in templates.withIndex()) {
+            val point: Point? = imageUtils.findImageWithBitmap(
+                template.path,
+                sourceBitmap = sourceBitmap,
+                region = template.region,
+                customConfidence = template.confidence,
+                suppressError = true,
+            )
+            if (point != null) {
+                return index != 0
+            }
+        }
+        return true
+    }
 }
 
 object ButtonTitleScreen : ComponentInterface {
@@ -571,14 +560,9 @@ object ButtonRaceStrategyEnd : ComponentInterface {
     override val template = Template("components/button/strategy_end_select", region = Region.middle)
 }
 
-object ButtonChampionsMeetingLocked : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonChampionsMeetingLocked"
-    override val template = Template("components/button/champions_meeting_locked")
-}
-
-object ButtonLegendRaceLocked : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonLegendRaceLocked"
-    override val template = Template("components/button/legend_race_locked")
+object ButtonChampionsMeeting : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonChampionsMeeting"
+    override val template = Template("components/button/champions_meeting")
 }
 
 object ButtonLegendRace : ComponentInterface {
@@ -660,11 +644,6 @@ object ButtonTeamTrialsQuickMode : MultiStateButtonInterface {
         Template("components/button/team_trials_quick_mode_off"),
         Template("components/button/team_trials_quick_mode_on"),
     )
-}
-
-object ButtonDailyRacesMultiRaceDisabled : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonDailyRacesMultiRaceDisabled"
-    override val template = Template("components/button/multi_race_disabled")
 }
 
 object ButtonDailyRacesMultiRaceOff : ComponentInterface {
