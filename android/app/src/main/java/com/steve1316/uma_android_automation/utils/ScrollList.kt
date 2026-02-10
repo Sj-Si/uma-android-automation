@@ -45,19 +45,27 @@ data class ScrollListEntry(
 
 /** Stores configuration for entry image detection.
  *
- * See [CustomImageUtils.detectRoundedRectangles] for more information.
+ * See [CustomImageUtils.detectRoundedRectangles] or
+ * [CustomImageUtils.detectRectanglesGeneric] for more information.
  */
 data class ScrollListEntryDetectionConfig (
+    val bUseGeneric: Boolean = true,
     // The area parameters can be updated later to fit the scroll list's dims.
     var minArea: Int? = null,
     var maxArea: Int? = null,
-    val blurSize: Int = 5,
+    val blurSize: Int = if (bUseGeneric) 7 else 5,
     val epsilonScalar: Double = 0.02,
+    // CustomImageUtils.detectRoundedRectangles params.
     val cannyLowerThreshold: Int = 30,
     val cannyUpperThreshold: Int = 50,
     val bUseAdaptiveThreshold: Boolean = true,
     val adaptiveThresholdBlockSize: Int = 11,
     val adaptiveThresholdConstant: Double = 2.0,
+    // CustomImageUtils.detectRoundedRectangles params.
+    val fillSeedPoint: Point = Point(10.0, 10.0),
+    val fillLoDiffValue: Int = 1,
+    val fillUpDiffValue: Int = 1,
+    val morphKernelSize: Int = 100,
 )
 
 /** Handles parsing entries in a scrollable list.
@@ -89,15 +97,22 @@ class ScrollList private constructor(
     private val defaultMaxEntryHeight: Int = game.imageUtils.relHeight((SharedData.displayHeight * 0.1302).toInt()) // 250px on 1920h
 
     private val entryDetectionConfig = ScrollListEntryDetectionConfig(
+        bUseGeneric = entryDetectionConfig.bUseGeneric,
         minArea = entryDetectionConfig.minArea ?: defaultMinEntryHeight * (bboxList.w.toDouble() * 0.7).toInt(),
         maxArea = entryDetectionConfig.maxArea ?: defaultMaxEntryHeight * bboxList.w,
         blurSize = entryDetectionConfig.blurSize,
         epsilonScalar = entryDetectionConfig.epsilonScalar,
+        // detectRoundedRectangles params
         cannyLowerThreshold = entryDetectionConfig.cannyLowerThreshold,
         cannyUpperThreshold = entryDetectionConfig.cannyUpperThreshold,
         bUseAdaptiveThreshold = entryDetectionConfig.bUseAdaptiveThreshold,
         adaptiveThresholdBlockSize = entryDetectionConfig.adaptiveThresholdBlockSize,
         adaptiveThresholdConstant = entryDetectionConfig.adaptiveThresholdConstant,
+        // detectRectanglesGeneric params
+        fillSeedPoint = entryDetectionConfig.fillSeedPoint,
+        fillLoDiffValue = entryDetectionConfig.fillLoDiffValue,
+        fillUpDiffValue = entryDetectionConfig.fillUpDiffValue,
+        morphKernelSize = entryDetectionConfig.morphKernelSize,
     )
 
     // Create a small padding within the bboxList. This is where the list entries
@@ -225,19 +240,35 @@ class ScrollList private constructor(
      */
     private fun detectEntries(bitmap: Bitmap? = null): List<BoundingBox> {
         // Extract a list of bounding boxes for each entry in the list.
-        val rects: List<BoundingBox> = game.imageUtils.detectRoundedRectangles(
-            bitmap = bitmap,
-            region = bboxList,
-            minArea = entryDetectionConfig.minArea,
-            maxArea = entryDetectionConfig.maxArea,
-            blurSize = entryDetectionConfig.blurSize,
-            epsilonScalar = entryDetectionConfig.epsilonScalar,
-            cannyLowerThreshold = entryDetectionConfig.cannyLowerThreshold,
-            cannyUpperThreshold = entryDetectionConfig.cannyUpperThreshold,
-            bUseAdaptiveThreshold = entryDetectionConfig.bUseAdaptiveThreshold,
-            adaptiveThresholdBlockSize = entryDetectionConfig.adaptiveThresholdBlockSize,
-            adaptiveThresholdConstant = entryDetectionConfig.adaptiveThresholdConstant,
-        )
+        val rects: List<BoundingBox> = if (entryDetectionConfig.bUseGeneric) {
+            game.imageUtils.detectRectanglesGeneric(
+                bitmap = bitmap,
+                region = bboxList,
+                minArea = entryDetectionConfig.minArea,
+                maxArea = entryDetectionConfig.maxArea,
+                blurSize = entryDetectionConfig.blurSize,
+                epsilonScalar = entryDetectionConfig.epsilonScalar,
+                fillSeedPoint = entryDetectionConfig.fillSeedPoint,
+                fillLoDiffValue = entryDetectionConfig.fillLoDiffValue,
+                fillUpDiffValue = entryDetectionConfig.fillUpDiffValue,
+                morphKernelSize = entryDetectionConfig.morphKernelSize,
+            )
+        } else {
+            game.imageUtils.detectRoundedRectangles(
+                bitmap = bitmap,
+                region = bboxList,
+                minArea = entryDetectionConfig.minArea,
+                maxArea = entryDetectionConfig.maxArea,
+                blurSize = entryDetectionConfig.blurSize,
+                epsilonScalar = entryDetectionConfig.epsilonScalar,
+                cannyLowerThreshold = entryDetectionConfig.cannyLowerThreshold,
+                cannyUpperThreshold = entryDetectionConfig.cannyUpperThreshold,
+                bUseAdaptiveThreshold = entryDetectionConfig.bUseAdaptiveThreshold,
+                adaptiveThresholdBlockSize = entryDetectionConfig.adaptiveThresholdBlockSize,
+                adaptiveThresholdConstant = entryDetectionConfig.adaptiveThresholdConstant,
+            )
+        }
+        
 
         // Need to adjust the coordinates of each BoundingBox to be in screen
         // coordinates instead of being relative to [bboxList].
