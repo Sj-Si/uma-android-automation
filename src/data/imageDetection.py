@@ -62,7 +62,7 @@ def detectRectangles(
     use_adaptive_threshold = False,
     adaptive_threshold_block_size = 11,
     adaptive_threshold_constant = 2.0,
-    window_name = "window",
+    window_name = "detectRectangles",
 ):
     is_video = os.path.splitext(fp)[-1] == ".mp4"
     
@@ -275,6 +275,135 @@ def detectRectanglesGeneric(
     if is_video:
         cap.release()
     cv2.destroyAllWindows()
+    
+def hex_to_hsv(hex_color):
+    """
+    Converts a hexadecimal color value to its corresponding HSV value 
+    using OpenCV's color space conversion.
+    
+    Args:
+        hex_color (str): The color in hexadecimal format (e.g., '#RRGGBB' or 'RRGGBB').
+        
+    Returns:
+        numpy.ndarray: The HSV values in OpenCV's range (H: 0-179, S: 0-255, V: 0-255).
+    """
+    # Remove '#' if present
+    hex_color = hex_color.lstrip('#')
+    
+    # Convert hex to RGB integers (0-255)
+    r = int(hex_color[0:2], 16)
+    g = int(hex_color[2:4], 16)
+    b = int(hex_color[4:6], 16)
+    
+    # OpenCV expects BGR format, so we use (b, g, r)
+    # Wrap the BGR values in a NumPy array with a specific shape and uint8 data type
+    color_bgr = np.uint8([[[b, g, r]]])
+    
+    # Convert the BGR color to HSV
+    color_hsv = cv2.cvtColor(color_bgr, cv2.COLOR_BGR2HSV)
+    
+    return color_hsv[0][0]
+
+def detectScrollBar(
+    fp, # can be .png or .mp4
+    min_area=0,
+    max_area=1e+7,
+    kernel_size=100,
+    crop_x=10,
+    crop_y=700,
+    crop_w=1055,
+    crop_h=840,
+    window_name="detectScrollBar"
+):
+    is_video = os.path.splitext(fp)[-1] == ".mp4"
+    
+    if is_video:
+        cap = cv2.VideoCapture(fp)
+
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    # Set the window to fullscreen mode
+    cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+    cv2.createTrackbar("Kernel", window_name, kernel_size, 1000, nothing)
+    
+    epsilon = 0.02
+    cv2.createTrackbar("Epsilon", window_name, int(epsilon * 100), 100, nothing)
+    
+
+    while(True):
+        kernel_size = cv2.getTrackbarPos("Kernel", window_name)
+        epsilon = cv2.getTrackbarPos("Epsilon", window_name)
+        
+        # Scale back to decimal range.
+        epsilon = float(epsilon) / 100.0
+    
+        # Process Image
+        if is_video:
+            ret, image = cap.read()
+            if not ret:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                ret, image = cap.read()
+        else:
+            image = cv2.imread(fp)
+            
+        image = image[crop_y:crop_y+crop_h, crop_x:crop_x+crop_w]
+        image_h, image_w = image.shape[:2]
+        
+        hsv_img = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        color_boundaries = [
+            (hex_to_hsv("#787388"), hex_to_hsv("#7d788e")),
+            (hex_to_hsv("#d3d1db"), hex_to_hsv("#d3d1db")),
+        ]
+
+        mask = np.zeros(hsv_img.shape[:2], dtype=np.uint8)
+        for (lower, upper) in color_boundaries:
+            lower = np.array(lower, dtype=np.uint8)
+            upper = np.array(upper, dtype=np.uint8)
+            
+            tmp_mask = cv2.inRange(hsv_img, lower, upper)
+            mask = cv2.bitwise_or(tmp_mask, mask)
+        
+        kernel = np.ones((kernel_size, kernel_size), np.uint8)
+        morphed = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+        morphed = cv2.morphologyEx(morphed, cv2.MORPH_CLOSE, np.ones((10, 10), np.uint8))
+        tmp = morphed
+
+        out_img = image
+        if len(out_img.shape) == 2 or out_img.shape[2] == 1:
+            out_img = cv2.cvtColor(out_img, cv2.COLOR_GRAY2BGR)
+        
+        found_rects = []
+        # Find and filter contours
+        contours, _ = cv2.findContours(tmp, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for cnt in contours:
+            # Filter out invalid sized contours.
+            area = cv2.contourArea(cnt)
+            if area < min_area or area > max_area:
+                continue
+            
+            # If 4 vertices are found, it's a candidate for a rounded rectangle
+            x, y, w, h = cv2.boundingRect(cnt)
+            if cnt not in found_rects:
+                found_rects.append(cnt)
+                
+                # Do not include any rects that are touching the bounding region.
+                if (x <= 0 or
+                    y <= 0 or
+                    x + w >= image_w - 1 or
+                    y + h >= image_h - 1
+                ):
+                    continue
+                # Draw rectangle for visualization.
+                cv2.rectangle(out_img, (x, y), (x + w, y + h), (0, 255, 0), 1)
+
+        res = display_fullscreen_no_stretch(out_img, SCREEN_WIDTH, SCREEN_HEIGHT)
+        cv2.imshow(window_name, res)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    if is_video:
+        cap.release()
+    cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     fp = "./imageDetectionSample.png"
@@ -305,5 +434,15 @@ if __name__ == "__main__":
         crop_y=700,
         crop_w=1055,
         crop_h=840,
-        window_name="detectRectanglesGeneric"
+    )
+
+    detectScrollBar(
+        fp,
+        min_area=0,
+        max_area=1e+7,
+        kernel_size=100,
+        crop_x=10,
+        crop_y=700,
+        crop_w=1055,
+        crop_h=840,
     )

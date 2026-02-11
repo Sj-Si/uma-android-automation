@@ -2892,4 +2892,269 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
             return 0
         }
     }
+
+    /** Converts an RGB hex string to an HSV
+     *
+     * The string should be a color hex string of the format:
+     *      #RRGGBB
+     *
+     * @return A Scalar with HSV values.
+     * H: 0-179
+     * S: 0-255
+     * V: 0-255
+     */
+    fun String.hexRGBToHSVScalar(): Scalar {
+        val colorInt = Color.parseColor(this)
+        val r = Color.red(colorInt)
+        val g = Color.green(colorInt)
+        val b = Color.blue(colorInt)
+
+        val bgrColor = Scalar(b.toDouble(), g.toDouble(), r.toDouble())
+
+        val bgrMat = Mat(1, 1, CvType.CV_8UC3, bgrColor)
+        val hsvMat = Mat()
+
+        Imgproc.cvtColor(bgrMat, hsvMat, Imgproc.COLOR_BGR2HSV)
+        val res = Scalar(hsvMat.get(0, 0))
+
+        bgrMat.release()
+        hsvMat.release()
+
+        return res
+    }
+
+    /** Detects a scrollbar on the screen.
+     *
+     * @param bitmap Optional bitmap containing the rectangles you want to detect.
+     * If NULL, then a screenshot will be used.
+     * @param region A bounding box region to limit the detection to.
+     * If not specified, then the entire bitmap will be used.
+     * @param minArea Filters out any rectangles with an area smaller than this parameter.
+     * If not specified, then no lower bound filter will be applied.
+     * @param maxArea Filters out any rectangles with an area larger than this parameter.
+     * If not specified, then no upper bound filter will be applied.
+     * @param morphCloseKernelSize The size of the kernel used when applying a
+     * closing morphology to the image. Higher values improve detection of scrollbars
+     * at the cost of reduced location accuracy.
+     *
+     * @return On success, a pair where the first value is the full scrollbar's
+     * BoundingBox and the second value is just the scrollbar's thumb's BoundingBox.
+     * If either of these could not be found, then we return NULL.
+     */
+    fun detectScrollBar(
+        bitmap: Bitmap? = null,
+        region: BoundingBox? = null,
+        minArea: Int? = null,
+        maxArea: Int? = null,
+        morphCloseKernelSize: Int = 10,
+    ): Pair<BoundingBox, BoundingBox>? {
+        val bitmap: Bitmap = if (region == null) {
+            bitmap ?: getSourceBitmap()
+        } else if (bitmap == null) {
+            getRegionBitmap(region)
+        } else {
+            createSafeBitmap(bitmap, region, "detectScrollBar") ?: getSourceBitmap()
+        }
+
+        // Input sanitization
+
+        val screenArea: Int = SharedData.displayWidth * SharedData.displayHeight
+        val minArea: Int = (minArea ?: 0).coerceIn(0, screenArea)
+        val maxArea: Int = (maxArea ?: screenArea).coerceIn(minArea, screenArea)
+
+        if (minArea > maxArea) {
+            throw IllegalArgumentException("minArea ($minArea) > maxArea ($maxArea)")
+        }
+
+        val morphCloseKernelSize: Int = morphCloseKernelSize.coerceIn(0, 250)
+        val morphCloseKernel = Imgproc.getStructuringElement(
+            Imgproc.MORPH_RECT,
+            Size(morphCloseKernelSize.toDouble(), morphCloseKernelSize.toDouble()),
+        )
+
+        val morphOpenKernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(5.0, 5.0))
+
+        val srcImage = Mat()
+		Utils.bitmapToMat(bitmap, srcImage)
+
+        val image = Mat()
+        Imgproc.cvtColor(srcImage, image, Imgproc.COLOR_BGR2GRAY)
+
+        val hsvImage = Mat()
+        Imgproc.cvtColor(srcImage, hsvImage, Imgproc.COLOR_BGR2HSV)
+
+        if (debugMode) {
+            val resultBitmap = createBitmap(hsvImage.cols(), hsvImage.rows())
+            Utils.matToBitmap(hsvImage, resultBitmap)
+            saveBitmap(resultBitmap, "detectScrollBar_hsvImage", fullRes = true)
+        }
+
+        val thumbColorRange: Pair<String, String> = Pair("#787388", "#7d788e")
+        val barColorRange: Pair<String, String> = Pair("#d3d1db", "#d3d1db")
+
+        val combinedColorRange: List<Pair<String, String>> = listOf(
+            thumbColorRange,
+            barColorRange,
+        )
+
+        /** Generates a mask from an HSV image using the given color range.
+         *
+         * @param hsvImage The HSV image used to gernerate the mask.
+         * @param colorRanges A list of pairs of RGB hex color strings.
+         * The first item in each pair is the lower bound and the second item is
+         * the upper bound. Colors within this range in [hsvImage] will be masked.
+         *
+         * @return The generated mask Mat. Make sure to release this Mat when done.
+         */
+        fun extractMask(hsvImage: Mat, colorRanges: List<Pair<String, String>>): Mat {
+            val mask = Mat.zeros(hsvImage.size(), CvType.CV_8UC1)
+            for ((lower, upper) in colorRanges) {
+                val tmpMask = Mat()
+                Core.inRange(
+                    hsvImage,
+                    lower.hexRGBToHSVScalar(),
+                    upper.hexRGBToHSVScalar(),
+                    tmpMask,
+                )
+                Core.bitwise_or(mask, tmpMask, mask)
+                tmpMask.release()
+            }
+
+            Imgproc.morphologyEx(mask, mask, Imgproc.MORPH_OPEN, morphOpenKernel)
+            Imgproc.morphologyEx(mask, mask, Imgproc.MORPH_CLOSE, morphCloseKernel)
+            return mask
+        }
+
+        val barMask: Mat = extractMask(
+            hsvImage,
+            combinedColorRange,
+        )
+        if (debugMode) {
+            val resultBitmap = createBitmap(barMask.cols(), barMask.rows())
+            Utils.matToBitmap(barMask, resultBitmap)
+            saveBitmap(resultBitmap, "detectScrollBar_barMask", fullRes = true)
+        }
+
+        val thumbMask: Mat = extractMask(
+            hsvImage,
+            listOf<Pair<String, String>>(thumbColorRange),
+        )
+        if (debugMode) {
+            val resultBitmap = createBitmap(thumbMask.cols(), thumbMask.rows())
+            Utils.matToBitmap(thumbMask, resultBitmap)
+            saveBitmap(resultBitmap, "detectScrollBar_thumbMask", fullRes = true)
+        }
+
+        /** Detects part of a scrollbar in the given mask.
+         *
+         * @param mask The masked image to find a scrollbar within.
+         * @param minArea The smallest area allowed for the scrollbar.
+         * @param maxArea The largest area allowed for the scrollbar.
+         * @param debugString String used for debugging and saving debug images.
+         *
+         * @return The BoundingBox of the detected scrollbar on success.
+         * Otherwise, NULL.
+         */
+        fun detectFromMask(
+            mask: Mat,
+            minArea: Int,
+            maxArea: Int,
+            debugString: String = "",
+        ): BoundingBox? {
+            val debugImage = Mat()
+            Utils.bitmapToMat(bitmap, debugImage)
+
+            val contours: MutableList<MatOfPoint> = mutableListOf()
+            val hierarchy = Mat()
+            Imgproc.findContours(
+                mask,
+                contours,
+                hierarchy,
+                Imgproc.RETR_EXTERNAL,
+                Imgproc.CHAIN_APPROX_SIMPLE,
+            )
+
+            val result: MutableList<Pair<BoundingBox, Double>> = mutableListOf()
+            for (cnt in contours) {
+                val area = Imgproc.contourArea(cnt)
+
+                // Filter out contours with invalid areas.
+                if (area < minArea || area > maxArea) {
+                    continue
+                }
+
+                val rect = Imgproc.boundingRect(cnt)
+
+                // Do not include any rects that are touching the bounding region.
+                if (rect.x <= 0 ||
+                    rect.y <= 0 ||
+                    rect.x + rect.width >= bitmap.width - 1 ||
+                    rect.y + rect.height >= bitmap.height - 1
+                ) {
+                    continue
+                }
+
+                if (debugMode) {
+                    Imgproc.rectangle(debugImage, rect.tl(), rect.br(), Scalar(0.0, 255.0, 0.0), 2)
+                }
+
+                result.add(Pair(
+                    BoundingBox(rect.x, rect.y, rect.width, rect.height),
+                    area,
+                ))
+            }
+
+            if (debugMode) {
+                val resultBitmap = createBitmap(debugImage.cols(), debugImage.rows())
+                Imgproc.cvtColor(debugImage, debugImage, Imgproc.COLOR_BGR2RGB)
+                Utils.matToBitmap(debugImage, resultBitmap)
+                saveBitmap(resultBitmap, "detectScrollBar_$debugString", fullRes = true)
+            }
+
+            contours.forEach { it.release() }
+            contours.clear()
+            hierarchy.release()
+            debugImage.release()
+
+            return result.maxByOrNull { it.second }?.first ?: null
+        }
+
+        val bboxBar: BoundingBox? = detectFromMask(
+            barMask,
+            minArea = minArea,
+            maxArea = maxArea,
+            debugString = "bar",
+        )
+        if (bboxBar == null) {
+            MessageLog.i(TAG, "No scrollbar detected.")
+            val resultBitmap = createBitmap(srcImage.cols(), srcImage.rows())
+            Imgproc.cvtColor(srcImage, srcImage, Imgproc.COLOR_BGR2RGB)
+            Utils.matToBitmap(srcImage, resultBitmap)
+            saveBitmap(resultBitmap, "detectScrollBar_FAILED", fullRes = true)
+        }
+
+        val bboxThumb: BoundingBox? = detectFromMask(
+            thumbMask,
+            minArea = 100,
+            maxArea = maxArea,
+            debugString = "thumb",
+        )
+        if (bboxThumb == null) {
+            MessageLog.i(TAG, "No scrollbar thumb detected.")
+        }
+
+        // Free memory for each mat.
+        barMask.release()
+        thumbMask.release()
+        hsvImage.release()
+        image.release()
+        srcImage.release()
+
+        if (bboxThumb == null || bboxBar == null) {
+            return null
+        }
+
+        MessageLog.d(TAG, "Detected ScrollBar: $bboxBar, ScrollBarThumb: $bboxThumb")
+        return Pair(bboxBar, bboxThumb)
+    }
 }
