@@ -217,6 +217,11 @@ class ClubActivity(
             return true
         }
 
+        if (!goToHome()) {
+            MessageLog.e(TAG, "[$name] Failed to go to MenuBar Home tab. Cannot continue.")
+            return false
+        }
+
         if (waitForButton(ButtonClub, bShouldClickButton = false) == null) {
             MessageLog.e(TAG, "Failed to find Club button. Cannot proceed.")
             return false

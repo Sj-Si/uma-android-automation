@@ -337,11 +337,6 @@ abstract class Plugin(
     open fun start(timeoutMs: Int = 60000 * 5): Boolean {
         MessageLog.i(TAG, "[$name] Starting...")
 
-        if (!goToHome()) {
-            MessageLog.e(TAG, "[$name] Failed to go to MenuBar Home tab. Cannot continue.")
-            return false
-        }
-
         if (!goToStart()) {
             MessageLog.e(TAG, "[$name] Failed to go to plugin's start screen.")
             // Attempt to return to home. Whether this fails here doesn't matter

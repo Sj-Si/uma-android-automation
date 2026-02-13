@@ -84,6 +84,11 @@ class DailySale(
             return true
         }
 
+        if (!goToHome()) {
+            MessageLog.e(TAG, "[$name] Failed to go to MenuBar Home tab. Cannot continue.")
+            return false
+        }
+
         if (waitForButton(ButtonHomeShop, bShouldClickButton = false) == null) {
             MessageLog.e(TAG, "Failed to find Shop button. Cannot proceed.")
             return false
@@ -187,11 +192,6 @@ class DailySale(
 
     override fun start(timeoutMs: Int): Boolean {
         MessageLog.i(TAG, "[$name] Starting...")
-
-        if (!goToHome()) {
-            MessageLog.e(TAG, "[$name] Failed to go to MenuBar Home tab. Cannot continue.")
-            return false
-        }
 
         if (!goToStart()) {
             MessageLog.e(TAG, "[$name] Failed to go to plugin's start screen.")

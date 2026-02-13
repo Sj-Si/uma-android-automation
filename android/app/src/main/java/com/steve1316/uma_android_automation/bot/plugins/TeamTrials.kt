@@ -51,10 +51,7 @@ class TeamTrials(
     fun handleSelectOpponent(bitmap: Bitmap? = null): Boolean {
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
         // Always select the extra rewards option if it is available.
-        if (LabelTeamTrialsExtraRewardsOpponent.click(
-            game.imageUtils,
-            tries = 10,
-        )) {
+        if (LabelTeamTrialsExtraRewardsOpponent.click(game.imageUtils, tries = 10)) {
             return true
         }
 
@@ -135,9 +132,16 @@ class TeamTrials(
         when (currentPage) {
             PageTeamTrialsHome -> {
                 PageTeamTrialsHome.next(game.imageUtils, bitmap)
+                // Waiting for this page here should prevent us from tapping
+                // randomly on the screen which could cause us to accidentally
+                // select an opponent before properly handling the opponent screen.
                 waitForPage(PageTeamTrialsSelectOpponent)
             }
             PageTeamTrialsSelectOpponent -> {
+                // Add a small delay here since when we get extra rewards, it will
+                // temporarily make the screen inactive which would cause us to fail
+                // to click an opponent.
+                game.wait(1.0, skipWaitingForLoading = true)
                 if (!handleSelectOpponent(bitmap)) {
                     MessageLog.e(TAG, "progress: Failed to select opponent.")
                     return checkPage()
@@ -211,6 +215,11 @@ class TeamTrials(
 
         if (PageTeamTrialsHome.check(game.imageUtils)) {
             return true
+        }
+
+        if (!goToHome()) {
+            MessageLog.e(TAG, "[$name] Failed to go to MenuBar Home tab. Cannot continue.")
+            return false
         }
 
         if (!menuBar.goToRace()) {

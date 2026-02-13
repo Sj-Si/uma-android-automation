@@ -184,6 +184,11 @@ class SpecialMissions(
             return true
         }
 
+        if (!goToHome()) {
+            MessageLog.e(TAG, "[$name] Failed to go to MenuBar Home tab. Cannot continue.")
+            return false
+        }
+
         if (waitForButton(ButtonHomeSpecialMissions, bShouldClickButton = true) == null) {
             MessageLog.w(TAG, "Failed to find Special Missions button.")
             return false

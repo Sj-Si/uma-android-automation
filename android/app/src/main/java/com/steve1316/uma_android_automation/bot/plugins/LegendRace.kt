@@ -130,6 +130,11 @@ class LegendRace(
             return true
         }
 
+        if (!goToHome()) {
+            MessageLog.e(TAG, "[$name] Failed to go to MenuBar Home tab. Cannot continue.")
+            return false
+        }
+
         if (!menuBar.goToRace()) {
             MessageLog.w(TAG, "Failed to go to menu bar's Race tab.")
             return false
