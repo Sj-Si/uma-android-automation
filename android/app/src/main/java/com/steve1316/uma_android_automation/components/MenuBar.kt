@@ -86,14 +86,12 @@ class MenuBar private constructor(
                     game.tap(bbox.cx.toDouble(), bbox.cy.toDouble(), "ok", taps = 1)
                     // Need to delay before checking if button is active since tapping
                     // causes an animation which will cause isActive to always return true.
-                    // Only the SCOUT page connects to the server when switching.
-                    // The rest don't need to wait for loading.
-                    game.wait(0.5, skipWaitingForLoading = name != MenuBarButtonName.SCOUT)
+                    game.wait(0.5)
                     if (isActive()) {
                         // Add a delay for elements to become interactive after
                         // switching tabs. Unsure why nothing is interactive for
                         // such a long time when switching tabs in this game.
-                        game.wait(2.0)
+                        game.wait(1.0, skipWaitingForLoading = true)
                         return true
                     }
                 }
@@ -236,12 +234,6 @@ class MenuBar private constructor(
      * @return Whether the [menuBarButtonName] tab was selected and is now active.
      */
     fun goToTab(menuBarButtonName: MenuBarButtonName, timeoutMs: Int = 3000): Boolean {
-        // Don't bother clicking if we're already at the tab.
-        if (checkActiveTab(menuBarButtonName)) {
-            MessageLog.d(TAG, "Already at specified tab: ${menuBarButtonName.name}")
-            return true
-        }
-
         val button: MenuBarButton = buttons[menuBarButtonName]!!
         MessageLog.i(TAG, "Navigating to menu: ${menuBarButtonName.name}")
         val result: Boolean = button.click(timeoutMs)
