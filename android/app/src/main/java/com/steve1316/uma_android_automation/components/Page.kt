@@ -324,7 +324,6 @@ object PageHome : PageInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]PageHome"
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
     override val identifyingComponents: List<ComponentInterface> = listOf(
-        ButtonMenuBarHomeSelected,
         ButtonHomeShop,
     )
 

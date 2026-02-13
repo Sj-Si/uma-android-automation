@@ -28,7 +28,6 @@ import com.steve1316.uma_android_automation.components.ButtonShoesMile
 import com.steve1316.uma_android_automation.components.ButtonShoesMedium
 import com.steve1316.uma_android_automation.components.ButtonShoesLong
 import com.steve1316.uma_android_automation.components.ButtonShoesDirt
-import com.steve1316.uma_android_automation.components.ButtonMenuBarHome
 import com.steve1316.uma_android_automation.components.ButtonDonateToAll0
 import com.steve1316.uma_android_automation.components.LabelItemRequestExpired
 import com.steve1316.uma_android_automation.components.LabelItemRequestCooldown
@@ -36,6 +35,7 @@ import com.steve1316.uma_android_automation.components.LabelItemRequestMaxDonati
 import com.steve1316.uma_android_automation.components.LabelItemRequestSelectItem
 import com.steve1316.uma_android_automation.components.LabelItemRequestConfirm
 import com.steve1316.uma_android_automation.components.LabelCurrentItemRequestStatus
+import com.steve1316.uma_android_automation.components.MenuBar
 
 enum class ShoeType {
     SPRINT,
@@ -55,8 +55,9 @@ enum class ShoeType {
 
 class ClubActivity(
     game: Game,
+    menuBar: MenuBar,
     commonDialogHandler: DialogHandlerCallback? = null,
-) : Plugin(game, commonDialogHandler) {
+) : Plugin(game, menuBar, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]ClubActivity"
 
     private val clubRequestShoeTypeString: String = SettingsHelper.getStringSetting("dailyTasks", "clubRequestShoeType")
@@ -214,11 +215,6 @@ class ClubActivity(
 
         if (PageClubHome.check(game.imageUtils)) {
             return true
-        }
-
-        if (!goToHome()) {
-            MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
-            return false
         }
 
         if (waitForButton(ButtonClub, bShouldClickButton = false) == null) {

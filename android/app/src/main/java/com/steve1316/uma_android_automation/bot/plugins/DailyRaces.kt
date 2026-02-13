@@ -9,6 +9,7 @@ import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.plugins.Plugin
+import com.steve1316.uma_android_automation.bot.plugins.PluginFactory
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 import com.steve1316.uma_android_automation.utils.ScrollList
@@ -17,7 +18,6 @@ import com.steve1316.uma_android_automation.components.BaseComponentInterface
 import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageInterface
-import com.steve1316.uma_android_automation.components.PageHome
 import com.steve1316.uma_android_automation.components.PageDailyRacesRaceSelection
 import com.steve1316.uma_android_automation.components.PageDailyRacesDifficultySelection
 import com.steve1316.uma_android_automation.components.PageExtraRacesRunnerSelection
@@ -35,10 +35,9 @@ import com.steve1316.uma_android_automation.components.ButtonRaceAgain
 import com.steve1316.uma_android_automation.components.ButtonSkip
 import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonRaceExclamation
-import com.steve1316.uma_android_automation.components.ButtonMenuBarRace
-import com.steve1316.uma_android_automation.components.ButtonMenuBarHome
 import com.steve1316.uma_android_automation.components.ButtonDailyRaces
 import com.steve1316.uma_android_automation.components.IconExtraRacePill
+import com.steve1316.uma_android_automation.components.MenuBar
 
 enum class DailyRaceName {
     MOONLIGHT_SHO,
@@ -55,11 +54,11 @@ enum class DailyRaceName {
 
 class DailyRaces(
     game: Game,
+    menuBar: MenuBar,
     commonDialogHandler: DialogHandlerCallback? = null,
-) : Plugin(game, commonDialogHandler) {
+) : Plugin(game, menuBar, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]DailyRaces"
 
-    private val bShouldHandleDailySale: Boolean = SettingsHelper.getStringArraySetting("dailyTasks", "saleItems").isNotEmpty()
     private val dailyRaceNameString: String = SettingsHelper.getStringSetting("dailyTasks", "dailyRaceName")
     private val dailyRaceName: DailyRaceName = DailyRaceName.fromName(dailyRaceNameString)!!
 
@@ -102,14 +101,13 @@ class DailyRaces(
 
         when (result.dialog.name) {
             "daily_sale" -> {
-                if (bShouldHandleDailySale) {
+                val dailySale: Plugin? = PluginFactory.create("DailySale", game, menuBar, commonDialogHandler)
+                if (dailySale == null) {
+                    result.dialog.close(game.imageUtils)
+                } else {
                     result.dialog.ok(game.imageUtils)
                     game.wait(0.5)
-                    game.waitForLoading()
-                    val dailySale = DailySale(game, commonDialogHandler)
                     dailySale.start()
-                } else {
-                    result.dialog.close(game.imageUtils)
                 }
             }
             "items_selected" -> result.dialog.ok(game.imageUtils)
@@ -126,15 +124,21 @@ class DailyRaces(
                     ButtonDailyRacesMultiRaceOn.checkDisabled(game.imageUtils)
                 ) {
                     result.dialog.ok(game.imageUtils)
+                    // We need an extra delay here since this dialog is slow to close.
+                    // Without this, the bot may try to click the dialog button again
+                    // as the dialog is closing which will cause the bot to accidentally
+                    // click the Race menu bar button instead.
                     game.wait(0.5)
-                    game.waitForLoading()
                     return DialogHandlerResult.Handled(result.dialog)
                 }
                 
                 ButtonDailyRacesMultiRaceOff.click(game.imageUtils)
                 result.dialog.ok(game.imageUtils)
+                // We need an extra delay here since this dialog is slow to close.
+                // Without this, the bot may try to click the dialog button again
+                // as the dialog is closing which will cause the bot to accidentally
+                // click the Race menu bar button instead.
                 game.wait(0.5)
-                game.waitForLoading()
             }
             "race_results" -> result.dialog.ok(game.imageUtils)
             else -> return DialogHandlerResult.Unhandled(result.dialog)
@@ -215,13 +219,8 @@ class DailyRaces(
             return true
         }
 
-        if (!goToHome()) {
-            MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
-            return false
-        }
-
-        if (waitForButton(ButtonMenuBarRace, bShouldClickButton = true) == null) {
-            MessageLog.w(TAG, "Failed to find Race button on menu bar.")
+        if (!menuBar.goToRace()) {
+            MessageLog.w(TAG, "Failed to go to menu bar's Race tab.")
             return false
         }
 

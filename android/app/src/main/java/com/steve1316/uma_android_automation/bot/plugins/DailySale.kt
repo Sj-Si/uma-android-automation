@@ -20,38 +20,36 @@ import com.steve1316.uma_android_automation.utils.types.BoundingBox
 import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageInterface
-import com.steve1316.uma_android_automation.components.PageHome
 import com.steve1316.uma_android_automation.components.PageDailySale
 import com.steve1316.uma_android_automation.components.ButtonShopExchange
 import com.steve1316.uma_android_automation.components.ButtonShopEndSale
 import com.steve1316.uma_android_automation.components.ButtonBack
 import com.steve1316.uma_android_automation.components.ButtonHomeShopDailySale
 import com.steve1316.uma_android_automation.components.ButtonShopDailySales
-import com.steve1316.uma_android_automation.components.ButtonMenuBarHome
 import com.steve1316.uma_android_automation.components.ButtonHomeShop
-
-enum class SaleItem {
-    STAR_PIECE,
-    ALARM_CLOCK,
-    PLEASING_PARFAIT;
-
-    companion object {
-        private val nameMap = entries.associateBy { it.name }
-
-        fun fromName(value: String): SaleItem? = nameMap[value.replace(" ", "_").uppercase()]
-    }
-}
+import com.steve1316.uma_android_automation.components.MenuBar
 
 class DailySale(
     game: Game,
+    menuBar: MenuBar,
     commonDialogHandler: DialogHandlerCallback? = null,
-) : Plugin(game, commonDialogHandler) {
+) : Plugin(game, menuBar, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]DailySale"
+
+    enum class SaleItem {
+        STAR_PIECE,
+        ALARM_CLOCK,
+        PLEASING_PARFAIT;
+
+        companion object {
+            private val nameMap = entries.associateBy { it.name }
+
+            fun fromName(value: String): SaleItem? = nameMap[value.replace(" ", "_").uppercase()]
+        }
+    }
 
     private val saleItemsToBuy: List<SaleItem> = SettingsHelper.getStringArraySetting("dailyTasks", "saleItems")
         .mapNotNull { it -> SaleItem.fromName(it) }
-
-    override val bIsEnabled: Boolean = super.bIsEnabled && saleItemsToBuy.isNotEmpty()
 
     private var bSaleExpired: Boolean = false
 
@@ -84,11 +82,6 @@ class DailySale(
 
         if (PageDailySale.check(game.imageUtils)) {
             return true
-        }
-
-        if (!goToHome()) {
-            MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
-            return false
         }
 
         if (waitForButton(ButtonHomeShop, bShouldClickButton = false) == null) {
@@ -165,6 +158,7 @@ class DailySale(
         // Click the button if it is in our list of items to buy.
         if (match != null && !bIsDisabled) {
             game.tap(buttonLoc.x, buttonLoc.y, ButtonShopExchange.templates.first()?.path ?: "ok")
+            // Clicking the exchange button will load from server. Need to wait.
             game.wait(0.5)
         } else {
             return false
@@ -192,13 +186,22 @@ class DailySale(
     }
 
     override fun start(timeoutMs: Int): Boolean {
+        MessageLog.i(TAG, "[$name] Starting...")
+
+        if (!goToHome()) {
+            MessageLog.e(TAG, "[$name] Failed to go to MenuBar Home tab. Cannot continue.")
+            return false
+        }
+
         if (!goToStart()) {
-            MessageLog.e(TAG, "Failed to go to start screen for plugin.")
+            MessageLog.e(TAG, "[$name] Failed to go to plugin's start screen.")
+            // Attempt to return to home. Whether this fails here doesn't matter
+            // since the plugin is already in a failure state.
+            goToHome()
             return false
         }
 
         val scrollList: ScrollList? = ScrollList.create(game)
-
         if (scrollList == null) {
             MessageLog.e(TAG, "[DAILY_SALE] Failed to detect sale list.")
             return false
@@ -214,13 +217,14 @@ class DailySale(
             handleDialogs()
         }
 
+        // Instead of returning to home, we want to click the back button since
+        // this will take us to where we were before entering the sale.
         waitForButton(ButtonBack, bShouldClickButton = true)
 
         // Allow the game to load. We don't know where the Back button will take
         // us since we may have come here via a dialog so we need to ensure that
         // we are back where we came from before returning to the calling function.
         game.wait(0.5)
-        game.waitForLoading()
 
         return true
     }

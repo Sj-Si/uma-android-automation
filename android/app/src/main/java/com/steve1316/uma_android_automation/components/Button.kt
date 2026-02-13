@@ -595,42 +595,6 @@ object ButtonExchange : ComponentInterface {
 
 // More complex buttons
 
-object ButtonMenuBarHomeSelected : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonMenuBarHomeSelected"
-    override val template = Template("components/button/menu_bar_home_selected")
-}
-
-object ButtonMenuBarHomeUnselected : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonMenuBarHomeUnselected"
-    override val template = Template("components/button/menu_bar_home_unselected")
-}
-
-object ButtonMenuBarHome : MultiStateButtonInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonMenuBarHome"
-    override val templates: List<Template> = listOf(
-        Template("components/button/menu_bar_home_unselected"),
-        Template("components/button/menu_bar_home_selected"),
-    )
-}
-
-object ButtonMenuBarRaceSelected : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonMenuBarRaceSelected"
-    override val template = Template("components/button/menu_bar_race_selected")
-}
-
-object ButtonMenuBarRaceUnselected : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonMenuBarRaceUnselected"
-    override val template = Template("components/button/menu_bar_race_unselected")
-}
-
-object ButtonMenuBarRace : MultiStateButtonInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonMenuBarRace"
-    override val templates: List<Template> = listOf(
-        Template("components/button/menu_bar_race_unselected"),
-        Template("components/button/menu_bar_race_selected"),
-    )
-}
-
 object ButtonTeamTrialsQuickModeOff : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonTeamTrialsQuickModeOff"
     override val template = Template("components/button/team_trials_quick_mode_off")

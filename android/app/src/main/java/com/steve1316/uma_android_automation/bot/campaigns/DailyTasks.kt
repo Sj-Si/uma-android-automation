@@ -13,21 +13,15 @@ import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.bot.Game
 
 import com.steve1316.uma_android_automation.bot.plugins.Plugin
+import com.steve1316.uma_android_automation.bot.plugins.PluginFactory
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
-import com.steve1316.uma_android_automation.bot.plugins.ChampionsMeeting
-import com.steve1316.uma_android_automation.bot.plugins.ClubActivity
-import com.steve1316.uma_android_automation.bot.plugins.DailyRaces
-import com.steve1316.uma_android_automation.bot.plugins.DailySale
-import com.steve1316.uma_android_automation.bot.plugins.LegendRace
-import com.steve1316.uma_android_automation.bot.plugins.Presents
-import com.steve1316.uma_android_automation.bot.plugins.SpecialMissions
-import com.steve1316.uma_android_automation.bot.plugins.TeamTrials
 
 import com.steve1316.uma_android_automation.components.*
 
 class DailyTasks(game: Game) : Campaign(game) {
     override val TAG: String = "[${MainActivity.loggerTag}]DailyTasks"
 
+    // The ordered list of plugins from the settings.
     val pluginsSetting: List<String> = SettingsHelper.getStringArraySetting("dailyTasks", "plugins")
         .map { it.replace("\\s+".toRegex(), "") }
 
@@ -81,68 +75,45 @@ class DailyTasks(game: Game) : Campaign(game) {
         return true
     }
 
-    private fun handleTitleMenu(): Boolean {
-        val maxTimeMs = 60000 // 60 seconds
+    /** Handles navigating to the home screen from the title menu.
+     *
+     * @param timeoutMs The max time this operation can run before failing.
+     *
+     * @return Whether the bot is currently at the home screen.
+     */
+    private fun handleTitleMenu(timeoutMs: Int = 60000): Boolean {
         val startTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - startTime < maxTimeMs) {
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
             when {
                 pluginDialogHandler() is DialogHandlerResult.Handled -> {}
-                ButtonMenuBarHome.check(game.imageUtils, sourceBitmap = bitmap) -> return true
+                // If we see the Shop button, then we're at the home page.
+                // Since we're at home page, we're done.
+                ButtonShop.check(game.imageUtils, sourceBitmap = bitmap) -> return true
                 ButtonTitleScreen.click(game.imageUtils, sourceBitmap = bitmap) -> {}
                 ButtonSkip.click(game.imageUtils, sourceBitmap = bitmap) -> {}
                 else -> game.tap(350.0, 750.0, "ok", taps = 1)
             }
         }
 
-        MessageLog.e(TAG, "[DAILY_TASKS] handleTitleMenu timed out.")
+        MessageLog.e(TAG, "[DAILY_TASKS] Timed out going to home screen from title.")
         return false
     }
 
 	override fun start() {
 		MessageLog.i(TAG, "[DAILY_TASKS] Starting process for handling the Daily Tasks.")
 
-        // Order determines when each plugin is run.
-        // Adding entries here must be reflected in App's BotStateContext.
-        val plugins = listOf(
-            ::TeamTrials,
-            ::DailyRaces,
-            ::ChampionsMeeting,
-            ::LegendRace,
-            ::ClubActivity,
-            ::SpecialMissions,
-            ::Presents,
-            ::DailySale,
-        )
-
-        // Sort by the user setting.
-        val orderMap: Map<String, Int> = pluginsSetting.mapIndexed { index, pluginName ->
-            pluginName.replace("\\s+".toRegex(), "") to index
-        }.toMap()
-
-        val sortedPlugins = plugins.sortedBy { it ->
-            // Need to retrieve the class name from the constructor reference.
-            val name = it.returnType.classifier?.let { classifier ->
-                (classifier as? kotlin.reflect.KClass<*>)?.simpleName
-            }
-            // Check the name's order, otherwise default to high value
-            // to drop it to the bottom of the list if it doesnt exist.
-            orderMap[name] ?: Int.MAX_VALUE
-        }
-
-        for (plugin in sortedPlugins) {
-            val instance: Plugin = plugin(game, ::pluginDialogHandler)
-            val className: String = instance::class.simpleName ?: "UNKNOWN"
-            if (!instance.bIsEnabled) {
-                MessageLog.i(TAG, "[DAILY_TASKS] [$className] Plugin is not enabled. Skipping...")
+        for (pluginName in pluginsSetting) {
+            val plugin: Plugin? = PluginFactory.create(pluginName, game, dialogHandler = ::pluginDialogHandler)
+            if (plugin == null) {
                 continue
             }
-            MessageLog.i(TAG, "[DAILY_TASKS] [$className] Starting...")
-            val result: Boolean = instance.start()
+
+            val result: Boolean = plugin.start()
             if (result) {
-                MessageLog.i(TAG, "[DAILY_TASKS] [$className] Completed successfully.")
+                MessageLog.i(TAG, "[DAILY_TASKS] [${plugin.name}] Completed successfully.")
             } else {
-                MessageLog.w(TAG, "[DAILY_TASKS] [$className] Failed.")
+                MessageLog.w(TAG, "[DAILY_TASKS] [${plugin.name}] Failed.")
             }
         }
 	}

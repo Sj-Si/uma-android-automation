@@ -21,7 +21,7 @@ Adding new components is very straight forward. Just go into the file for the ty
 
 The only exception is if you want to add a dialog, in which case there is one extra step. This process is described in the docstring at the top of `Dialog.kt`.
 
-For `ComplexComponentInterface` and `MultiStateButtonInterface`, the only difference is that you need to add a list of `Template`. See `Button.kt::ButtonMenuBarHome` for an example of a `MultiStateButtonInterface`.
+For `ComplexComponentInterface` and `MultiStateButtonInterface`, the only difference is that you need to add a list of `Template`. See `Button.kt::ButtonOk` for an example of a `MultiStateButtonInterface`.
 
 ## Button.kt
 

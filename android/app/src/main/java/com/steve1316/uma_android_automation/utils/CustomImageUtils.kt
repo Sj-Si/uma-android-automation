@@ -2415,6 +2415,146 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 		return result
 	}
 
+    fun findTextLocations(
+		cropRegion: BoundingBox,
+        grayscale: Boolean = true,
+        thresh: Boolean = true,
+        threshold: Double = 130.0,
+        thresholdMax: Double = 255.0,
+        scale: Double = 1.0,
+        sourceBitmap: Bitmap? = null,
+        debugName: String = "ocr",
+	): List<Pair<String, BoundingBox>> {
+		val startTime: Long = System.currentTimeMillis()
+        val result: MutableList<Pair<String, BoundingBox>> = mutableListOf()
+
+		val finalSourceBitmap: Bitmap = sourceBitmap ?: getSourceBitmap()
+
+		if (debugMode) Log.d(TAG, "\n[TEXT_DETECTION] Starting text detection now...")
+
+		// Crop and convert the source bitmap to Mat.
+		// Google ML Kit requires a minimum of 32x32 pixels, so clamp the dimensions.
+		val (x, y, width, height) = cropRegion.toIntArray()
+		val minDimension = 32
+		val clampedWidth = maxOf(width, minDimension).coerceAtMost(finalSourceBitmap.width - x)
+		val clampedHeight = maxOf(height, minDimension).coerceAtMost(finalSourceBitmap.height - y)
+
+		// Log if the dimensions were clamped to meet the minimum requirement.
+		if (width < minDimension || height < minDimension) {
+			Log.w(TAG, "[TEXT_DETECTION] Crop region clamped from ${width}x${height} to ${clampedWidth}x${clampedHeight} to meet ML Kit's minimum 32x32 requirement.")
+		}
+
+		val croppedBitmap = Bitmap.createBitmap(finalSourceBitmap, x, y, clampedWidth, clampedHeight)
+		val cvImage = Mat()
+		Utils.bitmapToMat(croppedBitmap, cvImage)
+
+		// Save the cropped image before converting it to black and white in order to troubleshoot issues related to differing device sizes and cropping.
+		if (debugMode) {
+			Imgcodecs.imwrite("$matchFilePath/debug_${debugName}_cropped.png", cvImage)
+		}
+
+		// Grayscale the cropped image.
+		val grayImage = Mat()
+		val imageForProcessing: Mat = if (grayscale) {
+			Imgproc.cvtColor(cvImage, grayImage, Imgproc.COLOR_BGR2GRAY)
+			grayImage
+		} else {
+			cvImage
+		}
+
+		// Thresh the grayscale cropped image to make black and white.
+		val processedMat: Mat = if (thresh) {
+			val bwImage = Mat()
+			Imgproc.threshold(imageForProcessing, bwImage, threshold, thresholdMax, Imgproc.THRESH_BINARY)
+
+			// Save the cropped image before converting it to black and white in order to troubleshoot issues related to differing device sizes and cropping.
+			if (debugMode) {
+				Imgcodecs.imwrite("$matchFilePath/debug_${debugName}_threshold.png", bwImage)
+			}
+			bwImage
+		} else {
+			imageForProcessing
+		}
+
+		// Convert the processed Mat to Bitmap and apply scaling if needed.
+		val clampedScale: Double = scale.coerceAtLeast(0.0)
+		val baseBitmap = createBitmap(processedMat.cols(), processedMat.rows())
+		Utils.matToBitmap(processedMat, baseBitmap)
+		val finalBitmap = if (clampedScale != 1.0) {
+			baseBitmap.scale((baseBitmap.width * clampedScale).toInt(), (baseBitmap.height * clampedScale).toInt())
+		} else {
+			baseBitmap
+		}
+
+		// Create a InputImage object for Google's ML OCR.
+		val inputImage: InputImage = InputImage.fromBitmap(finalBitmap, 0)
+
+		// Use CountDownLatch to make the async operation synchronous.
+		val latch = CountDownLatch(1)
+		var mlKitFailed = false
+		var errorMessage = "Google ML Kit failed to do text detection."
+
+        var fullText: String = ""
+		googleTextRecognizer.process(inputImage)
+			.addOnSuccessListener { text ->
+                if (text.textBlocks.isNotEmpty()) {
+                    fullText = text.text
+				}
+                for (block in text.textBlocks) {
+                    for (line in block.lines) {
+                        for (element in line.elements) {
+                            val wordText = element.text
+                            val wordLocs = element.cornerPoints
+                            val wordFrame = element.boundingBox!!
+                            val bbox = BoundingBox(
+                                x = (wordFrame.left.toDouble() / scale).toInt(),
+                                y = (wordFrame.top.toDouble() / scale).toInt(),
+                                w = (wordFrame.width().toDouble() / scale).toInt(),
+                                h = (wordFrame.height().toDouble() / scale).toInt(),
+                            )
+                            result.add(Pair(wordText, bbox))
+                        }
+                    }
+                }
+				latch.countDown()
+			}
+			.addOnFailureListener { exception ->
+				// Check if it's an MlKitException and extract error code information.
+				if (exception is MlKitException) {
+					val errorCode = exception.errorCode
+					errorMessage += " Error code: $errorCode."
+				}
+
+				// Include the exception message if available.
+				exception.message?.let {
+					errorMessage += " Exception message: $it"
+				}
+
+				mlKitFailed = true
+				latch.countDown()
+			}
+
+		// Wait for the async operation to complete.
+		try {
+			latch.await(5, TimeUnit.SECONDS)
+		} catch (_: InterruptedException) {
+			Log.e(TAG, "Google ML Kit operation timed out.")
+		}
+
+		// Fallback to Tesseract if ML Kit failed or didn't find result.
+		if (!mlKitFailed && fullText != "") {
+            Log.d(TAG, "[TEXT_DETECTION] Detected text with Google ML Kit: $fullText")
+        }
+
+		if (debugMode) Log.d(TAG, "[TEXT_DETECTION] Text detection finished in ${System.currentTimeMillis() - startTime}ms.")
+
+		cvImage.release()
+        grayImage.release()
+        processedMat.release()
+
+		return result.toList()
+	}
+
     /** Converts ConvexHull indices to actual points.
      *
      * @param contour The contour to apply this translation to.
@@ -3156,5 +3296,86 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 
         MessageLog.d(TAG, "Detected ScrollBar: $bboxBar, ScrollBarThumb: $bboxThumb")
         return Pair(bboxBar, bboxThumb)
+    }
+
+    /** Checks the percentage of pixels within the specified HSV color range.
+     *
+     * @param bitmap The source bitmap.
+     * @param lower A Scalar of the lower bound HSV value.
+     * @param upper A Scalar of the upper bound HSV value.
+     * @param debugString A string used for debugging purposes.
+     *
+     * @return The percent of pixels within the HSV range.
+     */
+    fun checkColorRangeInBitmap(
+        bitmap: Bitmap,
+        lower: Scalar,
+        upper: Scalar,
+        debugString: String = "",
+    ): Double {
+        val bgrMat = Mat()
+        Utils.bitmapToMat(bitmap, bgrMat)
+
+        val hsvMat = Mat()
+        Imgproc.cvtColor(bgrMat, hsvMat, Imgproc.COLOR_RGB2HSV)
+        bgrMat.release()
+
+        val mask = Mat()
+        Core.inRange(hsvMat, lower, upper, mask)
+        hsvMat.release()
+
+        if (debugMode) {
+            Imgcodecs.imwrite("$matchFilePath/mask_$debugString.png", mask)
+        }
+
+        val count = Core.countNonZero(mask).toDouble()
+        mask.release()
+
+        val totalPixels = (bitmap.width * bitmap.height).toDouble()
+        val result = (count * 100.0) / totalPixels
+
+        return result
+    }
+
+    /** Checks the percentage of pixels within the specified RGB color range.
+     *
+     * @param bitmap The source bitmap.
+     * @param lower An RGB Hex string of the lower bound HSV value.
+     * @param upper An RGB Hex string of the upper bound HSV value.
+     * @param debugString A string used for debugging purposes.
+     *
+     * @return The percent of pixels within the HSV range.
+     */
+    fun checkColorRangeInBitmap(
+        bitmap: Bitmap,
+        lower: String,
+        upper: String,
+        debugString: String = "",
+    ): Double {
+        val lower: Scalar = lower.hexRGBToHSVScalar()
+        val upper: Scalar = upper.hexRGBToHSVScalar()
+
+        return checkColorRangeInBitmap(bitmap, lower, upper, debugString)
+    }
+
+    /** Checks the percentage of pixels within the specified RGB color range.
+     *
+     * @param bitmap The source bitmap.
+     * @param lower The lower bound HSV values as a Triple of Doubles.
+     * @param upper The upper bound HSV values as a Triple of Doubles.
+     * @param debugString A string used for debugging purposes.
+     *
+     * @return The percent of pixels within the HSV range.
+     */
+    fun checkColorRangeInBitmap(
+        bitmap: Bitmap,
+        lower: Triple<Double, Double, Double>,
+        upper: Triple<Double, Double, Double>,
+        debugString: String = "",
+    ): Double {
+        val lower: Scalar = Scalar(lower.first, lower.second, lower.third)
+        val upper: Scalar = Scalar(upper.first, upper.second, upper.third)
+
+        return checkColorRangeInBitmap(bitmap, lower, upper, debugString)
     }
 }

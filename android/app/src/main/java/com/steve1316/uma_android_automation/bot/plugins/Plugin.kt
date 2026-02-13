@@ -1,3 +1,11 @@
+/**
+ *
+ * To add a plugin, simply import its file, then add an entry for it
+ * in the PluginFactory object.
+ *
+ * All plugins must exist in the App's BotStateContext settings for them
+ * to be available at runtime.
+ */
 package com.steve1316.uma_android_automation.bot.plugins
 
 import android.graphics.Bitmap
@@ -13,9 +21,18 @@ import com.steve1316.uma_android_automation.components.DialogUtils
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageInterface
 import com.steve1316.uma_android_automation.components.PageHome
-import com.steve1316.uma_android_automation.components.ButtonMenuBarHome
 import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonClose
+import com.steve1316.uma_android_automation.components.MenuBar
+
+import com.steve1316.uma_android_automation.bot.plugins.ChampionsMeeting
+import com.steve1316.uma_android_automation.bot.plugins.ClubActivity
+import com.steve1316.uma_android_automation.bot.plugins.DailyRaces
+import com.steve1316.uma_android_automation.bot.plugins.DailySale
+import com.steve1316.uma_android_automation.bot.plugins.LegendRace
+import com.steve1316.uma_android_automation.bot.plugins.Presents
+import com.steve1316.uma_android_automation.bot.plugins.SpecialMissions
+import com.steve1316.uma_android_automation.bot.plugins.TeamTrials
 
 sealed class DialogHandlerResult {
     data class Handled(val dialog: DialogInterface) : DialogHandlerResult()
@@ -25,17 +42,20 @@ sealed class DialogHandlerResult {
 
 typealias DialogHandlerCallback = (DialogInterface?) -> DialogHandlerResult
 
+/** A class abstraction for all plugins.
+ *
+ * Should be instantiated within a try/catch since we use "require" in init.
+ */
 abstract class Plugin(
     protected val game: Game,
+    protected val menuBar: MenuBar,
     protected val commonDialogHandler: DialogHandlerCallback? = null,
 ) {
     abstract val TAG: String
-    // Should be set from settings.
-    val pluginsSetting: List<String> = SettingsHelper.getStringArraySetting("dailyTasks", "plugins")
-        .map { it.replace("\\s+".toRegex(), "").lowercase() }
-    open val bIsEnabled: Boolean = pluginsSetting.contains(this::class.simpleName?.lowercase())
 
-    protected var bIsComplete: Boolean = false
+    val name: String = this::class.simpleName!!
+
+    protected open var bIsComplete: Boolean = false
 
     /** Attempts to progress to this plugin's next state.
      *
@@ -52,7 +72,7 @@ abstract class Plugin(
      *
      * @return The current page after progressing the state.
      */
-    open fun progress(bitmap: Bitmap? = null): PageInterface? {
+    protected open fun progress(bitmap: Bitmap? = null): PageInterface? {
         val dialogResult: DialogHandlerResult = handleDialogs()
         when (dialogResult) {
             // If it is handled, just return to continue with the loop.
@@ -70,33 +90,6 @@ abstract class Plugin(
         return checkPage(bitmap)
     }
 
-    /** Navigates to the home page of the plugin.
-     *
-     * This base implementation helps to simplify the code in overriding classes.
-     * Thus it should be called at the start of all overriding classes like so:
-     * 
-     * override fun goToStart(): Boolean {
-     *      super.goToStart()
-     *      ...
-     * }
-     *
-     * @return Whether the plugin is currently at its home page.
-     */
-    open fun goToStart(): Boolean {
-        var dialogResult: DialogHandlerResult = handleDialogs()
-        // Keep handling dialogs until there are none left.
-        while (dialogResult is DialogHandlerResult.Handled) {
-            dialogResult = handleDialogs()
-        }
-
-        // If unhandled, then we can't progress any further.
-        if (dialogResult is DialogHandlerResult.Unhandled) {
-            throw IllegalStateException("Unhandled dialog: ${dialogResult.dialog.name}")
-        }
-
-        return false
-    }
-
     /** Detects and handles any dialog popups.
      *
      * @param dialog An optional dialog to evaluate. This allows chaining
@@ -109,7 +102,7 @@ abstract class Plugin(
      *  - NoDialogDetected: If no dialog was detected.
      *  - Error: If an error occurred during dialog detection/handling.
      */
-    open fun handleDialogs(dialog: DialogInterface? = null): DialogHandlerResult {
+    protected open fun handleDialogs(dialog: DialogInterface? = null): DialogHandlerResult {
         if (commonDialogHandler != null) {
             return commonDialogHandler(dialog)
         }
@@ -118,6 +111,38 @@ abstract class Plugin(
             return DialogHandlerResult.NoDialogDetected
         }
         return DialogHandlerResult.Unhandled(dialog)
+    }
+
+    /** Handles dialogs until there are none left on the screen.
+     *
+     * @param timeoutMs The max runtime of this operation before timing out.
+     *
+     * @return Whether a dialog was detected and handled.
+     * @throws IllegalStateException If a dialog was detected and was not handled.
+     */
+    protected fun handleDialogsUntilNoneRemain(timeoutMs: Int = 10000): Boolean {
+        var bWasDialogHandled: Boolean = false
+        var dialogResult: DialogHandlerResult = handleDialogs()
+        // Keep handling dialogs until there are none left.
+        val startTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            dialogResult = handleDialogs()
+
+            // We want to check for new dialogs if we just handled one.
+            // Otherwise, we can break from the loop since there's nothing
+            // left to handle.
+            if (dialogResult !is DialogHandlerResult.Handled) {
+                break
+            }
+            bWasDialogHandled = true
+        }
+
+        // If unhandled, then we can't progress any further.
+        if (dialogResult is DialogHandlerResult.Unhandled) {
+            throw IllegalStateException("[$name] Unhandled dialog: ${dialogResult.dialog.name}")
+        }
+
+        return bWasDialogHandled
     }
 
     /** Wait for any of the specified pages to become available on screen.
@@ -132,7 +157,7 @@ abstract class Plugin(
      * @return If any of [pages] is found, then that PageInterface object is returned.
      * Otherwise, NULL is returned.
      */
-    fun waitForPage(
+    protected fun waitForPage(
         pages: List<PageInterface>,
         timeoutMs: Int = 10000,
         bShouldTapWhileWaiting: Boolean = false,
@@ -141,16 +166,7 @@ abstract class Plugin(
         while (System.currentTimeMillis() - startTime < timeoutMs) {
             // Handle dialogs first to prevent overlap of dialog buttons
             // with page components.
-            val dialogResult: DialogHandlerResult = handleDialogs()
-            when (dialogResult) {
-                // If we handled a dialog, just continue to next iteration of loop.
-                is DialogHandlerResult.Handled -> continue
-                // If unhandled, then we can't progress any further.
-                // If we did, we'd get stuck in an infinite loop looking for a dialog.
-                is DialogHandlerResult.Unhandled -> throw IllegalStateException("Unhandled dialog: ${dialogResult.dialog.name}")
-                // If no dialog detected, we can just continue with this function.
-                is DialogHandlerResult.NoDialogDetected -> {}
-            }
+            handleDialogsUntilNoneRemain()
 
             // Now check if any of our pages exist.
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
@@ -187,7 +203,7 @@ abstract class Plugin(
      * @return If the [page] is found, then that PageInterface object is returned.
      * Otherwise, NULL is returned.
      */
-    fun waitForPage(
+    protected fun waitForPage(
         page: PageInterface,
         timeoutMs: Int = 10000,
         bShouldTapWhileWaiting: Boolean = false,
@@ -213,7 +229,7 @@ abstract class Plugin(
      * @return If any of [buttons] is found, then that BaseComponentInterface object
      * is returned. Otherwise, NULL is returned.
      */
-    fun waitForButton(
+    protected fun waitForButton(
         buttons: List<BaseComponentInterface>,
         timeoutMs: Int = 3000,
         bShouldTapWhileWaiting: Boolean = false,
@@ -223,16 +239,7 @@ abstract class Plugin(
         while (System.currentTimeMillis() - startTime < timeoutMs) {
             // Handle dialogs first to prevent overlap of dialog buttons
             // with the buttons we're waiting for.
-            val dialogResult: DialogHandlerResult = handleDialogs()
-            when (dialogResult) {
-                // If we handled a dialog, just continue to next iteration of loop.
-                is DialogHandlerResult.Handled -> continue
-                // If unhandled, then we can't progress any further.
-                // If we did, we'd get stuck in an infinite loop looking for a dialog.
-                is DialogHandlerResult.Unhandled -> throw IllegalStateException("Unhandled dialog: ${dialogResult.dialog.name}")
-                // If no dialog detected, we can just continue with this function.
-                is DialogHandlerResult.NoDialogDetected -> {}
-            }
+            handleDialogsUntilNoneRemain()
 
             // Now check for the buttons in question.
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
@@ -278,7 +285,7 @@ abstract class Plugin(
      * @return If the [button] is found, then that BaseComponentInterface object
      * is returned. Otherwise, NULL is returned.
      */
-    fun waitForButton(
+    protected fun waitForButton(
         button: BaseComponentInterface,
         timeoutMs: Int = 3000,
         bShouldTapWhileWaiting: Boolean = false,
@@ -292,51 +299,127 @@ abstract class Plugin(
         )
     }
 
-    open fun checkPage(bitmap: Bitmap? = null): PageInterface? {
+    protected open fun checkPage(bitmap: Bitmap? = null): PageInterface? {
         return null
     }
 
-    open fun goToHome(): Boolean {
-        waitForButton(ButtonMenuBarHome, bShouldClickButton = true)
-        ButtonMenuBarHome.click(game.imageUtils)
-        val res: Boolean = waitForPage(PageHome) != null
-        if (res) {
-            // Small delay to ensure that home elements are interactive
-            // by the time we return from this function.
-            game.wait(0.5)
-        }
-        return res
+    /** Navigates to the home page of the plugin.
+     *
+     * This base implementation helps to simplify the code in overriding classes.
+     * Thus it should be called at the start of all overriding classes like so:
+     * 
+     * override fun goToStart(): Boolean {
+     *      super.goToStart()
+     *      ...
+     * }
+     *
+     * @return Whether the bot is at its start screen.
+     */
+    protected open fun goToStart(): Boolean {
+        handleDialogsUntilNoneRemain()
+        return true
+    }
+
+    /** Returns to the game's home screen.
+     *
+     * This function only needs to be overridden if there are screens
+     * in the plugin that do not contain the menu bar. These would require special
+     * navigation in order for the bot to return to the home screen since it
+     * can't just click the Home tab on the menu bar.
+     *
+     * @return Whether the bot is back at the home screen.
+     */
+    protected open fun goToHome(): Boolean {
+        handleDialogsUntilNoneRemain()
+        return menuBar.goToHome()
     }
 
     open fun start(timeoutMs: Int = 60000 * 5): Boolean {
-        if (!bIsEnabled) {
-            MessageLog.d(TAG, "Plugin is disabled.")
+        MessageLog.i(TAG, "[$name] Starting...")
+
+        if (!goToHome()) {
+            MessageLog.e(TAG, "[$name] Failed to go to MenuBar Home tab. Cannot continue.")
             return false
         }
 
-        MessageLog.i(TAG, "Starting plugin...")
-
         if (!goToStart()) {
-            MessageLog.e(TAG, "Failed to go to start screen for plugin.")
+            MessageLog.e(TAG, "[$name] Failed to go to plugin's start screen.")
+            // Attempt to return to home. Whether this fails here doesn't matter
+            // since the plugin is already in a failure state.
             goToHome()
             return false
         }
 
+        // Now run the plugin until it is complete or times out.
         val startTime = System.currentTimeMillis()
         while (!bIsComplete && System.currentTimeMillis() - startTime < timeoutMs) {
             progress()
         }
 
+        // Always return to the home screen after bot completion.
         if (!goToHome()) {
-            MessageLog.w(TAG, "Failed to return to home screen.")
+            MessageLog.w(TAG, "[$name] Failed to return to home screen after completion.")
             return false
         }
 
         if (bIsComplete) {
-            MessageLog.i(TAG, "Plugin completed successfully.")
+            MessageLog.i(TAG, "[$name] Completed successfully.")
         } else {
-            MessageLog.i(TAG, "Plugin timed out.")
+            MessageLog.w(TAG, "[$name] Timed out.")
         }
+
         return bIsComplete
+    }
+}
+
+class PluginFactory {
+    companion object {
+        private val TAG: String = "[${MainActivity.loggerTag}]PluginFactory"
+
+        fun create(
+            pluginName: String,
+            game: Game,
+            menuBar: MenuBar? = null,
+            dialogHandler: DialogHandlerCallback?,
+        ): Plugin? {
+            val pluginsSetting: List<String> = SettingsHelper.getStringArraySetting("dailyTasks", "plugins")
+                .map { it.replace("\\s+".toRegex(), "") }
+            if (!pluginsSetting.contains(pluginName)) {
+                MessageLog.d(TAG, "[$pluginName] Plugin is not enabled.")
+                return null
+            }
+
+            // All plugins must start at the home screen with the menu bar visible.
+            // This can only be overridden if [menuBar] is passed to this function.
+            // If we can't detect a menu bar then we are forced to abort this instantiation.
+            val menuBar: MenuBar? = menuBar ?: MenuBar.create(game, maxAttempts = 3)
+            if (menuBar == null) {
+                MessageLog.w(TAG, "[$pluginName] Failed to detect menu bar. Cannot create plugin.")
+                return null
+            }
+
+            return when (pluginName) {
+                "ChampionsMeeting" -> ChampionsMeeting(game, menuBar, dialogHandler)
+                "ClubActivity" -> ClubActivity(game, menuBar, dialogHandler)
+                "DailyRaces" -> DailyRaces(game, menuBar, dialogHandler)
+                "DailySale" -> {
+                    // If no items are marked for purchase, then we return NULL
+                    // since the plugin is effectively disabled.
+                    val bShouldHandleDailySale: Boolean = SettingsHelper
+                        .getStringArraySetting("dailyTasks", "saleItems")
+                        .isNotEmpty()
+                    if (bShouldHandleDailySale) {
+                        DailySale(game, menuBar, dialogHandler)
+                    } else {
+                        null
+                    }
+                }
+                "LegendRace" -> LegendRace(game, menuBar, dialogHandler)
+                "Presents" -> Presents(game, menuBar, dialogHandler)
+                "SpecialMissions" -> SpecialMissions(game, menuBar, dialogHandler)
+                "TeamTrials" -> TeamTrials(game, menuBar, dialogHandler)
+                else -> throw IllegalArgumentException("Unknown plugin name: $pluginName")
+            }
+        }
     }
 }

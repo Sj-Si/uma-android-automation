@@ -9,6 +9,7 @@ import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.plugins.Plugin
+import com.steve1316.uma_android_automation.bot.plugins.PluginFactory
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 import com.steve1316.uma_android_automation.utils.ScrollList
@@ -17,7 +18,6 @@ import com.steve1316.uma_android_automation.components.BaseComponentInterface
 import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageInterface
-import com.steve1316.uma_android_automation.components.PageHome
 import com.steve1316.uma_android_automation.components.PageTeamTrialsHome
 import com.steve1316.uma_android_automation.components.PageTeamTrialsSelectOpponent
 import com.steve1316.uma_android_automation.components.PageTeamTrialsPreRace
@@ -30,21 +30,20 @@ import com.steve1316.uma_android_automation.components.ButtonTeamTrialsQuickMode
 import com.steve1316.uma_android_automation.components.ButtonRaceAgain
 import com.steve1316.uma_android_automation.components.ButtonSkip
 import com.steve1316.uma_android_automation.components.ButtonNext
-import com.steve1316.uma_android_automation.components.ButtonMenuBarRace
-import com.steve1316.uma_android_automation.components.ButtonMenuBarHome
 import com.steve1316.uma_android_automation.components.ButtonTeamTrialsTallying
 import com.steve1316.uma_android_automation.components.ButtonTeamTrials
 import com.steve1316.uma_android_automation.components.IconTeamTrialsOpponentSelectionTeamRank
 import com.steve1316.uma_android_automation.components.IconPleasingParfait
 import com.steve1316.uma_android_automation.components.LabelTeamTrialsExtraRewardsOpponent
+import com.steve1316.uma_android_automation.components.MenuBar
 
 class TeamTrials(
     game: Game,
+    menuBar: MenuBar,
     commonDialogHandler: DialogHandlerCallback? = null,
-) : Plugin(game, commonDialogHandler) {
+) : Plugin(game, menuBar, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]TeamTrials"
 
-    private val bShouldHandleDailySale: Boolean = SettingsHelper.getStringArraySetting("dailyTasks", "saleItems").isNotEmpty()
     private val bShouldUseParfaitOnExtraRewards: Boolean = SettingsHelper.getBooleanSetting("dailyTasks", "enableTeamTrialsUseParfaitOnExtraRewards")
 
     private var bIsExtraRewards: Boolean = false
@@ -85,14 +84,13 @@ class TeamTrials(
 
         when (result.dialog.name) {
             "daily_sale" -> {
-                if (bShouldHandleDailySale) {
+                val dailySale: Plugin? = PluginFactory.create("DailySale", game, menuBar, commonDialogHandler)
+                if (dailySale == null) {
+                    result.dialog.close(game.imageUtils)
+                } else {
                     result.dialog.ok(game.imageUtils)
                     game.wait(0.5)
-                    game.waitForLoading()
-                    val dailySale = DailySale(game, commonDialogHandler)
                     dailySale.start()
-                } else {
-                    result.dialog.close(game.imageUtils)
                 }
             }
             "items_selected" -> {
@@ -102,13 +100,10 @@ class TeamTrials(
                 result.dialog.ok(game.imageUtils)
                 // Reset this flag every time we handle this dialog.
                 bIsExtraRewards = false
-
                 game.wait(0.5)
-                game.waitForLoading()
             }
             "confirm_restore_rp" -> {
                 result.dialog.close(game.imageUtils)
-                game.wait(0.5, skipWaitingForLoading = true)
                 bIsComplete = true
             }
             else -> return DialogHandlerResult.Unhandled(result.dialog)
@@ -218,13 +213,8 @@ class TeamTrials(
             return true
         }
 
-        if (!goToHome()) {
-            MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
-            return false
-        }
-
-        if (waitForButton(ButtonMenuBarRace, bShouldClickButton = true) == null) {
-            MessageLog.w(TAG, "Failed to find Race button on menu bar.")
+        if (!menuBar.goToRace()) {
+            MessageLog.w(TAG, "Failed to go to menu bar's Race tab.")
             return false
         }
 

@@ -14,7 +14,6 @@ import com.steve1316.uma_android_automation.utils.ScrollList
 import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageInterface
-import com.steve1316.uma_android_automation.components.PageHome
 import com.steve1316.uma_android_automation.components.PageSpecialMissions
 import com.steve1316.uma_android_automation.components.PageEventMissions
 import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabDaily
@@ -28,12 +27,13 @@ import com.steve1316.uma_android_automation.components.ButtonCollectAll
 import com.steve1316.uma_android_automation.components.ButtonEventMissions
 import com.steve1316.uma_android_automation.components.ButtonBack
 import com.steve1316.uma_android_automation.components.ButtonHomeSpecialMissions
-import com.steve1316.uma_android_automation.components.ButtonMenuBarHome
+import com.steve1316.uma_android_automation.components.MenuBar
 
 class SpecialMissions(
     game: Game,
+    menuBar: MenuBar,
     commonDialogHandler: DialogHandlerCallback? = null,
-) : Plugin(game, commonDialogHandler) {
+) : Plugin(game, menuBar, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]SpecialMissions"
 
     private val specialMissionsTabs: List<ComponentInterface> = listOf(
@@ -90,8 +90,9 @@ class SpecialMissions(
                     bHasHandledRacingCarnivalMissions = true
                     handleRacingCarnivalMissionsTabs()
                     result.dialog.close(game.imageUtils)
+                    // Need a delay otherwise we'll end up handling this same
+                    // dialog again since it is still on screen.
                     game.wait(0.5)
-                    game.waitForLoading()
                     handleDialogs()
                 }
             }
@@ -159,7 +160,6 @@ class SpecialMissions(
                 if (bHasHandledEventMissions) {
                     ButtonBack.click(game.imageUtils)
                     game.wait(0.5)
-                    game.waitForLoading()
                     handleDialogs()
                 }
             }
@@ -182,11 +182,6 @@ class SpecialMissions(
 
         if (PageSpecialMissions.check(game.imageUtils)) {
             return true
-        }
-
-        if (!goToHome()) {
-            MessageLog.w(TAG, "Not at home menu. Cannot proceed.")
-            return false
         }
 
         if (waitForButton(ButtonHomeSpecialMissions, bShouldClickButton = true) == null) {
