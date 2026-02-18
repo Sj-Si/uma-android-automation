@@ -11,12 +11,12 @@ import com.steve1316.automation_library.utils.TextUtils
 import com.steve1316.automation_library.data.SharedData
 
 import com.steve1316.uma_android_automation.MainActivity
-import com.steve1316.uma_android_automation.utils.types.BoundingBox
-import com.steve1316.uma_android_automation.utils.types.SkillData
-import com.steve1316.uma_android_automation.utils.types.SkillType
-import com.steve1316.uma_android_automation.utils.types.TrackDistance
-import com.steve1316.uma_android_automation.utils.types.RunningStyle
-import com.steve1316.uma_android_automation.utils.types.Aptitude
+import com.steve1316.uma_android_automation.types.BoundingBox
+import com.steve1316.uma_android_automation.types.SkillData
+import com.steve1316.uma_android_automation.types.SkillType
+import com.steve1316.uma_android_automation.types.TrackDistance
+import com.steve1316.uma_android_automation.types.RunningStyle
+import com.steve1316.uma_android_automation.types.Aptitude
 import com.steve1316.uma_android_automation.utils.DoublyLinkedList
 import com.steve1316.uma_android_automation.utils.DoublyLinkedListNode
 

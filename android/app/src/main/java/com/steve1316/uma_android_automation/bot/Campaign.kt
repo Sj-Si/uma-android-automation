@@ -6,11 +6,11 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.BotService
 import com.steve1316.automation_library.data.SharedData
 
-import com.steve1316.uma_android_automation.utils.types.DateYear
-import com.steve1316.uma_android_automation.utils.types.DateMonth
-import com.steve1316.uma_android_automation.utils.types.DatePhase
-import com.steve1316.uma_android_automation.utils.types.FanCountClass
-import com.steve1316.uma_android_automation.utils.types.BoundingBox
+import com.steve1316.uma_android_automation.types.DateYear
+import com.steve1316.uma_android_automation.types.DateMonth
+import com.steve1316.uma_android_automation.types.DatePhase
+import com.steve1316.uma_android_automation.types.FanCountClass
+import com.steve1316.uma_android_automation.types.BoundingBox
 
 import com.steve1316.uma_android_automation.components.*
 
@@ -144,13 +144,6 @@ open class Campaign(val game: Game) {
             "race_details" -> {
                 dialog.ok(imageUtils = game.imageUtils)
             }
-            "race_playback" -> {
-                // Select portrait mode to prevent game from switching to landscape.
-                RadioPortrait.click(imageUtils = game.imageUtils)
-                // Click the checkbox to prevent this popup in the future.
-                Checkbox.click(imageUtils = game.imageUtils)
-                dialog.ok(imageUtils = game.imageUtils)
-            }
             "race_recommendations" -> {
                 ButtonRaceRecommendationsCenterStage.click(imageUtils = game.imageUtils)
                 Checkbox.click(imageUtils = game.imageUtils)
@@ -185,16 +178,6 @@ open class Campaign(val game: Game) {
             "spark_details" -> dialog.close(imageUtils = game.imageUtils)
             "sparks" -> dialog.close(imageUtils = game.imageUtils)
             "team_info" -> dialog.close(imageUtils = game.imageUtils)
-            "trophy_won" -> dialog.close(imageUtils = game.imageUtils)
-            "try_again" -> {
-                if (game.racing.disableRaceRetries) {
-                    MessageLog.i(TAG, "\n[END] Stopping the bot due to failing a mandatory race.")
-                    MessageLog.i(TAG, "********************")
-                    game.notificationMessage = "Stopping the bot due to failing a mandatory race."
-                    throw IllegalStateException()
-                }
-                dialog.ok(imageUtils = game.imageUtils)
-            }
             "umamusume_class" -> {
                 val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
                 val templateBitmap: Bitmap? = game.imageUtils.getBitmaps(LabelUmamusumeClassFans.template.path).second
@@ -266,7 +249,6 @@ open class Campaign(val game: Game) {
             }
         }
 
-        game.wait(0.5, skipWaitingForLoading = true)
         return Pair(true, dialog)
     }
 
@@ -598,8 +580,8 @@ open class Campaign(val game: Game) {
                 }
                 
                 // Use CountDownLatch to run the operations in parallel.
-                // 1 racingRequirements + 5 stats + 1 skill points + 1 mood = 8 threads.
-                val latch = CountDownLatch(8)
+                // 1 racingRequirements (skipped during summer) + 5 stats + 1 skill points + 1 mood = 8 (or 7) threads.
+                val latch = if (game.currentDate.isSummer()) CountDownLatch(7) else CountDownLatch(8)
 
                 MessageLog.disableOutput = true
                 
@@ -630,15 +612,17 @@ open class Campaign(val game: Game) {
                 }.apply { isDaemon = true }.start()
 
                 // Thread 8: Update racing requirements.
-                Thread {
-                    try {
-                        game.racing.checkRacingRequirements(sourceBitmap)
-                    } catch (e: Exception) {
-                        MessageLog.e(TAG, "Error in checkRacingRequirements thread: ${e.stackTraceToString()}")
-                    } finally {
-                        latch.countDown()
-                    }
-                }.apply { isDaemon = true }.start()
+                if (!game.currentDate.isSummer()) {
+                    Thread {
+                        try {
+                            game.racing.checkRacingRequirements(sourceBitmap)
+                        } catch (e: Exception) {
+                            MessageLog.e(TAG, "Error in checkRacingRequirements thread: ${e.stackTraceToString()}")
+                        } finally {
+                            latch.countDown()
+                        }
+                    }.apply { isDaemon = true }.start()
+                }
                 
                 // Wait for all threads to complete.
                 try {
@@ -794,7 +778,6 @@ open class Campaign(val game: Game) {
             }
         }
 
-
         if (game.racing.encounteredRacingPopup || needToRace) {
             MessageLog.i(TAG, "[INFO] All checks are cleared for racing.")
             if (!handleRaceEvents(bIsScheduledRaceDay) && handleRaceEventFallback()) {
@@ -831,14 +814,8 @@ open class Campaign(val game: Game) {
 	open fun start() {
 		while (true) {
             try {
-                val (bWasDialogHandled, dialog) = handleDialogs()
                 // We always check for dialogs first.
-                if (bWasDialogHandled) {
-                    continue
-                }
-                // Chaining the result from the first dialog handler should
-                // improve speed by a few tenths.
-                if (game.handleDialogs(dialog).first) {
+                if (game.tryHandleAllDialogs()) {
                     continue
                 }
 
@@ -874,6 +851,8 @@ open class Campaign(val game: Game) {
                     MessageLog.d(TAG, "Misc checks complete.")
                 } else {
                     MessageLog.v(TAG, "Did not detect the bot being at the following screens: Main, Training Event, Inheritance, Mandatory Race Preparation, Racing and Career End.")
+                    // Tap to progress any intermediate screens.
+                    game.tap(350.0, 450.0, "ok", taps = 1)
                 }
             } catch (e: InterruptedException) {
                 game.notificationMessage = "Campaign main loop exiting: ${e.message}"

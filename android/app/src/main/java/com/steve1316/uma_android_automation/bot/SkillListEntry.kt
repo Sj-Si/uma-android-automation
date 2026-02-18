@@ -14,13 +14,13 @@ import com.steve1316.uma_android_automation.utils.DoublyLinkedListNode
 
 import com.steve1316.uma_android_automation.components.ButtonSkillUp
 
-import com.steve1316.uma_android_automation.utils.types.BoundingBox
-import com.steve1316.uma_android_automation.utils.types.SkillData
-import com.steve1316.uma_android_automation.utils.types.SkillType
-import com.steve1316.uma_android_automation.utils.types.RunningStyle
-import com.steve1316.uma_android_automation.utils.types.TrackDistance
-import com.steve1316.uma_android_automation.utils.types.TrackSurface
-import com.steve1316.uma_android_automation.utils.types.Aptitude
+import com.steve1316.uma_android_automation.types.BoundingBox
+import com.steve1316.uma_android_automation.types.SkillData
+import com.steve1316.uma_android_automation.types.SkillType
+import com.steve1316.uma_android_automation.types.RunningStyle
+import com.steve1316.uma_android_automation.types.TrackDistance
+import com.steve1316.uma_android_automation.types.TrackSurface
+import com.steve1316.uma_android_automation.types.Aptitude
 
 /** Represents a single skill entry in a skill list.
  *

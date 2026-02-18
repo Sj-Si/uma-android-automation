@@ -18,9 +18,9 @@ import com.steve1316.uma_android_automation.bot.Trainee
 import com.steve1316.uma_android_automation.bot.SkillPlan
 import com.steve1316.uma_android_automation.bot.SkillDatabase
 
-import com.steve1316.uma_android_automation.utils.types.BoundingBox
-import com.steve1316.uma_android_automation.utils.types.Aptitude
-import com.steve1316.uma_android_automation.utils.types.Mood
+import com.steve1316.uma_android_automation.types.BoundingBox
+import com.steve1316.uma_android_automation.types.Aptitude
+import com.steve1316.uma_android_automation.types.Mood
 
 import com.steve1316.uma_android_automation.components.DialogUtils
 import com.steve1316.uma_android_automation.components.DialogInterface
@@ -142,6 +142,7 @@ class Game(val myContext: Context) {
 
                 connectionErrorRetryAttempts++
                 dialog.ok(imageUtils = imageUtils)
+                wait(0.5)
             }
             "display_settings" -> dialog.close(imageUtils = imageUtils)
             "help_and_glossary" -> dialog.close(imageUtils = imageUtils)
@@ -153,8 +154,38 @@ class Game(val myContext: Context) {
             }
         }
 
-        wait(0.5, skipWaitingForLoading = true)
         return Pair(true, dialog)
+    }
+
+    /** Attempts to handle dialogs for all components containing a dialogHandler.
+     *
+     * @return Whether a dialog was successfully handled.
+     * If no dialog is detected at all, then False is returned.
+     * If an unhandled dialog was detected, throws an InterruptedException.
+     */
+    fun tryHandleAllDialogs(): Boolean {
+        // Attempt to handle any dialogs from the main dialog handler first.
+        var (bWasDialogHandled, dialog) = handleDialogs()
+
+        // If that failed, then try passing it to the campaign dialog handler.
+        if (!bWasDialogHandled && dialog != null) {
+            bWasDialogHandled = campaign.handleDialogs(dialog).first
+        }
+
+        // Finally, try the racing handler as a last ditch effort.
+        if (!bWasDialogHandled && dialog != null) {
+            bWasDialogHandled = racing.handleDialogs(dialog).first
+        }
+
+        // If we still couldn't handle it, then we're stuck with a dialog
+        // open. This shouldn't ever happen unless there is a new dialog
+        // or something else in the game changed.
+        if (!bWasDialogHandled && dialog != null) {
+            MessageLog.e(TAG, "[GAME] Failed to handle a detected dialog: ${dialog.name}")
+            throw InterruptedException("Failed to handle a detected dialog: ${dialog.name}")
+        }
+
+        return bWasDialogHandled
     }
 
 	////////////////////////////////////////////////////////////////////
@@ -781,9 +812,6 @@ class Game(val myContext: Context) {
         ) {
             ButtonCraneGameOk.click(imageUtils = imageUtils, sourceBitmap = sourceBitmap)
             MessageLog.i(TAG, "[CRANE GAME] Event exited.")
-		} else if (scenario != "Unity Cup" && findAndTapImage("close", sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
-			MessageLog.i(TAG, "[MISC] There is a possible popup to accept a trophy.")
-			racing.finalizeRaceResults(true, isExtra = true)
 		} else if (findAndTapImage("race_end", sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
 			MessageLog.i(TAG, "[MISC] Ended a leftover race.")
 		} else if (imageUtils.findImageWithBitmap("connection_error", sourceBitmap, region = imageUtils.regionMiddle, suppressError = true) != null) {

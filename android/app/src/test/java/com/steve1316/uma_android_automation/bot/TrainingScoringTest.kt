@@ -15,10 +15,10 @@ import com.steve1316.uma_android_automation.bot.Training.TrainingConfig
 import com.steve1316.uma_android_automation.bot.Training.TrainingOption
 import com.steve1316.uma_android_automation.utils.CustomImageUtils.BarFillResult
 import com.steve1316.uma_android_automation.utils.GameDate
-import com.steve1316.uma_android_automation.utils.types.StatName
-import com.steve1316.uma_android_automation.utils.types.DateYear
-import com.steve1316.uma_android_automation.utils.types.DateMonth
-import com.steve1316.uma_android_automation.utils.types.DatePhase
+import com.steve1316.uma_android_automation.types.StatName
+import com.steve1316.uma_android_automation.types.DateYear
+import com.steve1316.uma_android_automation.types.DateMonth
+import com.steve1316.uma_android_automation.types.DatePhase
 import java.util.stream.Stream
 
 /**

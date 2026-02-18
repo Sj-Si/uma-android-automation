@@ -26,6 +26,8 @@ export interface Settings {
         enableFarmingFans: boolean
         daysToRunExtraRaces: number
         disableRaceRetries: boolean
+        enableFreeRaceRetry: boolean
+        enableCompleteCareerOnFailure: boolean
         enableStopOnMandatoryRaces: boolean
         enableForceRacing: boolean
         enableUserInGameRaceAgenda: boolean
@@ -176,6 +178,8 @@ export const defaultSettings: Settings = {
         enableFarmingFans: false,
         daysToRunExtraRaces: 5,
         disableRaceRetries: false,
+        enableFreeRaceRetry: false,
+        enableCompleteCareerOnFailure: false,
         enableStopOnMandatoryRaces: false,
         enableForceRacing: false,
         enableUserInGameRaceAgenda: false,

@@ -5,9 +5,9 @@ import com.steve1316.automation_library.utils.TextUtils
 
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
-import com.steve1316.uma_android_automation.utils.types.DateYear
-import com.steve1316.uma_android_automation.utils.types.DateMonth
-import com.steve1316.uma_android_automation.utils.types.DatePhase
+import com.steve1316.uma_android_automation.types.DateYear
+import com.steve1316.uma_android_automation.types.DateMonth
+import com.steve1316.uma_android_automation.types.DatePhase
 
 /**
  * Represents the Game's date.

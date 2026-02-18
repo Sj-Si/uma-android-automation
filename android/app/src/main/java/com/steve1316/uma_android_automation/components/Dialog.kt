@@ -53,7 +53,7 @@ import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
 import com.steve1316.uma_android_automation.components.BaseComponentInterface
 
-import com.steve1316.uma_android_automation.utils.types.BoundingBox
+import com.steve1316.uma_android_automation.types.BoundingBox
 
 object DialogUtils {
     private val titleGradientTemplates: List<String> = listOf(

@@ -64,14 +64,10 @@ class UnityCup(game: Game) : Campaign(game) {
                 } else {
                     dialog.close(imageUtils = game.imageUtils)
                 }
-                game.wait(0.5, skipWaitingForLoading = true)
                 return Pair(true, dialog)
             }
-            else -> {
-                return Pair(false, dialog)
-            }
+            else -> return Pair(false, dialog)
         }
-        game.wait(0.5, skipWaitingForLoading = true)
         return Pair(true, dialog)
     }
 
