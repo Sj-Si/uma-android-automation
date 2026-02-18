@@ -27,6 +27,7 @@ class Racing (private val game: Game) {
     private val TAG: String = "[${MainActivity.loggerTag}]Racing"
 
     private val enableFarmingFans = SettingsHelper.getBooleanSetting("racing", "enableFarmingFans")
+    private val ignoreConsecutiveRaceWarning = SettingsHelper.getBooleanSetting("racing", "ignoreConsecutiveRaceWarning")
     private val daysToRunExtraRaces: Int = SettingsHelper.getIntSetting("racing", "daysToRunExtraRaces")
     val disableRaceRetries: Boolean = SettingsHelper.getBooleanSetting("racing", "disableRaceRetries")
     val enableFreeRaceRetry: Boolean = SettingsHelper.getBooleanSetting("racing", "enableFreeRaceRetry")
@@ -58,11 +59,6 @@ class Racing (private val game: Game) {
     var hasG3OrAboveRequirement = false  // Indicates that a G3 or above requirement has been detected (any race can fulfill it).
     private var nextSmartRaceDay: Int? = null  // Tracks the specific day to race based on opportunity cost analysis.
     private var hasLoadedUserRaceAgenda = false  // Tracks if the user's race agenda has been loaded this career.
-
-    // Used to tell the dialog handler to ignore the consecutive race warning.
-    // This is a single-use flag, so whenever the "consecutive_race_warning" dialog is
-    // handled, it will be reset back to False.
-    private var bIgnoreConsecutiveRaceWarning: Boolean = false
 
     private val enableStopOnMandatoryRace: Boolean = SettingsHelper.getBooleanSetting("racing", "enableStopOnMandatoryRaces")
     var detectedMandatoryRaceCheck = false
@@ -159,7 +155,7 @@ class Racing (private val game: Game) {
      * The boolean is true when a dialog has been handled by this function.
      * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
      */
-    fun handleDialogs(dialog: DialogInterface? = null): Pair<Boolean, DialogInterface?> {
+    fun handleDialogs(dialog: DialogInterface? = null, overrideIgnoreConsecutiveRaceWarning: Boolean = false): Pair<Boolean, DialogInterface?> {
         val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(imageUtils = game.imageUtils)
         if (dialog == null) {
             return Pair(false, null)
@@ -168,7 +164,7 @@ class Racing (private val game: Game) {
         when (dialog.name) {
             "consecutive_race_warning" -> {
                 raceRepeatWarningCheck = true
-                if (bIgnoreConsecutiveRaceWarning || enableForceRacing) {
+                if (overrideIgnoreConsecutiveRaceWarning || enableForceRacing || ignoreConsecutiveRaceWarning) {
                     MessageLog.i(TAG, "[RACE] Consecutive race warning! Racing anyway...")
                     dialog.ok(imageUtils = game.imageUtils)
                     // This dialog requires a little extra delay since it loads the
@@ -179,8 +175,6 @@ class Racing (private val game: Game) {
                     clearRacingRequirementFlags()
                     dialog.close(imageUtils = game.imageUtils)
                 }
-                // Always reset this flag after handling this dialog.
-                bIgnoreConsecutiveRaceWarning = false
             }
             "race_details" -> dialog.ok(imageUtils = game.imageUtils)
             "race_playback" -> {
@@ -445,36 +439,28 @@ class Racing (private val game: Game) {
         // Otherwise, it would have found itself at the Race Selection screen already (by way of the insufficient fans popup).
         val loc: Point? = IconRaceDayRibbon.find(imageUtils = game.imageUtils).first
         if (loc != null) {
-            // We are forced to race, so we need to ignore this warning dialog.
-            bIgnoreConsecutiveRaceWarning = true
-
             // Offset 100px down from the ribbon since the ribbon isn't clickable.
             game.tap(loc.x, loc.y + 100, IconRaceDayRibbon.template.path, ignoreWaiting = true)
             game.wait(0.5, skipWaitingForLoading = true)
             // Check for the consecutive race dialog before proceeding.
-            handleDialogs()
-            // In case we didn't get the dialog we still want to reset this flag.
-            bIgnoreConsecutiveRaceWarning = false
+            handleDialogs(overrideIgnoreConsecutiveRaceWarning = true)
             return handleMandatoryRace()
         } else if (!game.trainee.bHasCompletedMaidenRace && !isScheduledRace && ButtonRaceSelectExtra.click(imageUtils = game.imageUtils)) {
-            // Winning a maiden race ASAP is extremely important. Ignore this warning.
-            bIgnoreConsecutiveRaceWarning = true
-
             game.wait(1.0, skipWaitingForLoading = true)
             // Check for the consecutive race dialog before proceeding.
-            handleDialogs()
-            // In case we didn't get the dialog we still want to reset this flag.
-            bIgnoreConsecutiveRaceWarning = false
+            handleDialogs(overrideIgnoreConsecutiveRaceWarning = true)
             return handleMaidenRace()
         } else if ((!game.currentDate.bIsPreDebut && ButtonRaceSelectExtra.click(imageUtils = game.imageUtils)) || isScheduledRace) {
+            var overrideIgnore = false
             if (hasFanRequirement || hasTrophyRequirement) {
                 MessageLog.i(TAG, "[RACE] Racing requirement is active. Ignoring consecutive race warning.")
-                bIgnoreConsecutiveRaceWarning = true
+                overrideIgnore = true
             }
             game.wait(0.5, skipWaitingForLoading = true)
             // Check for the consecutive race dialog before proceeding.
-            val (bWasDialogHandled, dialog) = handleDialogs()
-            if (dialog != null && dialog.name == "consecutive_race_warning") {
+            val (bWasDialogHandled, dialog) = handleDialogs(overrideIgnoreConsecutiveRaceWarning = overrideIgnore)
+            if (dialog != null && dialog.name == "consecutive_race_warning" && !(overrideIgnore || enableForceRacing || ignoreConsecutiveRaceWarning)) {
+                MessageLog.i(TAG, "[RACE] Consecutive race warning but conditions dictate to not race. Skipping...")
                 return false
             }
             return handleExtraRace(isScheduledRace = isScheduledRace)
@@ -889,7 +875,6 @@ class Racing (private val game: Game) {
                 return false
             }
         } else if (isScheduledRace) {
-            bIgnoreConsecutiveRaceWarning = true
             MessageLog.i(TAG, "[RACE] Confirming the scheduled race dialog...")
             ButtonRace.click(game.imageUtils, tries = 30)
             game.waitForLoading()
@@ -1393,12 +1378,7 @@ class Racing (private val game: Game) {
         game.waitForLoading()
 
         // We are forced to race, so we need to ignore this warning dialog.
-        bIgnoreConsecutiveRaceWarning = true
-
-        handleDialogs()
-
-        // In case we didn't get the dialog we still want to reset this flag.
-        bIgnoreConsecutiveRaceWarning = false
+        handleDialogs(overrideIgnoreConsecutiveRaceWarning = true)
 
         game.waitForLoading()
 

@@ -20,6 +20,7 @@ const RacingSettings = () => {
     const racingSettings = { ...defaultSettings.racing, ...settings.racing }
     const {
         enableFarmingFans,
+        ignoreConsecutiveRaceWarning,
         daysToRunExtraRaces,
         disableRaceRetries,
         enableFreeRaceRetry,
@@ -142,6 +143,17 @@ const RacingSettings = () => {
                             Controls when extra races can be run using modulo arithmetic. For example, if set to 5, extra races will only be available on days 5, 10, 15, etc. (when current day % 5 =
                             0). Note: This setting has no effect when Racing Plan is enabled, as Racing Plan controls when races occur based on opportunity cost analysis or mandatory race detection.
                         </Text>
+                    </View>
+
+                    <View style={styles.section}>
+                        <CustomCheckbox
+                            id="ignore-consecutive-race-warning"
+                            checked={ignoreConsecutiveRaceWarning}
+                            onCheckedChange={(checked) => updateRacingSetting("ignoreConsecutiveRaceWarning", checked)}
+                            label="Ignore Consecutive Race Warning"
+                            description="When enabled, the bot will ignore the warning popup about consecutive races and continue racing."
+                            className="my-2"
+                        />
                     </View>
 
                     <CustomTitle title="Mandatory Race Settings" />
