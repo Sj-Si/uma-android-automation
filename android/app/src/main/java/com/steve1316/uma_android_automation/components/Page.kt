@@ -330,3 +330,55 @@ object PageHome : PageInterface {
     override val prevButton: ComponentInterface? = null
     override val nextButton: ComponentInterface? = null
 }
+
+object PageChampionsMeetingHome : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageChampionsMeetingHome"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        //ButtonChampionsMeetingEntry,
+        //ButtonChampionsMeetingRace,
+        ButtonSpecialMissions,
+        ButtonRunnerHistory,
+    )
+
+    override val prevButton: ComponentInterface? = null
+    override val nextButton: ComponentInterface? = null
+
+    override fun next(imageUtils: CustomImageUtils, bitmap: Bitmap?): Boolean {
+        val bitmap: Bitmap = bitmap ?: imageUtils.getSourceBitmap()
+
+        if (ButtonChampionsMeetingEntry.click(imageUtils, sourceBitmap = bitmap)) {
+            return true
+        }
+
+        if (ButtonChampionsMeetingRace.click(imageUtils, sourceBitmap = bitmap)) {
+            return true
+        }
+
+        return false
+    }
+}
+
+object PageChampionsMeetingRaces : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageChampionsMeetingRaces"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        LabelChampionsMeetingRacesHeader,
+    )
+
+    override val prevButton: ComponentInterface? = null
+    override val nextButton: ComponentInterface? = null
+}
+
+object PageChampionsMeetingEntryInfo : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageChampionsMeetingEntryInfo"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        ButtonAutoSelect,
+        ButtonConfirm,
+        ButtonBack,
+    )
+
+    override val prevButton: ComponentInterface? = ButtonBack
+    override val nextButton: ComponentInterface? = ButtonConfirm
+}
