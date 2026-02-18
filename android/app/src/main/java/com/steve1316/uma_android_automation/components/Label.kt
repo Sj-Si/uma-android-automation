@@ -164,3 +164,8 @@ object LabelItemRequestConfirm : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]LabelItemRequestConfirm"
     override val template = Template("components/label/ask_for_donations_of_the_selected_item", region = Region.middle)
 }
+
+object LabelChampionsMeetingRacesHeader : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelChampionsMeetingRacesHeader"
+    override val template = Template("components/label/champions_meeting_races_header", region = Region.topHalf)
+}

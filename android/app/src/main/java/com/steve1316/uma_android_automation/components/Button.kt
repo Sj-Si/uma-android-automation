@@ -568,6 +568,26 @@ object ButtonChampionsMeeting : ComponentInterface {
     override val template = Template("components/button/champions_meeting")
 }
 
+object ButtonChampionsMeetingEntry : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonChampionsMeetingEntry"
+    override val template = Template("components/button/champions_meeting_entry")
+}
+
+object ButtonChampionsMeetingRace : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonChampionsMeetingRace"
+    override val template = Template("components/button/champions_meeting_race")
+}
+
+object ButtonSpecialMissions : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonSpecialMissions"
+    override val template = Template("components/button/ribbon_special_missions")
+}
+
+object ButtonRunnerHistory : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonRunnerHistory"
+    override val template = Template("components/button/ribbon_runner_history")
+}
+
 object ButtonLegendRace : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonLegendRace"
     override val template = Template("components/button/legend_race")
@@ -804,4 +824,19 @@ object ButtonSkillUp : ComponentInterface {
 object ButtonSkillDown : ComponentInterface {
     override val TAG: String = "ButtonSkillDown"
     override val template = Template("components/button/skill_down", region = Region.rightHalf)
+}
+
+object ButtonRaceExclamationPink : ComponentInterface {
+    override val TAG: String = "ButtonRaceExclamationPink"
+    override val template = Template("components/button/race_exclamation_pink", region = Region.bottomHalf)
+}
+
+object ButtonPlacing : ComponentInterface {
+    override val TAG: String = "ButtonPlacing"
+    override val template = Template("components/button/placing", region = Region.bottomHalf)
+}
+
+object ButtonClaim : ComponentInterface {
+    override val TAG: String = "ButtonClaim"
+    override val template = Template("components/button/claim", region = Region.bottomHalf)
 }
