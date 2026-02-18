@@ -63,10 +63,7 @@ class SkillList (private val game: Game) {
      * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
      */
     private fun handleDialogs(): Pair<Boolean, DialogInterface?> {
-        val dialog: DialogInterface? = DialogUtils.getDialog(game.imageUtils)
-        if (dialog == null) {
-            return Pair(false, null)
-        }
+        val dialog: DialogInterface = DialogUtils.getDialog(game.imageUtils) ?: return Pair(false, null)
 
         when (dialog.name) {
             "skill_list_confirmation" -> {
@@ -95,7 +92,7 @@ class SkillList (private val game: Game) {
      * This function uses the skill database to populate our [entries] object.
      * While building the [entries] object, we also make sure to preserve the
      * structure of skill upgrade chains by linking them together when
-     * instantiating the SkillListEntry object ([prev] parameter).
+     * instantiating the SkillListEntry object.
      *
      * @return A mapping of skill names to SkillListEntry objects.
      */
@@ -143,7 +140,7 @@ class SkillList (private val game: Game) {
         bitmap: Bitmap? = null,
         bboxSkillListEntries: BoundingBox,
         debugString: String = ""
-    ): BoundingBox? {
+    ): BoundingBox {
         // Smaller region used to detect SkillUp buttons in the list.
         val bbox = BoundingBox(
             x = game.imageUtils.relX((bboxSkillListEntries.x + bboxSkillListEntries.w).toDouble(), -125),
@@ -170,7 +167,7 @@ class SkillList (private val game: Game) {
         bitmap: Bitmap? = null,
         bboxSkillListEntries: BoundingBox,
         debugString: String = "",
-    ): BoundingBox? {
+    ): BoundingBox {
         val bbox = BoundingBox(
             x = game.imageUtils.relX((bboxSkillListEntries.x + bboxSkillListEntries.w).toDouble(), -260),
             y = bboxSkillListEntries.y,
@@ -609,7 +606,7 @@ class SkillList (private val game: Game) {
         }
 
         // Finally, translate the localPoint to screen space before we return it.
-        val point: Point = Point(
+        val point = Point(
             localPoint.x + entry.bbox.x,
             localPoint.y + entry.bbox.y,
         )
@@ -641,7 +638,7 @@ class SkillList (private val game: Game) {
             return emptyMap()
         }
 
-        list.process() { _, entry: ScrollListEntry ->
+        list.process { _, entry: ScrollListEntry ->
             val res: Pair<SkillListEntry, Point>? = onScrollListEntry(entry)
             if (onEntry != null && res != null) onEntry(this, res.first, res.second) else false
         }
@@ -786,12 +783,12 @@ class SkillList (private val game: Game) {
         MessageLog.v(TAG, "================= Skill List Entries =================")
         for ((name, entry) in skillListEntries) {
             val entryString: String = if (verbose) {
-                "${entry}"
+                "$entry"
             } else {
                 val extraString: String = if (entry.bIsVirtual) " (virtual)" else ""
                 "${entry.price}${extraString}"
             }
-            MessageLog.v(TAG, "\t${name}: ${entryString}")
+            MessageLog.v(TAG, "\t${name}: $entryString")
         }
         MessageLog.v(TAG, "======================================================")
     }

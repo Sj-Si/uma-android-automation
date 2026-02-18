@@ -2189,24 +2189,12 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
      * @return The cropped screenshot.
      */
     fun getRegionBitmap(bbox: BoundingBox): Bitmap {
-        var bitmap: Bitmap? = getRegionBitmap(
+        return getRegionBitmap(
             x = bbox.x,
             y = bbox.y,
             w = bbox.w,
             h = bbox.h,
         )
-
-        if (bitmap == null) {
-            Log.w(TAG, "Source bitmap is null on initial capture. Waiting a moment before trying again.")
-            bitmap = getRegionBitmap(
-                x = bbox.x,
-                y = bbox.y,
-                w = bbox.w,
-                h = bbox.h,
-            )
-        }
-
-        return bitmap ?: throw IllegalStateException("Failed to acquire a source bitmap even after caching and retries.")
     }
 
     /** Compares two bitmaps using Structural Similarity Index (SSIM).
