@@ -16,6 +16,8 @@ import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.PageInterface
 import com.steve1316.uma_android_automation.components.ButtonRaceEvents
 import com.steve1316.uma_android_automation.components.ButtonChampionsMeeting
+import com.steve1316.uma_android_automation.components.ButtonChampionsMeetingRegistrationsOpenEntry
+import com.steve1316.uma_android_automation.components.ButtonChampionsMeetingChangeRegistration
 import com.steve1316.uma_android_automation.components.MenuBar
 
 import com.steve1316.uma_android_automation.components.* // REMOVEME
@@ -58,6 +60,7 @@ class ChampionsMeeting(
         return listOf<PageInterface>(
             PageChampionsMeetingHome,
             PageChampionsMeetingEntryInfo,
+            PageChampionsMeetingPreFinals,
             PageChampionsMeetingRaces,
         ).find { it.check(game.imageUtils, bitmap) }
     }
@@ -98,10 +101,20 @@ class ChampionsMeeting(
                     handleDialogsUntilNoneRemain()
                 }
 
+                // If we didnt qualify for this round, then we have nothing to do.
+                if (ButtonChampionsMeetingRegistrationsOpenEntry.checkDisabled(game.imageUtils)) {
+                    bIsComplete = true
+                    return PageChampionsMeetingHome
+                }
+
+                // If the entry button is disabled for any reason then
+                // we have nothing to do.
                 if (ButtonChampionsMeetingEntry.checkDisabled(game.imageUtils)) {
                     bIsComplete = true
                     return PageChampionsMeetingHome
                 }
+
+                // Otherwise, just continue to the next screen.
                 PageChampionsMeetingHome.next(game.imageUtils)
             }
             PageChampionsMeetingEntryInfo -> {
@@ -114,6 +127,11 @@ class ChampionsMeeting(
                 game.wait(0.5, skipWaitingForLoading = true)
                 handleDialogs()
                 waitForPage(PageChampionsMeetingRaces)
+            }
+            PageChampionsMeetingPreFinals -> {
+                // There is nothing for us to do at this point since we're just
+                // waiting for the final round to open.
+                bIsComplete = true
             }
             PageChampionsMeetingRaces -> {
                 if (ButtonRaceExclamationPink.click(game.imageUtils)) {

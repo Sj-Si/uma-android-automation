@@ -573,6 +573,16 @@ object ButtonChampionsMeetingEntry : ComponentInterface {
     override val template = Template("components/button/champions_meeting_entry")
 }
 
+object ButtonChampionsMeetingRegistrationsOpenEntry : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonChampionsMeetingRegistrationsOpenEntry"
+    override val template = Template("components/button/champions_meeting_registrations_open_entry")
+}
+
+object ButtonChampionsMeetingChangeRegistration : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonChampionsMeetingChangeRegistration"
+    override val template = Template("components/button/champions_meeting_change_registration")
+}
+
 object ButtonChampionsMeetingRace : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonChampionsMeetingRace"
     override val template = Template("components/button/champions_meeting_race")

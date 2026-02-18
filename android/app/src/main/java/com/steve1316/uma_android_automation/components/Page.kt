@@ -335,8 +335,6 @@ object PageChampionsMeetingHome : PageInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]PageChampionsMeetingHome"
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
     override val identifyingComponents: List<ComponentInterface> = listOf(
-        //ButtonChampionsMeetingEntry,
-        //ButtonChampionsMeetingRace,
         ButtonSpecialMissions,
         ButtonRunnerHistory,
     )
@@ -349,6 +347,13 @@ object PageChampionsMeetingHome : PageInterface {
 
         if (ButtonChampionsMeetingEntry.click(imageUtils, sourceBitmap = bitmap)) {
             return true
+        }
+        
+        if (ButtonChampionsMeetingRegistrationsOpenEntry.check(imageUtils, sourceBitmap = bitmap)) {
+            if (ButtonChampionsMeetingRegistrationsOpenEntry.checkDisabled(imageUtils, sourceBitmap = bitmap)) {
+                return false
+            }
+            return ButtonChampionsMeetingRegistrationsOpenEntry.click(imageUtils, sourceBitmap = bitmap)
         }
 
         if (ButtonChampionsMeetingRace.click(imageUtils, sourceBitmap = bitmap)) {
@@ -381,4 +386,15 @@ object PageChampionsMeetingEntryInfo : PageInterface {
 
     override val prevButton: ComponentInterface? = ButtonBack
     override val nextButton: ComponentInterface? = ButtonConfirm
+}
+
+object PageChampionsMeetingPreFinals : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageChampionsMeetingPreFinals"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        ButtonChampionsMeetingChangeRegistration,
+    )
+
+    override val prevButton: ComponentInterface? = ButtonBack
+    override val nextButton: ComponentInterface? = null
 }
