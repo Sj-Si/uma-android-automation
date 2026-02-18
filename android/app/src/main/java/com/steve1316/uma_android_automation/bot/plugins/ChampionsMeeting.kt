@@ -18,6 +18,8 @@ import com.steve1316.uma_android_automation.components.ButtonRaceEvents
 import com.steve1316.uma_android_automation.components.ButtonChampionsMeeting
 import com.steve1316.uma_android_automation.components.MenuBar
 
+import com.steve1316.uma_android_automation.components.* // REMOVEME
+
 class ChampionsMeeting(
     game: Game,
     menuBar: MenuBar,
@@ -32,6 +34,18 @@ class ChampionsMeeting(
         }
 
         when (result.dialog.name) {
+            "auto_select" -> result.dialog.ok(game.imageUtils)
+            "confirm_entry" -> result.dialog.ok(game.imageUtils)
+            "confirm_registration" -> result.dialog.ok(game.imageUtils)
+            "special_missions" -> {
+                if (ButtonCollectAll.checkDisabled(game.imageUtils)) {
+                    result.dialog.close(game.imageUtils)
+                } else {
+                    result.dialog.ok(game.imageUtils)
+                }
+            }
+            "rewards_collected" -> result.dialog.close(game.imageUtils)
+            "runner_history" -> result.dialog.close(game.imageUtils)
             else -> return DialogHandlerResult.Unhandled(result.dialog)
         }
         game.wait(0.5, skipWaitingForLoading = true)
@@ -42,7 +56,34 @@ class ChampionsMeeting(
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
 
         return listOf<PageInterface>(
+            PageChampionsMeetingHome,
+            PageChampionsMeetingEntryInfo,
+            PageChampionsMeetingRaces,
         ).find { it.check(game.imageUtils, bitmap) }
+    }
+
+    fun handleRaceLoop(timeoutMs: Int = 60000 * 2): Boolean {
+        val startTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
+            when {
+                ButtonPlacing.check(game.imageUtils, sourceBitmap = bitmap) -> {
+                    // Small delay in case we qualified for next round.
+                    // If we did, then it will pop up on screen and we have to
+                    // click to dismiss it.
+                    game.wait(0.5, skipWaitingForLoading = true)
+                    waitForButton(ButtonNext, bShouldTapWhileWaiting = true)
+                    return true
+                }
+                ButtonSkip.click(game.imageUtils, sourceBitmap = bitmap) -> {}
+                ButtonRace.click(game.imageUtils, sourceBitmap = bitmap) -> {}
+                ButtonRaceExclamation.click(game.imageUtils, sourceBitmap = bitmap) -> {}
+                ButtonNext.click(game.imageUtils, sourceBitmap = bitmap) -> {}
+                else -> game.tap(350.0, 750.0, "ok", taps = 1)
+            }
+        }
+        MessageLog.w(TAG, "handleRaceLoop timed out.")
+        return false
     }
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
@@ -51,6 +92,50 @@ class ChampionsMeeting(
         // We do this after super call to avoid taking unnecessary screenshots.
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
         when (currentPage) {
+            PageChampionsMeetingHome -> {
+                if (ButtonSpecialMissions.click(game.imageUtils)) {
+                    game.wait(0.5)
+                    handleDialogsUntilNoneRemain()
+                }
+
+                if (ButtonChampionsMeetingEntry.checkDisabled(game.imageUtils)) {
+                    bIsComplete = true
+                    return PageChampionsMeetingHome
+                }
+                PageChampionsMeetingHome.next(game.imageUtils)
+            }
+            PageChampionsMeetingEntryInfo -> {
+                if (ButtonConfirm.checkDisabled(game.imageUtils)) {
+                    ButtonAutoSelect.click(game.imageUtils)
+                    game.wait(0.5, skipWaitingForLoading = true)
+                    handleDialogs()
+                }
+                ButtonConfirm.click(game.imageUtils)
+                game.wait(0.5, skipWaitingForLoading = true)
+                handleDialogs()
+                waitForPage(PageChampionsMeetingRaces)
+            }
+            PageChampionsMeetingRaces -> {
+                if (ButtonRaceExclamationPink.click(game.imageUtils)) {
+                    waitForButton(ButtonNext, bShouldTapWhileWaiting = true)
+                    if (!handleRaceLoop()) {
+                        throw IllegalStateException("[$name] Failed to complete race loop. Stopping...")
+                    }
+                    waitForPage(PageChampionsMeetingRaces)
+                } else {
+                    if (!ButtonClaim.click(game.imageUtils, tries = 50)) {
+                        MessageLog.w(TAG, "Failed to click the Claim button.")
+                        return PageChampionsMeetingRaces
+                    }
+
+                    if (waitForButton(ButtonNext, bShouldClickButton = true) == null) {
+                        MessageLog.w(TAG, "Failed to wait for round rewards Next button.")
+                        return null
+                    }
+
+                    waitForPage(PageChampionsMeetingHome)
+                }
+            }
             else -> handleDialogs()
         }
 
@@ -59,6 +144,10 @@ class ChampionsMeeting(
 
     override fun goToStart(): Boolean {
         super.goToStart()
+
+        if (PageChampionsMeetingHome.check(game.imageUtils)) {
+            return true
+        }
 
         if (!goToHome()) {
             MessageLog.e(TAG, "[$name] Failed to go to MenuBar Home tab. Cannot continue.")
@@ -90,7 +179,12 @@ class ChampionsMeeting(
             return false
         }
 
-        MessageLog.e(TAG, "NOT IMPLEMENTED")
-        return false
+        // Tap while waiting for page since on every day it will show a splash
+        // screen that needs to be tapped to dismiss.
+        return waitForPage(PageChampionsMeetingHome, bShouldTapWhileWaiting = true) != null
+    }
+
+    override fun start(timeoutMs: Int): Boolean {
+        return super.start(60000 * 20)
     }
 }
