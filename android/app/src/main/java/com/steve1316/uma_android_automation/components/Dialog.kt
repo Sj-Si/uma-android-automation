@@ -305,7 +305,9 @@ object DialogObjects {
         DialogConcertSkipConfirmation,      // Career
         DialogConfirmAutoSelect,            // Career Selection
         DialogConfirmDonations,             // Club
+        DialogConfirmEntry,                 // Champions Meeting
         DialogConfirmExchange,              // Main Screen
+        DialogConfirmRegistration,          // Champions Meeting
         DialogConfirmRestoreRP,             // Team Trials
         DialogConnectionError,              // Anywhere
         DialogConsecutiveRaceWarning,       // Career
@@ -364,6 +366,7 @@ object DialogObjects {
         DialogRestAndRecreation,            // Career
         DialogRewardsCollected,             // Main Screen, Special Events
         DialogRunners,                      // Career -> Race screens
+        DialogRunnerHistory,                // Champions Meeting
         DialogScheduledRaceAvailable,       // Career
         DialogScheduledRaces,               // Career
         DialogScheduleSettings,             // Career
@@ -606,6 +609,18 @@ object DialogConfirmDonations : DialogInterface {
     )
 }
 
+object DialogConfirmEntry : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogConfirmEntry"
+    override val name: String = "confirm_entry"
+    override val title: String = "Confirm Entry"
+    override val closeButton = null
+    override val okButton: BaseComponentInterface = ButtonOk
+    override val buttons: List<BaseComponentInterface> = listOf(
+        ButtonCancel,
+        ButtonOk,
+    )
+}
+
 object DialogConfirmExchange : DialogInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]DialogConfirmExchange"
     override val name: String = "confirm_exchange"
@@ -680,6 +695,18 @@ object DialogContinueCareer : DialogInterface {
     override val buttons: List<BaseComponentInterface> = listOf(
         ButtonCancel,
         ButtonResume,
+    )
+}
+
+object DialogConfirmRegistration : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogConfirmRegistration"
+    override val name: String = "confirm_registration"
+    override val title: String = "Confirm Registration"
+    override val closeButton = null
+    override val okButton = ButtonOk
+    override val buttons: List<BaseComponentInterface> = listOf(
+        ButtonCancel,
+        ButtonOk,
     )
 }
 
@@ -1444,6 +1471,17 @@ object DialogRunners : DialogInterface {
     )
 }
 
+object DialogRunnerHistory : DialogInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogRunnerHistory"
+    override val name: String = "runner_history"
+    override val title: String = "Runner History"
+    override val closeButton = null
+    override val okButton = null
+    override val buttons: List<BaseComponentInterface> = listOf(
+        ButtonClose,
+    )
+}
+
 object DialogScheduledRaceAvailable : DialogInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]DialogScheduledRaceAvailable"
     override val name: String = "scheduled_race_available"
@@ -1576,7 +1614,7 @@ object DialogSpecialMissions : DialogInterface {
     override val closeButton = null
     override val okButton: BaseComponentInterface = ButtonCollectAll
     override val buttons: List<BaseComponentInterface> = listOf(
-        ButtonOk,
+        ButtonClose,
         ButtonCollectAll,
     )
 }
