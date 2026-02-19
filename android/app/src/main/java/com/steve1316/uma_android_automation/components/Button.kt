@@ -197,6 +197,11 @@ object ButtonEventMissions : ComponentInterface {
     override val template = Template("components/button/event_missions")
 }
 
+object ButtonEventInfo : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonEventInfo"
+    override val template = Template("components/button/event_info", region = Region.bottomHalf)
+}
+
 object ButtonEventMissionsTabLimitedTime : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonEventMissionsTabLimitedTime"
     override val template = Template("components/button/event_missions_tab_limited_time")
@@ -849,4 +854,9 @@ object ButtonPlacing : ComponentInterface {
 object ButtonClaim : ComponentInterface {
     override val TAG: String = "ButtonClaim"
     override val template = Template("components/button/claim", region = Region.bottomHalf)
+}
+
+object ButtonRewards : ComponentInterface {
+    override val TAG: String = "ButtonRewards"
+    override val template = Template("components/button/rewards", region = Region.bottomHalf)
 }

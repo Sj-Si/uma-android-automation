@@ -129,9 +129,19 @@ class ChampionsMeeting(
                 waitForPage(PageChampionsMeetingRaces)
             }
             PageChampionsMeetingPreFinals -> {
-                // There is nothing for us to do at this point since we're just
-                // waiting for the final round to open.
-                bIsComplete = true
+                // Final round registrations open.
+                if (ButtonChampionsMeetingChangeRegistration.check(game.imageUtils, sourceBitmap = bitmap)) {
+                    bIsComplete = true
+                    return PageChampionsMeetingPreFinals
+                }
+
+                // Final round matching.
+                if (ButtonRaceExclamationPink.checkDisabled(game.imageUtils, sourceBitmap = bitmap)) {
+                    bIsComplete = true
+                    return PageChampionsMeetingPreFinals
+                }
+
+                ButtonRaceExclamationPink.click(game.imageUtils, sourceBitmap = bitmap)
             }
             PageChampionsMeetingRaces -> {
                 if (ButtonRaceExclamationPink.click(game.imageUtils)) {

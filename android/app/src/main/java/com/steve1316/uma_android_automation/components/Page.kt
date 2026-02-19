@@ -335,8 +335,9 @@ object PageChampionsMeetingHome : PageInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]PageChampionsMeetingHome"
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
     override val identifyingComponents: List<ComponentInterface> = listOf(
-        ButtonSpecialMissions,
         ButtonRunnerHistory,
+        ButtonEventInfo,
+        ButtonBack,
     )
 
     override val prevButton: ComponentInterface? = null
@@ -392,7 +393,9 @@ object PageChampionsMeetingPreFinals : PageInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]PageChampionsMeetingPreFinals"
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
     override val identifyingComponents: List<ComponentInterface> = listOf(
-        ButtonChampionsMeetingChangeRegistration,
+        IconChampionsMeetingRewardChest,
+        ButtonRewards,
+        ButtonEventInfo,
     )
 
     override val prevButton: ComponentInterface? = ButtonBack
