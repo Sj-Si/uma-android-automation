@@ -150,7 +150,7 @@ class LegendRace(
             return false
         }
 
-        if (ButtonLegendRace.checkDisabled(game.imageUtils)) {
+        if (ButtonLegendRace.checkDisabled(game.imageUtils) == true) {
             MessageLog.i(TAG, "Legend Race is locked. Cannot proceed.")
             return false
         }

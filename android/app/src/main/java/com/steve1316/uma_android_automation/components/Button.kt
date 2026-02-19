@@ -510,7 +510,7 @@ object ButtonShopExchange : MultiStateButtonInterface {
 
     // Special case since this component's disabled state actually requires a
     // different template to detect.
-    override fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap?): Boolean {
+    override fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap?): Boolean? {
         val sourceBitmap: Bitmap = sourceBitmap ?: imageUtils.getSourceBitmap()
         for ((index, template) in templates.withIndex()) {
             val point: Point? = imageUtils.findImageWithBitmap(
@@ -524,7 +524,7 @@ object ButtonShopExchange : MultiStateButtonInterface {
                 return index != 0
             }
         }
-        return true
+        return null
     }
 }
 

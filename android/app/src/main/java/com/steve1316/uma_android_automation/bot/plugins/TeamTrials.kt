@@ -238,7 +238,7 @@ class TeamTrials(
                 return false
             }
             is ButtonTeamTrials -> {
-                if (button.checkDisabled(game.imageUtils)) {
+                if (button.checkDisabled(game.imageUtils) == true) {
                     MessageLog.i(TAG, "Team Trials are locked. Cannot proceed.")
                     return false
                 }

@@ -145,7 +145,7 @@ class ClubActivity(
                     is ButtonDonateToAll0 -> {
                         // If we can't donate anything, then just treat this as if we
                         // finished donating and back out.
-                        if (ButtonDonateToAll0.checkDisabled(game.imageUtils, bitmap)) {
+                        if (ButtonDonateToAll0.checkDisabled(game.imageUtils, bitmap) == true) {
                             MessageLog.d(TAG, "[DIALOG] ${result.dialog.name}: DonateToAll button is disabled.")
                             bHasDonatedItems = true
                             result.dialog.close(game.imageUtils)
@@ -227,7 +227,7 @@ class ClubActivity(
             return false
         }
 
-        if (ButtonClub.checkDisabled(game.imageUtils)) {
+        if (ButtonClub.checkDisabled(game.imageUtils) == true) {
             MessageLog.i(TAG, "Club is locked. Cannot proceed.")
             return false
         }

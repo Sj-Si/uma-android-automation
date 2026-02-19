@@ -42,7 +42,7 @@ class ChampionsMeeting(
             "confirm_entry" -> result.dialog.ok(game.imageUtils)
             "confirm_registration" -> result.dialog.ok(game.imageUtils)
             "special_missions" -> {
-                if (ButtonCollectAll.checkDisabled(game.imageUtils)) {
+                if (ButtonCollectAll.checkDisabled(game.imageUtils) == true) {
                     result.dialog.close(game.imageUtils)
                 } else {
                     result.dialog.ok(game.imageUtils)
@@ -105,13 +105,15 @@ class ChampionsMeeting(
                 }
 
                 // If we didnt qualify for this round, then we have nothing to do.
-                if (ButtonChampionsMeetingRegistrationsOpenEntry.checkDisabled(game.imageUtils)) {
+                if (ButtonChampionsMeetingRegistrationsOpenEntry.checkDisabled(game.imageUtils) == true) {
+                    MessageLog.i(TAG, "[$name] Registration is locked. Completed.")
                     bIsComplete = true
                     return PageChampionsMeetingHome
                 }
 
                 // If the entry button is disabled for any reason then we have nothing to do.
-                if (ButtonChampionsMeetingEntry.checkDisabled(game.imageUtils)) {
+                if (ButtonChampionsMeetingEntry.checkDisabled(game.imageUtils) == true) {
+                    MessageLog.i(TAG, "[$name] Entry is locked. Completed.")
                     bIsComplete = true
                     return PageChampionsMeetingHome
                 }
@@ -120,7 +122,7 @@ class ChampionsMeeting(
                 PageChampionsMeetingHome.next(game.imageUtils)
             }
             PageChampionsMeetingEntryInfo -> {
-                if (ButtonConfirm.checkDisabled(game.imageUtils)) {
+                if (ButtonConfirm.checkDisabled(game.imageUtils) == true) {
                     ButtonAutoSelect.click(game.imageUtils)
                     game.wait(0.5, skipWaitingForLoading = true)
                     handleDialogs()
@@ -138,7 +140,7 @@ class ChampionsMeeting(
                 }
 
                 // Final round matching.
-                if (ButtonRaceExclamationPink.checkDisabled(game.imageUtils, sourceBitmap = bitmap)) {
+                if (ButtonRaceExclamationPink.checkDisabled(game.imageUtils, sourceBitmap = bitmap) == true) {
                     bIsComplete = true
                     return PageChampionsMeetingFinals
                 }
@@ -237,7 +239,7 @@ class ChampionsMeeting(
             return false
         }
 
-        if (ButtonChampionsMeeting.checkDisabled(game.imageUtils)) {
+        if (ButtonChampionsMeeting.checkDisabled(game.imageUtils) == true) {
             MessageLog.i(TAG, "[$name] Champions Meeting is locked. Cannot proceed.")
             return false
         }

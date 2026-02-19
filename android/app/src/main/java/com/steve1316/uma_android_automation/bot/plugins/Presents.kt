@@ -32,7 +32,7 @@ class Presents(
 
         when (result.dialog.name) {
             "presents" -> {
-                if (ButtonCollectAll.checkDisabled(game.imageUtils)) {
+                if (ButtonCollectAll.checkDisabled(game.imageUtils) == true) {
                     bIsComplete = true
                     result.dialog.close(game.imageUtils)
                 } else {

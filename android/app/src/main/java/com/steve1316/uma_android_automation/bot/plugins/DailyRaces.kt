@@ -120,8 +120,8 @@ class DailyRaces(
                 // If the multi race button is disabled, we just need to proceed.
                 // This happens if the player hasn't completed this race before.
                 // Multi-race is disabled until they win the race for the first time.
-                if (ButtonDailyRacesMultiRaceOff.checkDisabled(game.imageUtils) ||
-                    ButtonDailyRacesMultiRaceOn.checkDisabled(game.imageUtils)
+                if (ButtonDailyRacesMultiRaceOff.checkDisabled(game.imageUtils) == true ||
+                    ButtonDailyRacesMultiRaceOn.checkDisabled(game.imageUtils) == true
                 ) {
                     result.dialog.ok(game.imageUtils)
                     // We need an extra delay here since this dialog is slow to close.
@@ -180,7 +180,7 @@ class DailyRaces(
                 PageDailyRacesPreRacePrep.next(game.imageUtils)
             }
             PageDailyRacesRacePrep -> {
-                if (ButtonViewResults.checkDisabled(game.imageUtils)) {
+                if (ButtonViewResults.checkDisabled(game.imageUtils) == true) {
                     ButtonRaceManual.click(game.imageUtils)
                 } else {
                     ButtonViewResults.click(game.imageUtils)
@@ -234,7 +234,7 @@ class DailyRaces(
             return false
         }
 
-        if (ButtonDailyRaces.checkDisabled(game.imageUtils)) {
+        if (ButtonDailyRaces.checkDisabled(game.imageUtils) == true) {
             MessageLog.i(TAG, "Daily Races are locked. Cannot proceed.")
             return false
         }

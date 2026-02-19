@@ -188,11 +188,12 @@ interface BaseComponentInterface {
      * @param sourceBitmap The source bitmap to search within.
      *
      * @return Whether this component is currently disabled.
-     * All errors in this function will cause the function to return TRUE.
+     * If the component is not found on screen at all, then NULL is returned.
+     * All errors in this function will cause the function to return NULL.
      * This way, we don't think we're clicking a valid button when there is an error.
      */
-    fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap? = null): Boolean {
-        return false
+    fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap? = null): Boolean? {
+        return null
     }
 }
 
@@ -277,7 +278,7 @@ interface ComponentInterface: BaseComponentInterface {
             )
             if (cropped == null) {
                 null
-            } else if (checkDisabled(imageUtils, cropped)) {
+            } else if (checkDisabled(imageUtils, cropped) == true) {
                 null
             } else {
                 it
@@ -350,13 +351,13 @@ interface ComponentInterface: BaseComponentInterface {
         return true
     }
 
-    override fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap?): Boolean {
+    override fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap?): Boolean? {
         val sourceBitmap: Bitmap = sourceBitmap ?: imageUtils.getSourceBitmap()
         // Check color toward the left of the button's bitmap region.
         val templateBitmap: Bitmap = template.getBitmap(imageUtils)!!
         val point: Point? = findImageWithBitmap(imageUtils, sourceBitmap = sourceBitmap)
         if (point == null) {
-            return true
+            return null
         }
 
         val bitmap: Bitmap? = imageUtils.createSafeBitmap(
@@ -368,7 +369,7 @@ interface ComponentInterface: BaseComponentInterface {
             "checkDisabled cropped",
         )
         if (bitmap == null) {
-            return true
+            return null
         }
         val res: Int = imageUtils.compareBitmapLuminance(bitmap, templateBitmap)
         // If templateBitmap is darker than the detected bitmap, we return true.
@@ -460,7 +461,7 @@ interface ComplexComponentInterface: BaseComponentInterface {
                 )
                 if (cropped == null) {
                     null
-                } else if (checkDisabled(imageUtils, cropped)) {
+                } else if (checkDisabled(imageUtils, cropped) == true) {
                     null
                 } else {
                     it

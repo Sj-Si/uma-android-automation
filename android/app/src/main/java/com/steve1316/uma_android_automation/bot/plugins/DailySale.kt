@@ -145,7 +145,7 @@ class DailySale(
             return false
         }
 
-        var bIsDisabled: Boolean = ButtonShopExchange.checkDisabled(game.imageUtils, entry.bitmap)
+        var bIsDisabled: Boolean = ButtonShopExchange.checkDisabled(game.imageUtils, entry.bitmap) == true
 
         // Translate the location to the screen coordinates.
         buttonLoc = Point(buttonLoc.x + entry.bbox.x, buttonLoc.y + entry.bbox.y)

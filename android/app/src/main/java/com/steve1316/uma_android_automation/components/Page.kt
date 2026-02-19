@@ -351,7 +351,7 @@ object PageChampionsMeetingHome : PageInterface {
         }
         
         if (ButtonChampionsMeetingRegistrationsOpenEntry.check(imageUtils, sourceBitmap = bitmap)) {
-            if (ButtonChampionsMeetingRegistrationsOpenEntry.checkDisabled(imageUtils, sourceBitmap = bitmap)) {
+            if (ButtonChampionsMeetingRegistrationsOpenEntry.checkDisabled(imageUtils, sourceBitmap = bitmap) == true) {
                 return false
             }
             return ButtonChampionsMeetingRegistrationsOpenEntry.click(imageUtils, sourceBitmap = bitmap)
