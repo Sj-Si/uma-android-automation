@@ -46,16 +46,20 @@ package com.steve1316.uma_android_automation.components
 import android.graphics.Bitmap
 import org.opencv.core.Point
 
+import com.steve1316.automation_library.utils.MessageLog
+
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.utils.ImageUtils
 import com.steve1316.automation_library.utils.TextUtils
-import com.steve1316.uma_android_automation.MainActivity
-import com.steve1316.uma_android_automation.utils.CustomImageUtils
-import com.steve1316.uma_android_automation.components.BaseComponentInterface
 
+import com.steve1316.uma_android_automation.MainActivity
+import com.steve1316.uma_android_automation.components.ComponentInterface
+import com.steve1316.uma_android_automation.utils.CustomImageUtils
 import com.steve1316.uma_android_automation.types.BoundingBox
 
 object DialogUtils {
+    private val TAG: String = "[${MainActivity.loggerTag}]DialogUtils"
+
     private val titleGradientTemplates: List<String> = listOf(
         "components/dialog/dialog_title_gradient_0",
         "components/dialog/dialog_title_gradient_1",
@@ -91,16 +95,21 @@ object DialogUtils {
     /** Gets the title bar text of any dialog current on screen.
     *
     * @param imageUtils The CustomImageUtils instance used to find the dialog.
-    * @param titleLocation Optional location of the title bar gradient.
-    * @param tries The number of times to attempt to find the image.
+    * @param bitmap Optional bitmap to use when looking for a dialog.
+    * If not specified, a screenshot will be taken and used instead.
     *
     * @return The text of the dialog's title bar if one was found, else NULL.
     */
-    fun getTitle(imageUtils: CustomImageUtils, tries: Int = 1): String? {
+    fun getTitle(imageUtils: CustomImageUtils, bitmap: Bitmap? = null): String? {
+        val bitmap: Bitmap = bitmap ?: imageUtils.getSourceBitmap()
         var templateBitmap: Bitmap? = null
         var titleLocation: Point? = null
         for (template in titleGradientTemplates) {
-            titleLocation = imageUtils.findImage(template, tries = tries, suppressError = true).first
+            titleLocation = imageUtils.findImageWithBitmap(
+                template,
+                sourceBitmap = bitmap,
+                suppressError = true,
+            )
             if (titleLocation != null) {
                 templateBitmap = imageUtils.getTemplateBitmap(template.substringAfterLast('/'), "images/" + template.substringBeforeLast('/'))
                 break
@@ -117,8 +126,6 @@ object DialogUtils {
             return null
         }
 
-        val sourceBitmap = imageUtils.getSourceBitmap()
-
         // Get top left coordinates of the title.
         val x = titleLocation.x - (templateBitmap.width / 2.0)
         val y = titleLocation.y - (templateBitmap.height / 2.0)
@@ -131,7 +138,7 @@ object DialogUtils {
         )
 
         val text: String = imageUtils.performOCROnRegion(
-            sourceBitmap,
+            bitmap,
             bbox.x,
             bbox.y,
             bbox.w,
@@ -153,7 +160,7 @@ object DialogUtils {
         // that use a different font (like Trophy Won).
         if (match == null) {
             val croppedBitmap: Bitmap? = imageUtils.createSafeBitmap(
-                sourceBitmap,
+                bitmap,
                 bbox.x,
                 bbox.y,
                 bbox.w,
@@ -168,6 +175,7 @@ object DialogUtils {
                 return DialogTrophyWon.title
             }
 
+            MessageLog.e(TAG, "Failed to match any dialogs to the extracted title: $text")
             return null
         }
 
@@ -192,15 +200,24 @@ object DialogUtils {
     /** Detect and return a DialogInterface on screen.
     *
     * @param imageUtils The CustomImageUtils instance used to find the dialog.
-    * @param tries The number of times to attempt to find the image.
+    * @param bitmap Optional bitmap to use when looking for a dialog.
+    * If not specified, a screenshot will be taken and used instead.
     *
     * @return The DialogInterface if one was found, else NULL.
     */
-    fun getDialog(imageUtils: CustomImageUtils, tries: Int = 1): DialogInterface? {
-        val title: String = getTitle(imageUtils = imageUtils) ?: return null
+    fun getDialog(imageUtils: CustomImageUtils, bitmap: Bitmap? = null): DialogInterface? {
+        val bitmap: Bitmap = bitmap ?: imageUtils.getSourceBitmap()
+        val title: String = getTitle(imageUtils, bitmap) ?: return null
 
         // There may be multiple matches for titles since they are not unique.
         val matches: List<DialogInterface> = DialogObjects.items.filter { it.title == title }
+
+        if (matches.isEmpty()) {
+            // If there are no matches, that means there is a programmer error since
+            // getTitle should always return a valid title.
+            throw IllegalStateException("getTitle returned an invalid title: $title")
+        }
+
         if (matches.size == 1) {
             handleDangerousDialogs(matches[0])
             return matches[0]
@@ -210,13 +227,14 @@ object DialogUtils {
         // set of buttons matches what is on screen.
         if (matches.size > 1) {
             for (dialog in matches) {
-                if (dialog.buttons.all { button -> button.check(imageUtils) }) {
+                if (dialog.buttons.all { button -> button.check(imageUtils, sourceBitmap = bitmap) }) {
                     handleDangerousDialogs(dialog)
                     return dialog
                 }
             }
         }
 
+        MessageLog.e(TAG, "Multiple dialogs match the detected title ($title). However, we failed to match any of them to the buttons in the dialog on the screen.")
         return null
     }
 }
