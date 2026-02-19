@@ -11,18 +11,33 @@ import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 
 import com.steve1316.uma_android_automation.components.BaseComponentInterface
+import com.steve1316.uma_android_automation.components.ButtonAutoSelect
+import com.steve1316.uma_android_automation.components.ButtonChampionsMeeting
+import com.steve1316.uma_android_automation.components.ButtonChampionsMeetingChangeRegistration
+import com.steve1316.uma_android_automation.components.ButtonChampionsMeetingEntry
+import com.steve1316.uma_android_automation.components.ButtonChampionsMeetingRegistrationsOpenEntry
+import com.steve1316.uma_android_automation.components.ButtonClaim
+import com.steve1316.uma_android_automation.components.ButtonCollectAll
+import com.steve1316.uma_android_automation.components.ButtonConfirm
+import com.steve1316.uma_android_automation.components.ButtonNext
+import com.steve1316.uma_android_automation.components.ButtonPlacing
+import com.steve1316.uma_android_automation.components.ButtonRace
+import com.steve1316.uma_android_automation.components.ButtonRaceEvents
+import com.steve1316.uma_android_automation.components.ButtonRaceExclamation
+import com.steve1316.uma_android_automation.components.ButtonRaceExclamationPink
+import com.steve1316.uma_android_automation.components.ButtonReplayWithImage
+import com.steve1316.uma_android_automation.components.ButtonSkip
+import com.steve1316.uma_android_automation.components.ButtonSpecialMissions
 import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.DialogInterface
-import com.steve1316.uma_android_automation.components.PageInterface
-import com.steve1316.uma_android_automation.components.ButtonRaceEvents
-import com.steve1316.uma_android_automation.components.ButtonChampionsMeeting
-import com.steve1316.uma_android_automation.components.ButtonChampionsMeetingRegistrationsOpenEntry
-import com.steve1316.uma_android_automation.components.ButtonChampionsMeetingChangeRegistration
-import com.steve1316.uma_android_automation.components.ButtonReplayWithImage
-import com.steve1316.uma_android_automation.components.ButtonClaim
 import com.steve1316.uma_android_automation.components.MenuBar
+import com.steve1316.uma_android_automation.components.PageChampionsMeetingEntryInfo
+import com.steve1316.uma_android_automation.components.PageChampionsMeetingFinals
+import com.steve1316.uma_android_automation.components.PageChampionsMeetingHome
+import com.steve1316.uma_android_automation.components.PageChampionsMeetingPostRace
+import com.steve1316.uma_android_automation.components.PageChampionsMeetingRaces
+import com.steve1316.uma_android_automation.components.PageInterface
 
-import com.steve1316.uma_android_automation.components.* // REMOVEME
 
 class ChampionsMeeting(
     game: Game,
