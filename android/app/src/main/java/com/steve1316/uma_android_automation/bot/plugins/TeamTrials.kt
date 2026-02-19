@@ -171,6 +171,7 @@ class TeamTrials(
             }
             PageTeamTrialsPreRaceResults -> {
                 PageTeamTrialsPreRaceResults.next(game.imageUtils, bitmap)
+                waitForButton(ButtonNext, bShouldTapWhileWaiting = true, bShouldClickButton = true)
                 waitForPage(PageTeamTrialsRaceResults, bShouldTapWhileWaiting = true)
             }
             PageTeamTrialsRaceResults -> {
