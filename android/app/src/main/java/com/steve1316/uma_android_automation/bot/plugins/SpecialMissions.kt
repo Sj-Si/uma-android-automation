@@ -152,6 +152,7 @@ class SpecialMissions(
                 } else {
                     if (!ButtonEventMissions.click(game.imageUtils)) {
                         bHasHandledEventMissions = true
+                        bHasHandledRacingCarnivalMissions = true
                     }
                 }
             }
