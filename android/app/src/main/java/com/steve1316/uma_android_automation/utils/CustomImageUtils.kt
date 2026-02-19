@@ -2646,7 +2646,7 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 		Utils.bitmapToMat(bitmap, srcImage)
 
         val image = Mat()
-        Imgproc.cvtColor(srcImage, image, Imgproc.COLOR_BGR2GRAY)
+        Imgproc.cvtColor(srcImage, image, Imgproc.COLOR_RGB2GRAY)
         Imgproc.GaussianBlur(image, image, blurKernel, 0.0)
         if (bUseAdaptiveThreshold) {
             Imgproc.adaptiveThreshold(
@@ -2775,6 +2775,10 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
      * @param morphKernelSize The size of the kernel used for the opening morphology
      * operation. Higher values will cause detected rectangles to be more accurate,
      * but too high of values can cause rectangles to not be detected at all.
+     * @param bIgnoreOverflowYAxis Whether to discard any results whose region extends
+     * outside of the [region] y-axis.
+     * @param bIgnoreOverflowXAxis Whether to discard any results whose region extends
+     * outside of the [region] x-axis.
      *
      * @return A list of BoundingBox objects for detected rectangles, sorted by their
      * y-position in the bitmap (from top to bottom on screen).
@@ -2790,6 +2794,8 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
         fillLoDiffValue: Int = 1,
         fillUpDiffValue: Int = 1,
         morphKernelSize: Int = 100,
+        bIgnoreOverflowYAxis: Boolean = true,
+        bIgnoreOverflowXAxis: Boolean = true,
     ): List<BoundingBox> {
         val bitmap: Bitmap = if (region == null) {
             bitmap ?: getSourceBitmap()
@@ -2837,7 +2843,7 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 		Utils.bitmapToMat(bitmap, srcImage)
 
         val image = Mat()
-        Imgproc.cvtColor(srcImage, image, Imgproc.COLOR_BGR2GRAY)
+        Imgproc.cvtColor(srcImage, image, Imgproc.COLOR_RGB2GRAY)
         Imgproc.GaussianBlur(image, image, blurKernel, 0.0)
         
         val rect = Rect()
@@ -2919,12 +2925,16 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
                 val rect = Imgproc.boundingRect(cnt)
 
                 // Do not include any rects that are touching the bounding region.
-                if (rect.x <= 0 ||
-                    rect.y <= 0 ||
-                    rect.x + rect.width >= bitmap.width - 1 ||
-                    rect.y + rect.height >= bitmap.height - 1
-                ) {
-                    continue
+                if (bIgnoreOverflowYAxis) {
+                    if (rect.y <= 0 || rect.y + rect.height >= bitmap.height - 1) {
+                        continue
+                    }
+                }
+
+                if (bIgnoreOverflowXAxis) {
+                    if (rect.x <= 0 || rect.x + rect.width >= bitmap.width - 1) {
+                        continue
+                    }
                 }
 
                 if (debugMode) {
@@ -3059,6 +3069,30 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
         return res
     }
 
+    /** Converts a standardized HSV value range to OpenCV's HSV value range.
+     *
+     * OpenCV likes making everything harder for no reason, so we need to manually
+     * convert typical HSV values into the value range that OpenCV is expecting:
+     *          Standard        OpenCV
+     *      H   0 - 360 (deg)   0 - 179
+     *      S   0 - 100 (%)     0 - 255
+     *      V   0 - 100 (%)     0 - 255
+     *
+     * @param h The standardized H value.
+     * @param s The standardized S value.
+     * @param v The standardized V value.
+     *
+     * @return An HSV Scalar containing the converted values in OpenCV's HSV range.
+     */
+    fun standardHsvToOpenCvHsvScalar(h: Int, s: Int, v: Int): Scalar {
+        val newH: Int = (h / 2.0).toInt().coerceIn(0, 179)
+        val newS: Int = ((s / 100.0) * 255.0).toInt().coerceIn(0, 255)
+        val newV: Int = ((v / 100.0) * 255.0).toInt().coerceIn(0, 255)
+
+        return Scalar(newH.toDouble(), newS.toDouble(), newV.toDouble())
+    }
+
+
     /** Detects a scrollbar on the screen.
      *
      * @param bitmap Optional bitmap containing the rectangles you want to detect.
@@ -3118,10 +3152,10 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 		Utils.bitmapToMat(bitmap, srcImage)
 
         val image = Mat()
-        Imgproc.cvtColor(srcImage, image, Imgproc.COLOR_BGR2GRAY)
+        Imgproc.cvtColor(srcImage, image, Imgproc.COLOR_RGB2GRAY)
 
         val hsvImage = Mat()
-        Imgproc.cvtColor(srcImage, hsvImage, Imgproc.COLOR_BGR2HSV)
+        Imgproc.cvtColor(srcImage, hsvImage, Imgproc.COLOR_RGB2HSV)
 
         if (debugMode) {
             val resultBitmap = createBitmap(hsvImage.cols(), hsvImage.rows())
@@ -3129,10 +3163,17 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
             saveBitmap(resultBitmap, "detectScrollBar_hsvImage", fullRes = true)
         }
 
-        val thumbColorRange: Pair<String, String> = Pair("#787388", "#7d788e")
-        val barColorRange: Pair<String, String> = Pair("#d3d1db", "#d3d1db")
+        val thumbColorRange: Pair<Scalar, Scalar> = Pair(
+            standardHsvToOpenCvHsvScalar(252, 14, 52), // approx #787388
+            standardHsvToOpenCvHsvScalar(254, 16, 56), // approx #7d788e
+        )
 
-        val combinedColorRange: List<Pair<String, String>> = listOf(
+        val barColorRange: Pair<Scalar, Scalar> = Pair(
+            standardHsvToOpenCvHsvScalar(251, 4, 85), // approx #d3d1db
+            standardHsvToOpenCvHsvScalar(253, 5, 86), // approx #d3d1db
+        )
+
+        val combinedColorRange: List<Pair<Scalar, Scalar>> = listOf(
             thumbColorRange,
             barColorRange,
         )
@@ -3146,16 +3187,11 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
          *
          * @return The generated mask Mat. Make sure to release this Mat when done.
          */
-        fun extractMask(hsvImage: Mat, colorRanges: List<Pair<String, String>>): Mat {
+        fun extractMask(hsvImage: Mat, colorRanges: List<Pair<Scalar, Scalar>>): Mat {
             val mask = Mat.zeros(hsvImage.size(), CvType.CV_8UC1)
             for ((lower, upper) in colorRanges) {
                 val tmpMask = Mat()
-                Core.inRange(
-                    hsvImage,
-                    lower.hexRGBToHSVScalar(),
-                    upper.hexRGBToHSVScalar(),
-                    tmpMask,
-                )
+                Core.inRange(hsvImage, lower, upper, tmpMask)
                 Core.bitwise_or(mask, tmpMask, mask)
                 tmpMask.release()
             }
@@ -3177,7 +3213,7 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 
         val thumbMask: Mat = extractMask(
             hsvImage,
-            listOf<Pair<String, String>>(thumbColorRange),
+            listOf<Pair<Scalar, Scalar>>(thumbColorRange),
         )
         if (debugMode) {
             val resultBitmap = createBitmap(thumbMask.cols(), thumbMask.rows())

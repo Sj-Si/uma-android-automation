@@ -59,11 +59,15 @@ data class ScrollListEntryDetectionConfig (
     val bUseAdaptiveThreshold: Boolean = true,
     val adaptiveThresholdBlockSize: Int = 11,
     val adaptiveThresholdConstant: Double = 2.0,
-    // CustomImageUtils.detectRoundedRectangles params.
+    // CustomImageUtils.detectRectanglesGeneric params.
     val fillSeedPoint: Point = Point(10.0, 10.0),
     val fillLoDiffValue: Int = 1,
     val fillUpDiffValue: Int = 1,
     val morphKernelSize: Int = 100,
+    val bIgnoreOverflowYAxis: Boolean = true,
+    // Ignoring X overflow helps for things like the race list, where the selected
+    // race has angle brackets around it that overflow with the scroll bar.
+    val bIgnoreOverflowXAxis: Boolean = false,
 )
 
 /** Handles parsing entries in a scrollable list.
@@ -112,6 +116,8 @@ class ScrollList private constructor(
         fillLoDiffValue = entryDetectionConfig.fillLoDiffValue,
         fillUpDiffValue = entryDetectionConfig.fillUpDiffValue,
         morphKernelSize = entryDetectionConfig.morphKernelSize,
+        bIgnoreOverflowYAxis = entryDetectionConfig.bIgnoreOverflowYAxis,
+        bIgnoreOverflowXAxis = entryDetectionConfig.bIgnoreOverflowXAxis,
     )
 
     // Create a small padding within the bboxList. This is where the list entries
@@ -252,11 +258,23 @@ class ScrollList private constructor(
      * @return A list of bounding boxes for each entry that we detected.
      */
     private fun detectEntries(bitmap: Bitmap? = null): List<BoundingBox> {
+        // We want to cut the scroll bar region out of the search region. This way,
+        // the scroll bar doesn't cause entries to merge together.
+        // This is really only important for lists where entries can have overlay
+        // icons (such as selection brackets) around them that can overlap with
+        // the scrollbar.
+        val bboxNoScrollbar = BoundingBox(
+            x = bboxList.x,
+            y = bboxList.y,
+            w = bboxScrollBar.x - bboxList.x,
+            h = bboxList.h,
+        )
+
         // Extract a list of bounding boxes for each entry in the list.
         val rects: List<BoundingBox> = if (entryDetectionConfig.bUseGeneric) {
             game.imageUtils.detectRectanglesGeneric(
                 bitmap = bitmap,
-                region = bboxList,
+                region = bboxNoScrollbar,
                 minArea = entryDetectionConfig.minArea,
                 maxArea = entryDetectionConfig.maxArea,
                 blurSize = entryDetectionConfig.blurSize,
@@ -265,11 +283,13 @@ class ScrollList private constructor(
                 fillLoDiffValue = entryDetectionConfig.fillLoDiffValue,
                 fillUpDiffValue = entryDetectionConfig.fillUpDiffValue,
                 morphKernelSize = entryDetectionConfig.morphKernelSize,
+                bIgnoreOverflowYAxis = entryDetectionConfig.bIgnoreOverflowYAxis,
+                bIgnoreOverflowXAxis = entryDetectionConfig.bIgnoreOverflowXAxis,
             )
         } else {
             game.imageUtils.detectRoundedRectangles(
                 bitmap = bitmap,
-                region = bboxList,
+                region = bboxNoScrollbar,
                 minArea = entryDetectionConfig.minArea,
                 maxArea = entryDetectionConfig.maxArea,
                 blurSize = entryDetectionConfig.blurSize,
@@ -319,6 +339,7 @@ class ScrollList private constructor(
             region = bboxScrollBarRegionDefault,
             minArea = bboxScrollBarMinArea,
             maxArea = bboxScrollBarMaxArea,
+            morphCloseKernelSize = 10,
         )
 
         // If we detected a scrollbar, update our class state with the new bbox
