@@ -18,6 +18,8 @@ import com.steve1316.uma_android_automation.components.ButtonRaceEvents
 import com.steve1316.uma_android_automation.components.ButtonChampionsMeeting
 import com.steve1316.uma_android_automation.components.ButtonChampionsMeetingRegistrationsOpenEntry
 import com.steve1316.uma_android_automation.components.ButtonChampionsMeetingChangeRegistration
+import com.steve1316.uma_android_automation.components.ButtonReplayWithImage
+import com.steve1316.uma_android_automation.components.ButtonClaim
 import com.steve1316.uma_android_automation.components.MenuBar
 
 import com.steve1316.uma_android_automation.components.* // REMOVEME
@@ -60,8 +62,9 @@ class ChampionsMeeting(
         return listOf<PageInterface>(
             PageChampionsMeetingHome,
             PageChampionsMeetingEntryInfo,
-            PageChampionsMeetingPreFinals,
+            PageChampionsMeetingFinals,
             PageChampionsMeetingRaces,
+            PageChampionsMeetingPostRace,
         ).find { it.check(game.imageUtils, bitmap) }
     }
 
@@ -85,7 +88,7 @@ class ChampionsMeeting(
                 else -> game.tap(350.0, 750.0, "ok", taps = 1)
             }
         }
-        MessageLog.w(TAG, "handleRaceLoop timed out.")
+        MessageLog.w(TAG, "[$name] handleRaceLoop timed out.")
         return false
     }
 
@@ -107,8 +110,7 @@ class ChampionsMeeting(
                     return PageChampionsMeetingHome
                 }
 
-                // If the entry button is disabled for any reason then
-                // we have nothing to do.
+                // If the entry button is disabled for any reason then we have nothing to do.
                 if (ButtonChampionsMeetingEntry.checkDisabled(game.imageUtils)) {
                     bIsComplete = true
                     return PageChampionsMeetingHome
@@ -128,20 +130,41 @@ class ChampionsMeeting(
                 handleDialogs()
                 waitForPage(PageChampionsMeetingRaces)
             }
-            PageChampionsMeetingPreFinals -> {
+            PageChampionsMeetingFinals -> {
                 // Final round registrations open.
                 if (ButtonChampionsMeetingChangeRegistration.check(game.imageUtils, sourceBitmap = bitmap)) {
                     bIsComplete = true
-                    return PageChampionsMeetingPreFinals
+                    return PageChampionsMeetingFinals
                 }
 
                 // Final round matching.
                 if (ButtonRaceExclamationPink.checkDisabled(game.imageUtils, sourceBitmap = bitmap)) {
                     bIsComplete = true
-                    return PageChampionsMeetingPreFinals
+                    return PageChampionsMeetingFinals
                 }
 
-                ButtonRaceExclamationPink.click(game.imageUtils, sourceBitmap = bitmap)
+                // Race available. Handle final race and reward collection.
+                if (ButtonRaceExclamationPink.click(game.imageUtils, sourceBitmap = bitmap)) {
+                    waitForButton(ButtonNext, bShouldTapWhileWaiting = true)
+                    if (!handleRaceLoop()) {
+                        throw IllegalStateException("[$name] Failed to complete race loop. Stopping...")
+                    }
+                    waitForButton(ButtonClaim, bShouldClickButton = true)
+                    // Finish claiming rewards.
+                    waitForButton(ButtonNext, bShouldClickButton = true)
+                } else {
+                    if (!ButtonClaim.click(game.imageUtils, tries = 50)) {
+                        MessageLog.w(TAG, "[$name] Failed to click the Claim button.")
+                        return PageChampionsMeetingRaces
+                    }
+
+                    if (waitForButton(ButtonNext, bShouldClickButton = true) == null) {
+                        MessageLog.w(TAG, "[$name] Failed to wait for round rewards Next button.")
+                        return null
+                    }
+
+                    waitForPage(PageChampionsMeetingHome)
+                }
             }
             PageChampionsMeetingRaces -> {
                 if (ButtonRaceExclamationPink.click(game.imageUtils)) {
@@ -151,17 +174,34 @@ class ChampionsMeeting(
                     }
                     waitForPage(PageChampionsMeetingRaces)
                 } else {
+                    // Many tries since it has animated sparkles.
                     if (!ButtonClaim.click(game.imageUtils, tries = 50)) {
-                        MessageLog.w(TAG, "Failed to click the Claim button.")
+                        MessageLog.w(TAG, "[$name] Failed to click the Claim button.")
                         return PageChampionsMeetingRaces
                     }
 
                     if (waitForButton(ButtonNext, bShouldClickButton = true) == null) {
-                        MessageLog.w(TAG, "Failed to wait for round rewards Next button.")
+                        MessageLog.w(TAG, "[$name] Failed to wait for round rewards Next button.")
                         return null
                     }
 
                     waitForPage(PageChampionsMeetingHome)
+                }
+            }
+            PageChampionsMeetingPostRace -> {
+                if (ButtonReplayWithImage.check(game.imageUtils, sourceBitmap = bitmap)) {
+                    bIsComplete = true
+                    MessageLog.i(TAG, "[$name] Champions Meeting is already complete. Exiting...")
+                    return PageChampionsMeetingPostRace
+                }
+
+                // Many tries since it has animated sparkles.
+                if (ButtonClaim.click(game.imageUtils, tries = 50)) {
+                    if (waitForButton(ButtonNext, bShouldClickButton = true) != null) {
+                        bIsComplete = true
+                        return PageChampionsMeetingPostRace
+                    }
+                    throw IllegalStateException("[$name] Failed to find the NEXT button after claiming rewards. Aborting...")
                 }
             }
             else -> handleDialogs()
@@ -183,27 +223,27 @@ class ChampionsMeeting(
         }
 
         if (!menuBar.goToRace()) {
-            MessageLog.w(TAG, "Failed to go to menu bar's Race tab.")
+            MessageLog.w(TAG, "[$name] Failed to go to menu bar's Race tab.")
             return false
         }
         
         if (waitForButton(ButtonRaceEvents, bShouldClickButton = true) == null) {
-            MessageLog.w(TAG, "Failed to find Race Events button.")
+            MessageLog.w(TAG, "[$name] Failed to find Race Events button.")
             return false
         }
 
         if (waitForButton(ButtonChampionsMeeting, bShouldClickButton = false) == null) {
-            MessageLog.e(TAG, "Failed to find Champions Meeting button. Cannot proceed.")
+            MessageLog.e(TAG, "[$name] Failed to find Champions Meeting button. Cannot proceed.")
             return false
         }
 
         if (ButtonChampionsMeeting.checkDisabled(game.imageUtils)) {
-            MessageLog.i(TAG, "Champions Meeting is locked. Cannot proceed.")
+            MessageLog.i(TAG, "[$name] Champions Meeting is locked. Cannot proceed.")
             return false
         }
 
         if (!ButtonChampionsMeeting.click(game.imageUtils)) {
-            MessageLog.w(TAG, "Failed to click Champions Meeting button.")
+            MessageLog.w(TAG, "[$name] Failed to click Champions Meeting button.")
             return false
         }
 

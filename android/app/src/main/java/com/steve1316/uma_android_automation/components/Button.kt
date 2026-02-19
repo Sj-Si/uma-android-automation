@@ -583,6 +583,11 @@ object ButtonChampionsMeetingRegistrationsOpenEntry : ComponentInterface {
     override val template = Template("components/button/champions_meeting_registrations_open_entry")
 }
 
+object ButtonChampionsMeetingFinalRoundResults : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonChampionsMeetingFinalRoundResults"
+    override val template = Template("components/button/champions_meeting_final_round_results", region = Region.bottomHalf)
+}
+
 object ButtonChampionsMeetingChangeRegistration : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonChampionsMeetingChangeRegistration"
     override val template = Template("components/button/champions_meeting_change_registration")
@@ -859,4 +864,9 @@ object ButtonClaim : ComponentInterface {
 object ButtonRewards : ComponentInterface {
     override val TAG: String = "ButtonRewards"
     override val template = Template("components/button/rewards", region = Region.bottomHalf)
+}
+
+object ButtonReplayWithImage : ComponentInterface {
+    override val TAG: String = "ButtonReplayWithImage"
+    override val template = Template("components/button/replay_with_image", region = Region.bottomHalf)
 }

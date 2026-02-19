@@ -361,6 +361,10 @@ object PageChampionsMeetingHome : PageInterface {
             return true
         }
 
+        if (ButtonChampionsMeetingFinalRoundResults.click(imageUtils, sourceBitmap = bitmap)) {
+            return true
+        }
+
         return false
     }
 }
@@ -389,8 +393,8 @@ object PageChampionsMeetingEntryInfo : PageInterface {
     override val nextButton: ComponentInterface? = ButtonConfirm
 }
 
-object PageChampionsMeetingPreFinals : PageInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]PageChampionsMeetingPreFinals"
+object PageChampionsMeetingFinals : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageChampionsMeetingFinals"
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
     override val identifyingComponents: List<ComponentInterface> = listOf(
         IconChampionsMeetingRewardChest,
@@ -400,4 +404,26 @@ object PageChampionsMeetingPreFinals : PageInterface {
 
     override val prevButton: ComponentInterface? = ButtonBack
     override val nextButton: ComponentInterface? = null
+}
+
+object PageChampionsMeetingPostRace : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageChampionsMeetingPostRace"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        ButtonRewards,
+        ButtonEventInfo,
+    )
+
+    override val prevButton: ComponentInterface? = ButtonBack
+    override val nextButton: ComponentInterface? = null
+
+    override fun check(imageUtils: CustomImageUtils, bitmap: Bitmap?): Boolean {
+        // This page must include the two identifying components.
+        if (!super.check(imageUtils, bitmap)) {
+            return false
+        }
+        // ...and either of these buttons.
+        return ButtonReplayWithImage.check(imageUtils, sourceBitmap = bitmap) ||
+            ButtonClaim.check(imageUtils, sourceBitmap = bitmap)
+    }
 }
