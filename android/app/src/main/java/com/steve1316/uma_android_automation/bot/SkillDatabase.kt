@@ -125,7 +125,7 @@ class SkillDatabase (private val game: Game) {
 
             return result.toMap()
         } catch (e: Exception) {
-            MessageLog.e(TAG, "[ERROR] blah: Error: ${e.message}")
+            MessageLog.e(TAG, "[ERROR] loadSkillData: ${e.message}")
             return emptyMap<String, SkillData>()
         } finally {
             settingsManager.close()
@@ -140,6 +140,7 @@ class SkillDatabase (private val game: Game) {
         fun getVersionNames(id: Int?, bIsUpgrade: Boolean = false): List<String> {
             var id: Int? = id
             if (id == null) {
+                MessageLog.e(TAG, "loadSkillStructure::getVersionNames: id is null.")
                 return emptyList()
             }
 

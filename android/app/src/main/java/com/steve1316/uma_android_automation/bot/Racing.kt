@@ -158,6 +158,7 @@ class Racing (private val game: Game) {
     fun handleDialogs(dialog: DialogInterface? = null, overrideIgnoreConsecutiveRaceWarning: Boolean = false): Pair<Boolean, DialogInterface?> {
         val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(imageUtils = game.imageUtils)
         if (dialog == null) {
+            Log.d(TAG, "[RACE] No dialog found.")
             return Pair(false, null)
         }
 
@@ -280,6 +281,7 @@ class Racing (private val game: Game) {
             // the one in Campaign.
             "umamusume_details" -> dialog.close(imageUtils = game.imageUtils)
             else -> {
+                Log.w(TAG, "[RACE] Unknown dialog \"${dialog.name}\" detected so it will not be handled.")
                 return Pair(false, dialog)
             }
         }
@@ -642,6 +644,7 @@ class Racing (private val game: Game) {
             // If after scrolling the scrollbar hasn't changed, that means
             // we've reached the end of the list.
             if (prevScrollBarBitmap != null && scrollBarBitmap.sameAs(prevScrollBarBitmap)) {
+                Log.d(TAG, "[RACE] Scrollbar has not changed, reached end of list.")
                 return false
             }
 
@@ -654,6 +657,7 @@ class Racing (private val game: Game) {
             )
 
             if (!locs.isEmpty()) {
+                Log.d(TAG, "[RACE] Found double predictions at (${locs.first().x}, ${locs.first().y}).")
                 game.tap(
                     locs.first().x,
                     locs.first().y,
@@ -722,6 +726,7 @@ class Racing (private val game: Game) {
         game.wait(0.5, skipWaitingForLoading = true)
         val (bWasDialogHandled, dialog) = handleDialogs()
         if (!bWasDialogHandled || (dialog != null && dialog.name != "race_details")) {
+            Log.w(TAG, "[RACE] Failed to handle dialogs. Aborting racing...")
             return false
         }
         game.wait(2.0)
@@ -871,6 +876,7 @@ class Racing (private val game: Game) {
 
             if (!success) {
                 // Clear requirement flags if race selection failed.
+                Log.w(TAG, "[RACE] Failed to select a race. Aborting racing...")
                 clearRacingRequirementFlags()
                 return false
             }
@@ -1325,7 +1331,10 @@ class Racing (private val game: Game) {
 
         // Determine max fans and select the appropriate race.
         val maxFans = filteredRaces.maxOfOrNull { it.fans } ?: -1
-        if (maxFans == -1) return false
+        if (maxFans == -1) {
+            Log.w(TAG, "[RACE] Failed to determine max fans. Aborting racing...")
+            return false
+        }
         MessageLog.i(TAG, "[RACE] Number of fans detected for each extra race are: ${filteredRaces.joinToString(", ") { it.fans.toString() }}")
 
         // Evaluates which race to select based on maximum fans and double prediction priority (if force racing is enabled).
@@ -1580,6 +1589,7 @@ class Racing (private val game: Game) {
      */
     private fun findMandatoryExtraRaceForCurrentTurn(): Pair<PlannedRace?, RaceData?> {
         if (!enableRacingPlan || !enableMandatoryRacingPlan) {
+            Log.d(TAG, "[RACE] Mandatory racing plan is not enabled so skipping the search for a mandatory extra race.")
             return Pair(null, null)
         }
 
@@ -1588,6 +1598,7 @@ class Racing (private val game: Game) {
         // Find planned race matching current turn number.
         val matchingPlannedRace = userPlannedRaces.find { it.turnNumber == currentTurnNumber }
         if (matchingPlannedRace == null) {
+            Log.d(TAG, "[RACE] No mandatory extra race found for current turn number $currentTurnNumber.")
             return Pair(null, null)
         }
 
@@ -1677,7 +1688,10 @@ class Racing (private val game: Game) {
         MessageLog.i(TAG, "[RACE] Current remaining number of days before the next mandatory race: $turnsRemaining.")
 
         // If the setting to force racing extra races is enabled, always return true.
-        if (enableForceRacing) return true
+        if (enableForceRacing) {
+            Log.d(TAG, "[RACE] Force racing is enabled so eligibility to start extra races will be true.")
+            return true
+        }
 
         // Check for common restrictions that apply to both smart and standard racing via screen checks.
         val sourceBitmap = game.imageUtils.getSourceBitmap()
@@ -2091,6 +2105,7 @@ class Racing (private val game: Game) {
 
             val database = settingsManager.getDatabase()
             if (database == null) {
+                MessageLog.e(TAG, "[RACE] Database not available for race lookup.")
                 settingsManager.close()
                 return arrayListOf()
             }

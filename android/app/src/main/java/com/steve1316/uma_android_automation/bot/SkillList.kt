@@ -63,7 +63,11 @@ class SkillList (private val game: Game) {
      * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
      */
     private fun handleDialogs(): Pair<Boolean, DialogInterface?> {
-        val dialog: DialogInterface = DialogUtils.getDialog(game.imageUtils) ?: return Pair(false, null)
+        val dialog: DialogInterface = DialogUtils.getDialog(game.imageUtils)
+        if (dialog == null) {
+            Log.d(TAG, "\n[SKILLS] No dialogs found.")
+            return Pair(false, null)
+        }
 
         when (dialog.name) {
             "skill_list_confirmation" -> {
@@ -79,6 +83,7 @@ class SkillList (private val game: Game) {
                 dialog.close(game.imageUtils)
             }
             else -> {
+                Log.w(TAG, "[SKILLS] Unknown dialog \"${dialog.name}\" detected so it will not be handled.")
                 return Pair(false, dialog)
             }
         }
@@ -629,6 +634,7 @@ class SkillList (private val game: Game) {
         onEntry: OnEntryDetectedCallback? = null,
     ): Map<String, SkillListEntry> {
         if (bUseMockData) {
+            Log.d(TAG, "\n[SKILLS] Using mock skill list entries.")
             return parseMockSkillListEntries()
         }
 

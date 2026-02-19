@@ -70,6 +70,7 @@ open class Campaign(val game: Game) {
     open fun handleDialogs(dialog: DialogInterface? = null): Pair<Boolean, DialogInterface?> {
         val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(imageUtils = game.imageUtils)
         if (dialog == null) {
+            Log.d(TAG, "\n[DIALOG] No dialog found.")
             return Pair(false, null)
         }
 
@@ -245,6 +246,7 @@ open class Campaign(val game: Game) {
             "unity_cup_available" -> dialog.close(imageUtils = game.imageUtils)
             "unmet_requirements" -> dialog.close(imageUtils = game.imageUtils)
             else -> {
+                Log.w(TAG, "[DIALOG] Unknown dialog \"${dialog.name}\" detected so it will not be handled.")
                 return Pair(false, dialog)
             }
         }
@@ -252,11 +254,19 @@ open class Campaign(val game: Game) {
         return Pair(true, dialog)
     }
 
-    fun handleSkillListScreen(skillPlanName: String? = null): Boolean {
-        MessageLog.i(TAG, "Beginning process to purchase skills...")
-
-        return game.skillPlan.start(skillPlanName)
-    }
+	/**
+	 * Handles the skill list screen to purchase skills.
+	 *
+	 * This function initiates the skill purchasing process using the specified
+	 * skill plan. If no plan name is provided, the default skill plan is used.
+	 *
+	 * @param skillPlanName The optional name of the skill plan to use.
+	 * @return True if the skill purchasing process was successful, false otherwise.
+	 */
+	fun handleSkillListScreen(skillPlanName: String? = null): Boolean {
+		MessageLog.i(TAG, "Beginning process to purchase skills...")
+		return game.skillPlan.start(skillPlanName)
+	}
 
     /**
      * Opens the Umamusume Details dialog to update trainee aptitudes.

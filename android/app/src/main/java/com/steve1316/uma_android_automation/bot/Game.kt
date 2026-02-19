@@ -122,6 +122,7 @@ class Game(val myContext: Context) {
     fun handleDialogs(dialog: DialogInterface? = null): Pair<Boolean, DialogInterface?> {
         val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(imageUtils = imageUtils)
         if (dialog == null) {
+            Log.d(TAG, "\n[DIALOG] No dialog found.")
             return Pair(false, null)
         }
 
@@ -150,6 +151,7 @@ class Game(val myContext: Context) {
                 throw InterruptedException("Session error. Stopping bot...")
             }
             else -> {
+                Log.w(TAG, "[DIALOG] Unknown dialog \"${dialog.name}\" detected so it will not be handled.")
                 return Pair(false, dialog)
             }
         }
@@ -450,9 +452,11 @@ class Game(val myContext: Context) {
 	 */
 	fun checkFinalsStop(): Boolean {
 		if (!enableStopBeforeFinals) {
+            Log.d(TAG, "\n[FINALS] Flag is false so skipping Finals check.")
 			return false
 		} else if (currentDate.day > 72) {
             // If already past turn 72, skip the check to prevent re-checking.
+            Log.d(TAG, "\n[FINALS] Turn is greater than 72 so skipping Finals check.")
 			return false
 		}
 
@@ -553,6 +557,7 @@ class Game(val myContext: Context) {
         }
 
         if (currentDate.day == prevDay) {
+            Log.d(TAG, "[DATE] Date did not change.")
             return false
         } else {
             MessageLog.i(TAG, "[DATE] New date: ${currentDate}")
