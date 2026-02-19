@@ -191,14 +191,12 @@ abstract class Plugin(
     /** Wait for a single page to become available on screen.
      *
      * This is an overloaded version of [waitForPage] that makes it easier
-     * to wait for just a single page.
+     * to wait for just a single page by only passing that page instead
+     * of a list of a single page.
      *
      * @param page A PageInterface object to wait for.
-     * @param timeoutMs The max time (in milliseconds) to spend looking for a page.
-     * @param bShouldTapWhileWaiting Whether the bot should tap on the screen
-     * on each iteration where no page is found. This can be helpful for progressing
-     * past intermediate screens that either require a tap to progress or can be
-     * sped up by tapping.
+     * @param timeoutMs See [waitForPage]
+     * @param bShouldTapWhileWaiting See [waitForPage]
      *
      * @return If the [page] is found, then that PageInterface object is returned.
      * Otherwise, NULL is returned.
@@ -225,15 +223,31 @@ abstract class Plugin(
      * sped up by tapping.
      * @param bShouldClickButton Whether the bot should click the button when
      * one is found.
+     * @param delayClickMs The time to wait before clicking the button after it is
+     * detected. This helps avoid cases where we detect a button before it is
+     * actually clickable. That would cause us to click the button and think that
+     * we handled it when in fact the button wasn't actually registered as
+     * clicked by the game.
+     * If [bShouldWaitForButtonToGoAway] is TRUE, then this value is ignored
+     * since the button will be clicked until it disappears.
+     * @param bShouldWaitForButtonToGoAway Whether to wait for the clicked button
+     * to no longer be detected on the screen. This allows us to verify that we
+     * actually clicked the button since clicking most buttons in the game
+     * causes them to disappear from the screen in some way.
      *
      * @return If any of [buttons] is found, then that BaseComponentInterface object
      * is returned. Otherwise, NULL is returned.
+     * However, if [bShouldClickButton] and [bShouldWaitForButtonToGoAway] are
+     * set to TRUE, and we time out while waiting for the button to go away, then
+     * we return NULL since this operation failed.
      */
     protected fun waitForButton(
         buttons: List<BaseComponentInterface>,
-        timeoutMs: Int = 3000,
+        timeoutMs: Int = 10000,
         bShouldTapWhileWaiting: Boolean = false,
         bShouldClickButton: Boolean = false,
+        delayClickMs: Int = 250,
+        bShouldWaitForButtonToGoAway: Boolean = true,
     ): BaseComponentInterface? {
         val startTime = System.currentTimeMillis()
         while (System.currentTimeMillis() - startTime < timeoutMs) {
@@ -243,24 +257,43 @@ abstract class Plugin(
 
             // Now check for the buttons in question.
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
-            if (bShouldClickButton) {
-                val button: BaseComponentInterface? = buttons.firstOrNull { it.click(game.imageUtils, sourceBitmap = bitmap) }
-                if (button != null) {
-                    return button
+            val button: BaseComponentInterface? = buttons.firstOrNull { it.check(game.imageUtils, sourceBitmap = bitmap) }
+
+            if (button != null) {
+                if (bShouldClickButton) {
+                    if (bShouldWaitForButtonToGoAway) {
+                        // We need to wait for the button to fully disappear from
+                        // the screen.
+                        while (System.currentTimeMillis() - startTime < timeoutMs) {
+                            if (!button.click(game.imageUtils)) {
+                                return button
+                            }
+                            // Small delay to allow the click animation to go away.
+                            // Otherwise it would cause us to immediately fail
+                            // to find the button.
+                            // This also helps prevent us from clicking the button
+                            // location after it has already gone away.
+                            game.wait(0.25, skipWaitingForLoading = true)
+                        }
+                        MessageLog.w(TAG, "waitForButton: Timed out while waiting for button to go away: ${button::class.simpleName}")
+                        return null
+                    } else {
+                        if (delayClickMs > 0) {
+                            game.wait(delayClickMs / 1000.0, skipWaitingForLoading = true)
+                        }
+                        button.click(game.imageUtils, sourceBitmap = bitmap)
+                    }
                 }
-            } else {
-                val button: BaseComponentInterface? = buttons.firstOrNull { it.check(game.imageUtils, sourceBitmap = bitmap) }
-                if (button != null) {
-                    return button
-                }
+                return button
             }
 
-            // Finally, handle any edge cases.
+            // If no button is found, then we need to handle any edge cases that
+            // many be preventing the button from being detected.
             when {
-                // Handle any overlay screen buttons.
-                // i.e. Rewards, Tutorials, etc.
+                // Handle any overlay screen buttons. (i.e. Rewards, Tutorials, etc.)
                 ButtonNext.click(game.imageUtils, sourceBitmap = bitmap) -> {}
                 ButtonClose.click(game.imageUtils, sourceBitmap = bitmap) -> {}
+                // Otherwise we tap to dismiss any other overlay screens.
                 bShouldTapWhileWaiting -> game.tap(350.0, 750.0, "ok", taps = 1)
             }
         }
@@ -271,31 +304,34 @@ abstract class Plugin(
     /** Wait for the specified button to become available.
      *
      * This is an overloaded version of [waitForButton] that makes it easier
-     * to wait for just a single button.
+     * to wait for just a single button by only passing that component instead
+     * of a list of a single item.
      *
      * @param button A button to wait for.
-     * @param timeoutMs The max time (in milliseconds) to spend looking for a button.
-     * @param bShouldTapWhileWaiting Whether the bot should tap on the screen
-     * on each iteration where no button is found. This can be helpful for progressing
-     * past intermediate screens that either require a tap to progress or can be
-     * sped up by tapping.
-     * @param bShouldClickButton Whether the bot should click the button when
-     * one is found.
+     * @param timeoutMs See [waitForButton]
+     * @param bShouldTapWhileWaiting See [waitForButton]
+     * @param bShouldClickButton See [waitForButton]
+     * @param delayClickMs See [waitForButton]
+     * @param bShouldWaitForButtonToGoAway See [waitForButton]
      *
      * @return If the [button] is found, then that BaseComponentInterface object
      * is returned. Otherwise, NULL is returned.
      */
     protected fun waitForButton(
         button: BaseComponentInterface,
-        timeoutMs: Int = 3000,
+        timeoutMs: Int = 10000,
         bShouldTapWhileWaiting: Boolean = false,
         bShouldClickButton: Boolean = false,
+        delayClickMs: Int = 250,
+        bShouldWaitForButtonToGoAway: Boolean = true,
     ): BaseComponentInterface? {
         return waitForButton(
             buttons = listOf<BaseComponentInterface>(button),
             timeoutMs = timeoutMs,
             bShouldTapWhileWaiting = bShouldTapWhileWaiting,
             bShouldClickButton = bShouldClickButton,
+            delayClickMs = delayClickMs,
+            bShouldWaitForButtonToGoAway = bShouldWaitForButtonToGoAway,
         )
     }
 
