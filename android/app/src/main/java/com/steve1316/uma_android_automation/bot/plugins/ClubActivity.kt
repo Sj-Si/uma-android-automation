@@ -83,7 +83,14 @@ class ClubActivity(
         }
 
         when (result.dialog.name) {
-            "confirm_donations" -> result.dialog.ok(game.imageUtils)
+            "confirm_donations" -> {
+                result.dialog.ok(game.imageUtils)
+                // Need an extra delay here. This is a unique case since the club
+                // screen has a gradient that can sometimes be mistaken for the
+                // dialog gradient. So if we close this and try to find a dialog
+                // too quickly, it can get stuck.
+                game.wait(0.5)
+            }
             "donation_complete" -> {
                 result.dialog.close(game.imageUtils)
                 bHasDonatedItems = true
@@ -173,6 +180,7 @@ class ClubActivity(
                 }
                 result.dialog.close(game.imageUtils)
             }
+            // TODO: Why does this keep getting opened?
             "practice_partner_list" -> result.dialog.close(game.imageUtils)
             "trainer_info" -> result.dialog.close(game.imageUtils)
             else -> return DialogHandlerResult.Unhandled(result.dialog)
