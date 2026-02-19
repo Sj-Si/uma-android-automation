@@ -63,7 +63,7 @@ class SkillList (private val game: Game) {
      * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
      */
     private fun handleDialogs(): Pair<Boolean, DialogInterface?> {
-        val dialog: DialogInterface = DialogUtils.getDialog(game.imageUtils)
+        val dialog: DialogInterface? = DialogUtils.getDialog(game.imageUtils)
         if (dialog == null) {
             Log.d(TAG, "\n[SKILLS] No dialogs found.")
             return Pair(false, null)

@@ -138,11 +138,7 @@ class SkillDatabase (private val game: Game) {
      */
     private fun loadSkillStructure(): Map<String, DoublyLinkedListNode<String>> {
         fun getVersionNames(id: Int?, bIsUpgrade: Boolean = false): List<String> {
-            var id: Int? = id
-            if (id == null) {
-                MessageLog.e(TAG, "loadSkillStructure::getVersionNames: id is null.")
-                return emptyList()
-            }
+            var id: Int? = id ?: return emptyList()
 
             val result: MutableList<String> = mutableListOf()
 
@@ -168,7 +164,7 @@ class SkillDatabase (private val game: Game) {
         val result: MutableMap<String, DoublyLinkedListNode<String>> = mutableMapOf()
 
         for ((name, skillData) in skillData) {
-            // Get all downgrade/upgrade versions for this skill.            
+            // Get all downgrade/upgrade versions for this skill.
             val downgradeNames: List<String> = getVersionNames(skillData.downgrade)
             val upgradeNames: List<String> = getVersionNames(skillData.upgrade, bIsUpgrade = true)
 

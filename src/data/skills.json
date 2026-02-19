@@ -47,7 +47,7 @@
         "condition": "is_finalcorner==1&corner!=0&distance_diff_top>=7",
         "precondition": "",
         "inherited": true,
-        "community_tier": null,
+        "community_tier": 1,
         "versions": [],
         "upgrade": null,
         "downgrade": null
@@ -386,7 +386,7 @@
         "condition": "remain_distance<=401&remain_distance>=399&order_rate<=40&activate_count_all>=7@remain_distance<=401&remain_distance>=399&order_rate<=40&activate_count_all<=6",
         "precondition": "",
         "inherited": true,
-        "community_tier": null,
+        "community_tier": 0,
         "versions": [],
         "upgrade": null,
         "downgrade": null
@@ -1409,7 +1409,7 @@
         "condition": "running_style==4&phase_random==1&order_rate>=50",
         "precondition": "",
         "inherited": false,
-        "community_tier": null,
+        "community_tier": 1,
         "versions": [
             202022
         ],
@@ -1669,7 +1669,7 @@
         "condition": "running_style==4&phase_random==1&order_rate>=50",
         "precondition": "",
         "inherited": false,
-        "community_tier": 2,
+        "community_tier": 1,
         "versions": [
             202021
         ],
@@ -2127,7 +2127,7 @@
         "condition": "distance_type==4&phase_laterhalf_random==1&order_rate<=50",
         "precondition": "",
         "inherited": false,
-        "community_tier": null,
+        "community_tier": 1,
         "versions": [
             202011
         ],
@@ -3092,7 +3092,7 @@
         "eval_pt": 180,
         "pt_ratio": 0.9,
         "rarity": 1,
-        "condition": "change_order_up_finalcorner_after>=2&is_last_straight==1",
+        "condition": "change_order_up_finalcorner_after>=3&is_finalcorner==1&corner==0",
         "precondition": "",
         "inherited": true,
         "community_tier": null,
@@ -3289,7 +3289,7 @@
         "condition": "distance_type==4&phase_laterhalf_random==1&order_rate<=50",
         "precondition": "",
         "inherited": false,
-        "community_tier": null,
+        "community_tier": 1,
         "versions": [
             202012
         ],

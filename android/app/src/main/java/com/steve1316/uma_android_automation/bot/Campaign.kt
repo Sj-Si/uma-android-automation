@@ -14,6 +14,7 @@ import com.steve1316.uma_android_automation.types.BoundingBox
 
 import com.steve1316.uma_android_automation.components.*
 
+import android.util.Log
 import android.graphics.Bitmap
 import org.opencv.core.Point
 import java.util.concurrent.CountDownLatch

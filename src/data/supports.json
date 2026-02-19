@@ -984,6 +984,17 @@
         "(❯❯) I Want to Say Thank You!": [
             "Power +5\nStraightaway Adept hint +1\nNishino Flower bond +5",
             "Wit +5\nStraightaway Acceleration hint +1\nNishino Flower bond +5"
+        ],
+        "(❯) Nourishment for a Flower Bud": [
+            "Wit +10\nSkill points +10\nNishino Flower bond +5"
+        ],
+        "(❯❯) I'm Gonna Be a Mommy!": [
+            "Skill points +15\nShifting Gears hint +1\nNishino Flower bond +5",
+            "Mood +1\nHeal a negative status effect\nNishino Flower bond +10",
+            "Power +25\nNishino Flower bond -5\nEvent chain ended"
+        ],
+        "(❯❯❯) Blooming Emotions, with Love": [
+            "Energy +20\nDetermined Descent hint +1"
         ]
     },
     "Oguri Cap": {
@@ -1096,6 +1107,17 @@
         "Enough to Break into a Dash!": [
             "Gap Closer hint +1\nSakura Bakushin O bond +5",
             "Energy -10\nSpeed +10\nPower +5\nSakura Bakushin O bond +5"
+        ],
+        "(❯) Uma Kids Footrace Meet": [
+            "Guts +5\nGroundwork hint +1\nSakura Bakushin O bond +5",
+            "Maximum Energy +4\nSpeed +5\nSakura Bakushin O bond +5"
+        ],
+        "(❯❯) Chasing My Sister": [
+            "Guts +10\nSpeed +5\nSakura Bakushin O bond +5",
+            "Skill points +30\nEvent chain ended"
+        ],
+        "(❯❯❯) Just the Way You Are": [
+            "Randomly either\n----------\nSpeed +15\nGuts +15\nIn High Spirits hint +3\n----------\n\n----------\nSpeed +5\nGuts +5\nLight as a Feather hint +3"
         ]
     },
     "Sakura Chiyono O": {
@@ -1117,6 +1139,44 @@
         "Until I Bloom...": [
             "Energy +5\nStamina +5\nSakura Chiyono O bond +5",
             "Spring Runner ○ hint +1\nSakura Chiyono O bond +5"
+        ]
+    },
+    "Sasami Anshinzawa": {
+        "(❯) Trusty Teamwork?!": [
+            "Randomly either\n----------\nEnergy +30\nMood +1\n1 random stat +10\nSasami Anshinzawa bond +5\n----------\n\n----------\nEnergy +10\nMood -1\nSasami Anshinzawa bond +5"
+        ],
+        "(❯❯) Storied ☆ Sunglasses": [
+            "Randomly either\n----------\nEnergy +30\nMood +1\n2 random stats +10\nSasami Anshinzawa bond +5\n----------\n\n----------\nEnergy +10\nMood -1\nSasami Anshinzawa bond +5"
+        ],
+        "(❯❯❯) The Final Race ☆ For a Worry-Free Future!": [
+            "Randomly either\n----------\nEnergy +10\nAll stats +3\nSkill points +10\nRisky Business hint +3\nSasami Anshinzawa bond +5\n----------\n\n----------\nEnergy -10\nMood -2\nSasami Anshinzawa bond +5",
+            "Energy +20\nMood +1\nRisky Business hint +1\nSasami Anshinzawa bond +5"
+        ],
+        "The Applications of Acupuncture": [
+            "Randomly either\n----------\n1 random stat +10\nSasami Anshinzawa bond +5\n(random) Get Fast Learner status\n----------\n\n----------\nSkill points +52\nObtain Wallflower skill\nSasami Anshinzawa bond +5"
+        ],
+        "A Pleasant Practice Partner?\nDating starts": [
+            "Randomly either\n----------\nMaximum Energy +4\nEnergy +10\nMood +1\nSasami Anshinzawa bond +10\nCan start dating\n----------\n\n----------\nSkill points +52\nObtain Corner Recovery × skill\nSasami Anshinzawa bond +5\nCan start dating",
+            "Mood +1\nStamina +10\nSasami Anshinzawa bond +5\nCan start dating",
+            "Energy -10\nSkill points +105\nRisky Business hint +1\nObtain Running Idle skill\nSasami Anshinzawa bond -10\nEvent chain ended"
+        ],
+        "Just a Poke ☆\nTraining together failed": [
+            "Randomly either\n----------\nAll stats +3\n(random) Get Practice Perfect ○ status\nSasami Anshinzawa bond +5\n----------\n\n----------\nEnergy -10\nMood -2\nSasami Anshinzawa bond +5"
+        ],
+        "Suspicious, But Safe?!\nAfter first training": [
+            "1 random stat +21\nSasami Anshinzawa bond +5"
+        ],
+        "An Accurate Acupuncturist ☆\nRandomly after training (repeatable)": [
+            "Randomly either\n----------\nEnergy +2\n1 random stat +4\nSasami Anshinzawa bond +5\n----------\n\n----------\nEnergy -5\nSasami Anshinzawa bond +5"
+        ],
+        "Healing Hot Spring Holiday ☆\nAfter Finals (bond maxed)": [
+            "2 random stats +15\nSkill points +47"
+        ],
+        "An Encouraging Entrustment?!\nAfter Finals (bond not maxed)": [
+            "2 random stats +10\nSkill points +31"
+        ],
+        "A Bond Bolstered by Booze?\nDating before the first New Year's": [
+            "Energy +10\n2 random stats +10\nUma Stan hint +3\nSasami Anshinzawa bond +5"
         ]
     },
     "Satono Diamond": {
@@ -1409,6 +1469,14 @@
         ],
         "(❯❯❯) My Flaws Make Me Who I Am!": [
             "Stamina +10\nPower +10\nFast & Furious hint +2\nTamamo Cross bond +5"
+        ],
+        "(❯) Rhapsody of Kindness": [
+            "Mood +1\nSpeed +5\nTamamo Cross bond +5",
+            "Energy +10\nStamina +5\nTamamo Cross bond +5"
+        ],
+        "(❯❯) The Path of Profit and People": [
+            "Speed +10\nSkill points +10\nPace Chaser Corners ○ hint +1\nTamamo Cross bond +5",
+            "Stamina +10\nSkill points +10\nLate Surger Corners ○ hint +1\nTamamo Cross bond +5"
         ]
     },
     "Tazuna Hayakawa": {
@@ -1487,6 +1555,16 @@
         "Sponsored Posts Can Be Low-Key Sus": [
             "Energy +10\nMood +1\nTosen Jordan bond +5",
             "Lucky Seven hint +1\nTosen Jordan bond +5"
+        ],
+        "(❯) Leave It to the Roomie": [
+            "Speed +10\nStamina +5\nTosen Jordan bond +5",
+            "Energy +10\nTosen Jordan bond +5"
+        ],
+        "(❯❯) A Gal's Gotta Glam": [
+            "Speed +10\nSkill points +10"
+        ],
+        "(❯❯❯) If You Got It, Own It": [
+            "Randomly either\n----------\nEnergy -10\nSpeed +15\nBreath of Fresh Air hint +3\n----------\n\n----------\nEnergy -10\nSpeed +10\nStraightaway Recovery hint +3"
         ]
     },
     "Twin Turbo": {

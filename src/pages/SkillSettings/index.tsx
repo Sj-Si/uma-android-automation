@@ -21,13 +21,7 @@ const SkillSettings = () => {
 
     // Merge current skills settings with defaults to handle missing properties.
     const skillSettings = { ...defaultSettings.skills, ...settings.skills }
-    const {
-        enableSkillPointCheck,
-        skillPointCheck,
-        preferredRunningStyle,
-        preferredTrackDistance,
-        preferredTrackSurface,
-    } = skillSettings
+    const { preferredRunningStyle, preferredTrackDistance, preferredTrackSurface } = skillSettings
 
     useEffect(() => {
         if (bsc.settings.skills.plans.skillPointCheck.enabled) {
@@ -35,7 +29,7 @@ const SkillSettings = () => {
                 ...bsc.settings,
                 skills: {
                     ...bsc.settings.skills,
-                    enableSkillPointCheck: true
+                    enableSkillPointCheck: true,
                 },
             })
         }
@@ -87,7 +81,7 @@ const SkillSettings = () => {
             lineHeight: 20,
         },
         section: {
-            marginBottom: 24,
+            marginBottom: 16,
         },
         sectionTitle: {
             fontSize: 18,
@@ -116,7 +110,7 @@ const SkillSettings = () => {
             fontSize: 14,
             color: colors.foreground,
             opacity: 0.7,
-            marginTop: 4,
+            marginTop: 8,
         },
         titleDescription: {
             fontSize: 14,
@@ -142,21 +136,14 @@ const SkillSettings = () => {
     return (
         <View style={styles.root}>
             <PageHeader title="Skill Settings" />
-            <Text style={styles.description}>
-                Allows configuration of automated skill point spending.
-            </Text>
-            <Text style={styles.description}>
-                This feature is not made of magic. If you wish to train an uma
-                up for TT or CM, then you should buy your skills manually. The
-                main purpose of this feature is to make the process of farming
-                rank in events less of a hassle.
-            </Text>
-            <Divider style={{ marginBottom: 16 }} />
             <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
-                <CustomTitle
-                    title="General Skill Settings"
-                />
                 <View style={styles.inputContainer}>
+                    <Text style={styles.description}>Allows configuration of automated skill point spending.</Text>
+                    <Text style={styles.description}>
+                        This feature is not made of magic. If you wish to train an uma up for TT or CM, then you should buy your skills manually. The main purpose of this feature is to make the
+                        process of farming rank in events less of a hassle.
+                    </Text>
+                    <Divider style={{ marginBottom: 16 }} />
                     <CustomCheckbox
                         checked={bsc.settings.skills.enableSkillPointCheck}
                         onCheckedChange={(checked) => {
@@ -166,11 +153,11 @@ const SkillSettings = () => {
                             })
                         }}
                         label="Enable Skill Point Check"
-                        description="Enables check for a certain skill point threshold. When the threshold is reached, the bot is stopped. If the Skill Point Check skill plan is enabled, then that skill plan will be run instead of stopping the bot."
+                        description="Enables check for a certain skill point threshold. When the threshold is reached, the bot is stopped. This can be changed to allow the selected Skill Plan to spend those points instead of stopping the bot."
                     />
 
                     {bsc.settings.skills.enableSkillPointCheck && (
-                        <View style={{ marginTop: 8, marginLeft: 20 }}>
+                        <View style={{ marginTop: 8 }}>
                             <CustomSlider
                                 value={bsc.settings.skills.skillPointCheck}
                                 placeholder={bsc.defaultSettings.skills.skillPointCheck}
@@ -205,30 +192,24 @@ const SkillSettings = () => {
                                                 ...bsc.settings.skills.plans,
                                                 skillPointCheck: {
                                                     ...bsc.settings.skills.plans.skillPointCheck,
-                                                    enabled: checked
+                                                    enabled: checked,
                                                 },
                                             },
                                         },
                                     })
                                 }}
-                                label="Enable Skill Plan at Threshold"
-                                description="Instead of stopping the bot, this will run the Skill Point Check skill plan when the skill point threshold is met."
+                                label="Enable Skill Plan Upon Meeting Threshold"
+                                description="Instead of stopping the bot, this will run the Skill Plan to spend the skill points when the threshold is met."
                             />
                         </View>
                     )}
                 </View>
-                <CustomTitle
-                    title="Skill Style Overrides"
-                    description="Override which types of skills the bot can purchase."
-                />
+                <CustomTitle title="Skill Style Overrides" description="Override which types of skills the bot can purchase." />
                 <Text style={styles.description}>
-                    Any skills whose activation condition does not match the
-                    selected override will be filtered out of the list of
-                    available skills that the bot can consider for purchasing.
-                    Skills that have no activation conditions will still be
-                    available.
+                    Any skills whose activation condition does not match the selected override will be filtered out of the list of available skills that the bot can consider for purchasing. Skills
+                    that have no activation conditions will still be available.
                 </Text>
-                <View style={styles.section}>
+                <View>
                     <View style={styles.inputContainer}>
                         <Text style={styles.inputLabel}>Running Style</Text>
                         <CustomSelect
@@ -245,29 +226,31 @@ const SkillSettings = () => {
                             onValueChange={(value) => updateSkillsSetting("preferredRunningStyle", value)}
                             placeholder="Select Running Style"
                         />
+                        <Text style={styles.inputDescription}>There are two different groups of Running Style skills.</Text>
                         <Text style={styles.inputDescription}>
-                            There are two different groups of Running Style skills.
+                            The first are skills that specifically say in their description that they are for a specific running style. These cannot be activated unless the trainee is using that
+                            running style.
                         </Text>
                         <Text style={styles.inputDescription}>
-                            The first are skills that specifically say in their
-                            description that they are for a specific running style.
-                            These cannot be activated unless the trainee is using
-                            that running style.
+                            The second are skills that do not say they are for a running style, but have activation conditions which limit which styles would actually be able to activate them
+                            (ignoring rare cases).
                         </Text>
                         <Text style={styles.inputDescription}>
-                            The second are skills that do not say they are for a
-                            running style, but have activation conditions which
-                            limit which styles would actually be able to activate
-                            them (ignoring rare cases).
+                            This setting will filter skills based on both of these conditions. This helps us avoid having situations like an End Closer purchasing a skill like "Keeping the Lead". This
+                            skill doesn't require using the Front Runner style to activate, but it does require the runner to be in the lead mid-race which is very unlikely for an End Closer.
+                        </Text>
+                        <Text style={styles.inputDescription}>Detailed breakdown of examples:</Text>
+                        <Text style={styles.inputDescription}>
+                            • Use [Racing Settings] {"->"} [Original Race Strategy]: Inherits the running style from your Racing Settings. For example, if you set the Strategy to "Late Surger" in
+                            Racing Settings, only Late Surger skills will be considered.
                         </Text>
                         <Text style={styles.inputDescription}>
-                            This setting will filter skills based on both of these
-                            conditions.
-                            This helps us avoid having situations like an
-                            End Closer purchasing a skill like "Keeping the Lead".
-                            This skill doesn't require using the Front Runner style
-                            to activate, but it does require the runner to be in the
-                            lead mid-race which is very unlikely for an End Closer.
+                            • Any: Does not filter any skills based on running style. For example, even if your trainee is an "End Closer", the bot may still purchase "Pace Chaser Corners ○" (a Pace
+                            Chaser skill) if it's available.
+                        </Text>
+                        <Text style={styles.inputDescription}>
+                            • Front Runner: Only considers skills that are compatible with the Front Runner style. For example, skills like "Escape Artist" will be included, while "Outer Swell" (Late
+                            Surger) will be ignored.
                         </Text>
                     </View>
                     <View style={styles.inputContainer}>
@@ -301,21 +284,19 @@ const SkillSettings = () => {
                             placeholder="Select Track Surface"
                         />
                         <Text style={styles.inputDescription}>
-                            At the time of writing, there are no skills that only
-                            apply to the Turf surface type. The only track surface
-                            specific skills are ones for Dirt surfaces. So if you
-                            choose Dirt, all skills will still be available for purchase. However if you choose Turf,
-                            then all the Dirt skills will be ignored.
+                            As of 2026-02-19, there are no skills that only apply to the Turf surface type. The only track surface specific skills are ones for Dirt. So if you choose Dirt, all skills
+                            will still be available for purchase. However if you choose Turf, then all the Dirt skills will be ignored.
                         </Text>
                     </View>
                 </View>
-                <Divider style={{ marginBottom: 16 }} />
+                <Divider style={{ marginBottom: 24 }} />
                 <View style={styles.section}>
                     <View className="m-1">
-                        {Object.values(skillPlanSettingsPages).map(value => (
+                        {Object.values(skillPlanSettingsPages).map((value) => (
                             <NavigationLink
+                                key={value.name}
                                 title={`Go to ${value.title} Skill Plan Settings`}
-                                description={value.description}
+                                description={value.description.split("\n")[0]}
                                 onPress={() => navigation.navigate(value.name as never)}
                                 style={{ ...styles.section, marginTop: 0 }}
                             />

@@ -9,7 +9,7 @@ import re
 import time
 import logging
 import os
-from typing import List, Dict
+from typing import List, Dict, Any
 from difflib import SequenceMatcher
 import bisect
 import requests
@@ -681,9 +681,9 @@ class SkillScraper(BaseScraper):
         # Webpack for Next.js loads chunks into a global variable called webpackChunk_N_E.
         # Each chunk contains these module functions that populates "module.exports".
         # This JS script creates a fake object "tmp" with a null "exports" property.
-        # Then it grabs the chunk with ID 4318 and calls the module ID 60930 with the tmp fake object. It then assigns the skill data to tmp.exports.
-        # Then we return it as a dictionary.
-        skill_data = driver.execute_script("let tmp = { exports: null }; window.webpackChunk_N_E.find(arr => arr[0][0] == 4318)[1][60930](tmp); return tmp.exports")
+        # Then it searches for the Webpack chunk that contains module ID 60930 and calls it with the tmp fake object. 
+        # It then assigns the skill data to tmp.exports and we return it as a dictionary.
+        skill_data = driver.execute_script("let tmp = { exports: null }; window.webpackChunk_N_E.find(chunk => chunk[1] && chunk[1][60930])[1][60930](tmp); return tmp.exports")
         
         def get_skill_activation_conditions(skill_object: Dict[str, Any], get_preconditions: bool = False):
             """ Gets the activation condition/precondition string for a skill.

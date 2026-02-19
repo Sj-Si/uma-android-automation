@@ -1,1 +1,6 @@
 beautifulsoup4==4.13.4
+selenium==4.34.2
+requests==2.32.3
+Deprecated==1.2.18
+opencv-python==4.11.0.86
+numpy==1.26.4

@@ -30,7 +30,7 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         "RacingSettings",
         "RacingPlanSettings",
         "SkillSettings",
-        ...Object.values(skillPlanSettingsPages).flatMap(item => item.name),
+        ...Object.values(skillPlanSettingsPages).flatMap((item) => item.name),
         "DailyTasksSettings",
         "DailyTasksPluginSettings",
         "DebugSettings",
@@ -121,6 +121,7 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
             fontSize: 15,
             fontWeight: "400",
             color: colors.foreground,
+            flex: 1,
         },
         nestedItemTextActive: {
             color: colors.primary,
@@ -148,6 +149,7 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
             fontSize: 14,
             fontWeight: "400",
             color: colors.foreground,
+            flex: 1,
         },
         doubleNestedItemTextActive: {
             color: colors.primary,
@@ -198,13 +200,11 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
                     name: "SkillSettings",
                     label: "Skill Settings",
                     icon: () => "american-football-outline",
-                    nested: Object.values(skillPlanSettingsPages).map((item) => (
-                        {
-                            name: item.name,
-                            label: `${item.title} Skill Plan Settings`,
-                            icon: () => "cube-outline",
-                        }
-                    )),
+                    nested: Object.values(skillPlanSettingsPages).map((item) => ({
+                        name: item.name,
+                        label: `${item.title} Plan Settings`,
+                        icon: () => "cube-outline",
+                    })),
                 },
                 {
                     name: "DailyTasksSettings",
@@ -280,7 +280,11 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         }
 
         // Auto-expand Skill Settings if Skill Plan Settings is active.
-        if (Object.values(skillPlanSettingsPages).map(item => item.name).includes(currentScreen)) {
+        if (
+            Object.values(skillPlanSettingsPages)
+                .map((item) => item.name)
+                .includes(currentScreen)
+        ) {
             newExpanded.add("SkillSettings")
         }
 

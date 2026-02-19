@@ -11,7 +11,7 @@ import PageHeader from "../../components/PageHeader"
 import { Input } from "../../components/ui/input"
 import { CircleCheckBig, Trash2 } from "lucide-react-native"
 import skillsData from "../../data/skills.json"
-import icons from "../SkillSettings/icons";
+import icons from "../SkillSettings/icons"
 
 interface Skill {
     id: number
@@ -47,19 +47,20 @@ export const skillPlanSettingsPages: DynamicSkillPlanSettingsProps = {
         planKey: "skillPointCheck",
         name: "SkillPlanSettingsSkillPointCheck",
         title: "Skill Point Check",
-        description: "Configure the skills to buy when the skill point threshold has been reached.",
+        description:
+            "Configure the skills to buy when the skill point threshold has been reached.\n\nEvaluated ratings are sourced from Umamusume Wiki and community tier list ratings are sourced from Game8.",
     },
     preFinals: {
         planKey: "preFinals",
         name: "SkillPlanSettingsPreFinals",
         title: "Pre-Finals",
-        description: "Configure the skills to buy just before the finale season.",
+        description: "Configure the skills to buy just before the finale season.\n\nEvaluated ratings are sourced from Umamusume Wiki and community tier list ratings are sourced from Game8.",
     },
     careerComplete: {
         planKey: "careerComplete",
         name: "SkillPlanSettingsCareerComplete",
         title: "Career Complete",
-        description: "Configure the skills to buy after the career has completed.",
+        description: "Configure the skills to buy after the career has completed.\n\nEvaluated ratings are sourced from Umamusume Wiki and community tier list ratings are sourced from Game8.",
     },
 }
 
@@ -72,27 +73,17 @@ const SkillPlanSettings: FC<SkillPlanSettingsProps> = ({ planKey, name, title, d
     // Merge current skills settings with defaults to handle missing properties.
     const combinedConfig = { ...defaultSettings.skills.plans, ...settings.skills.plans }
 
-    const {
-        enabled,
-        strategy,
-        enableBuyInheritedUniqueSkills,
-        enableBuyNegativeSkills,
-        plan,
-    } = combinedConfig[planKey]
+    const { enabled, strategy, enableBuyInheritedUniqueSkills, enableBuyNegativeSkills, plan } = combinedConfig[planKey]
 
     const [searchQuery, setSearchQuery] = useState("")
 
     // Parse skill plan from CSV string.
-    const planIds: number[] = plan && plan !== "" && typeof plan === "string" ? plan.split(",").map(s => Number(s)) : []
+    const planIds: number[] = plan && plan !== "" && typeof plan === "string" ? plan.split(",").map((s) => Number(s)) : []
     // Convert skills.json to array.
     const skillData: Skill[] = Object.values(skillsData)
 
     // Filter skills based on search and preferences.
-    const filteredSkills = skillData.filter((skill) => {
-        const matchesSearch = skill.name_en.toLowerCase().includes(searchQuery.toLowerCase())
-
-        return matchesSearch
-    })
+    const filteredSkills = skillData.filter((skill) => skill.name_en.toLowerCase().includes(searchQuery.toLowerCase()))
 
     const updateSkillsSetting = (key: string, value: any) => {
         setSettings({
@@ -104,9 +95,9 @@ const SkillPlanSettings: FC<SkillPlanSettingsProps> = ({ planKey, name, title, d
                     [planKey]: {
                         ...bsc.settings.skills.plans[planKey],
                         [key]: value,
-                    }
-                }
-            }
+                    },
+                },
+            },
         })
     }
 
@@ -117,7 +108,7 @@ const SkillPlanSettings: FC<SkillPlanSettingsProps> = ({ planKey, name, title, d
         let newPlanIds: number[] = []
         if (isSelected) {
             // Remove the skill from the skill plan.
-            newPlanIds = planIds.filter(id => id !== skill.id)
+            newPlanIds = planIds.filter((id) => id !== skill.id)
         } else {
             // Add the skill to the skill plan.
             newPlanIds = [...planIds, skill.id]
@@ -218,7 +209,7 @@ const SkillPlanSettings: FC<SkillPlanSettingsProps> = ({ planKey, name, title, d
             fontSize: 14,
             color: colors.foreground,
             opacity: 0.7,
-            marginTop: 4,
+            marginTop: 8,
         },
         inputContainer: {
             marginBottom: 16,
@@ -283,28 +274,19 @@ const SkillPlanSettings: FC<SkillPlanSettingsProps> = ({ planKey, name, title, d
                     />
                     {strategy == "optimize_rank" && (
                         <View style={styles.warningContainer}>
-                            <Text style={styles.warningText}>
-                                ⚠️ Warning: Optimize Rank ignores any of the Skill
-                                Style Overrides set in the Skill Settings page.
-                            </Text>
+                            <Text style={styles.warningText}>⚠️ Warning: Optimize Rank ignores any of the Skill Style Overrides set in the Skill Settings page.</Text>
                         </View>
                     )}
                     <Text style={styles.inputDescription}>
-                        This option determines what the bot does with any
-                        remaining skill points after it has purchased all of
-                        the skills from the Planned Skills section and the
-                        other options on this page.
+                        This option determines what the bot does with any remaining skill points after it has purchased all of the skills from the Planned Skills section and the other options on this
+                        page.
                     </Text>
                     <Text style={styles.inputDescription}>
-                        Best Skills First will use a community skill tier list
-                        to purchase better skills first and then within each
-                        tier it will attempt to optimize rank since the skills
-                        within each tier are not ordered.
+                        Best Skills First will use a community skill tier list to purchase better skills first and then within each tier it will attempt to optimize rank since the skills within each
+                        tier are not ordered.
                     </Text>
                     <Text style={styles.inputDescription}>
-                        Optimize Rank will purchase skills in a way which will
-                        result in the highest trainee rank. Avoid this option
-                        if you wish to train an uma up for TT or CM.
+                        Optimize Rank will purchase skills in a way which will result in the highest trainee rank. Avoid this option if you wish to train an uma up for TT or CM.
                     </Text>
                 </View>
             </>
@@ -330,9 +312,7 @@ const SkillPlanSettings: FC<SkillPlanSettingsProps> = ({ planKey, name, title, d
 
                 <View style={{ flexDirection: "row", marginBottom: 12 }}>
                     <View style={{ flex: 1 }}>
-                        <Text style={[styles.inputDescription, { marginTop: 0 }]}>
-                            Select skills that the bot will always attempt to buy.
-                        </Text>
+                        <Text style={[styles.inputDescription, { marginTop: 0 }]}>Select skills that the bot will always attempt to buy.</Text>
                     </View>
                 </View>
 
@@ -351,9 +331,7 @@ const SkillPlanSettings: FC<SkillPlanSettingsProps> = ({ planKey, name, title, d
                                                 <Text style={styles.skillDescription}>{skill.desc_en}</Text>
                                                 <Text style={styles.skillSubtext}>ID: {skill.id}</Text>
                                             </View>
-                                            {planIds.includes(skill.id) && (
-                                                <CircleCheckBig size={18} color={"green"} />
-                                            )}
+                                            {planIds.includes(skill.id) && <CircleCheckBig size={18} color={"green"} />}
                                         </View>
                                     </TouchableOpacity>
                                 ),
@@ -379,7 +357,7 @@ const SkillPlanSettings: FC<SkillPlanSettingsProps> = ({ planKey, name, title, d
 
     return (
         <View style={styles.root}>
-            <PageHeader title={`${title} Skill Plan`} />
+            <PageHeader title={`${title} Plan`} />
             <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                 <View className="m-1">
                     <Text style={styles.description}>{description}</Text>
@@ -388,7 +366,7 @@ const SkillPlanSettings: FC<SkillPlanSettingsProps> = ({ planKey, name, title, d
                         id={`enable-career-complete-skill-plan-${planKey}`}
                         checked={enabled}
                         onCheckedChange={(checked) => updateSkillsSetting("enabled", checked)}
-                        label={`Enable ${title} Skill Plan (Beta)`}
+                        label={`Enable ${title} Plan (Beta)`}
                         description={"When enabled, the bot will attempt to purchase skills based on the following configuration."}
                     />
                     {enabled && (

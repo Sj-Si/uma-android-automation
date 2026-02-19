@@ -1449,6 +1449,16 @@
         ],
         "Time to Review the Schedule": [
             "Randomly either\n----------\nEnergy +15\nMood -1\nGuts -5\n----------\n\n----------\nEnergy +15\nGuts -5\nGet Slacker status\n----------\n\n----------\nEnergy +15\nMood -1\nGuts -5\nGet Slacker status"
+        ],
+        "The Pride of a Patissier": [
+            "※ At least 60000 fans\nPower +10\nHomestretch Haste hint +1\n\n※ Less than 60000 fans\nPower +10"
+        ],
+        "Time Is a Gift": [
+            "Energy +10\nSpeed +15\nWit +10",
+            "Energy +10\nMurmur hint +3"
+        ],
+        "Cookies of Joy": [
+            "Stamina +10\n(random) Get Charming ○ status"
         ]
     },
     "El Condor Pasa": {
@@ -2876,6 +2886,15 @@
         ],
         "Mmm-Mmm Temptation!": [
             "Randomly either\n----------\nEnergy +15\nMood -1\nGuts -5\n----------\n\n----------\nEnergy +15\nGuts -5\nGet Slacker status\n----------\n\n----------\nEnergy +15\nMood -1\nGuts -5\nGet Slacker status"
+        ],
+        "C'mon, It's a Snowball Fight!": [
+            "Randomly either\n----------\nWit +10\n----------\n\n----------\nWit +10\nSpeed +10\n----------\n\n----------\nWit +10\nSpeed +10\nPower +10"
+        ],
+        "Look! You Can See the Feelings!": [
+            "Randomly either\n----------\nPower +10\nSkill points +40\nFighter hint +2\n----------\n\n----------\nPower +5\nSkill points +30"
+        ],
+        "Wait Up, Little Fishies!": [
+            "Pace Strategy hint +2\n(random) Get Practice Perfect ○ status"
         ]
     },
     "Hishi Akebono": {
@@ -5483,6 +5502,16 @@
         ],
         "Cheerful Shopping": [
             "Randomly either\n----------\nEnergy +15\nMood -1\nGuts -5\n----------\n\n----------\nEnergy +15\nGuts -5\nGet Slacker status\n----------\n\n----------\nEnergy +15\nMood -1\nGuts -5\nGet Slacker status"
+        ],
+        "Valentine's Day Mission": [
+            "※ At least 60000 fans\nEarly Lead hint +1\nStamina +10\n\n※ Less than 60000 fans\nStamina +10"
+        ],
+        "Not Found": [
+            "Energy +10\nSpeed +10\nStamina +15",
+            "Energy +10\nSpeed Eater hint +3"
+        ],
+        "Apply": [
+            "Speed +10\n(random) Get Charming ○ status"
         ]
     },
     "Narita Brian": {
@@ -6752,6 +6781,175 @@
         ],
         "The Class Rep Is Very Busy!": [
             "Randomly either\n----------\nEnergy +15\nMood -1\nGuts -5\n----------\n\n----------\nEnergy +15\nGuts -5\nGet Slacker status\n----------\n\n----------\nEnergy +15\nMood -1\nGuts -5\nGet Slacker status"
+        ]
+    },
+    "Sakura Chiyono O": {
+        "Victory! (G1)\n1st": [
+            "Energy -15\n1 random stat +10\nSkill points +45\n(random) Hint for a skill related to the race",
+            "Energy -5/-20\n1 random stat +10\nSkill points +45\n(random) Hint for a skill related to the race"
+        ],
+        "Victory! (G2/G3)\n1st": [
+            "Energy -15\n1 random stat +8\nSkill points +35\n(random) Hint for a skill related to the race",
+            "Energy -5/-20\n1 random stat +8\nSkill points +35\n(random) Hint for a skill related to the race"
+        ],
+        "Victory! (Pre/OP)\n1st": [
+            "Energy -15\n1 random stat +5\nSkill points +30\n(random) Hint for a skill related to the race",
+            "Energy -5/-20\n1 random stat +5\nSkill points +30\n(random) Hint for a skill related to the race"
+        ],
+        "Solid Showing (G1)\n2nd-5th": [
+            "Energy -20\n1 random stat +8\nSkill points +45\n(random) Hint for a skill related to the race",
+            "Energy -10/-30\n1 random stat +8\nSkill points +45\n(random) Hint for a skill related to the race"
+        ],
+        "Solid Showing (G2/G3)\n2nd-5th": [
+            "Energy -20\n1 random stat +5\nSkill points +35\n(random) Hint for a skill related to the race",
+            "Energy -10/-30\n1 random stat +5\nSkill points +35\n(random) Hint for a skill related to the race"
+        ],
+        "Solid Showing (Pre/OP)\n2nd-5th": [
+            "Energy -20\n1 random stat +3\nSkill points +30\n(random) Hint for a skill related to the race",
+            "Energy -10/-30\n1 random stat +3\nSkill points +30\n(random) Hint for a skill related to the race"
+        ],
+        "Defeat (G1)\n6th or worse": [
+            "Energy -25\n1 random stat +4\nSkill points +25\n(random) Hint for a skill related to the race",
+            "Energy -15/-35\n1 random stat +4\nSkill points +25\n(random) Hint for a skill related to the race"
+        ],
+        "Defeat (G2/G3)\n6th or worse": [
+            "Energy -25\n1 random stat +3\nSkill points +20\n(random) Hint for a skill related to the race",
+            "Energy -15/-35\n1 random stat +3\nSkill points +20\n(random) Hint for a skill related to the race"
+        ],
+        "Defeat (Pre/OP)\n6th or worse": [
+            "Energy -25\nSkill points +10\n(random) Hint for a skill related to the race",
+            "Energy -15/-35\nSkill points +10\n(random) Hint for a skill related to the race"
+        ],
+        "Etsuko's Elated Coverage (G1)": [
+            "Energy -15\nMood +1\n1 random stat +10\nSkill points +45\nFans +500\n(random) Hint for a skill related to the race\nEtsuko Otonashi bond +15"
+        ],
+        "Etsuko's Elated Coverage (G2/G3)": [
+            "Energy -15\nMood +1\n1 random stat +8\nSkill points +35\nFans +500\n(random) Hint for a skill related to the race\nEtsuko Otonashi bond +15"
+        ],
+        "Etsuko's Elated Coverage (Pre/OP)": [
+            "Energy -15\nMood +1\n1 random stat +5\nSkill points +30\nFans +500\n(random) Hint for a skill related to the race\nEtsuko Otonashi bond +15"
+        ],
+        "Etsuko's Exhaustive Coverage (G1)": [
+            "Randomly either\n----------\nEnergy -25\nMood -1\n1 random stat +4\nSkill points +25\nEtsuko Otonashi bond -10\n----------\n\n----------\nEnergy -15\nMood +1\n1 random stat +4\nSkill points +25\nEtsuko Otonashi bond +15",
+            "Energy -20\n1 random stat +4\nSkill points +25\nEtsuko Otonashi bond +10"
+        ],
+        "Etsuko's Exhaustive Coverage (G2/G3)": [
+            "Randomly either\n----------\nEnergy -25\nMood -1\n1 random stat +3\nSkill points +20\nEtsuko Otonashi bond -10\n----------\n\n----------\nEnergy -15\nMood +1\n1 random stat +3\nSkill points +20\nEtsuko Otonashi bond +15",
+            "Energy -20\n1 random stat +3\nSkill points +20\nEtsuko Otonashi bond +10"
+        ],
+        "Etsuko's Exhaustive Coverage (Pre/OP)": [
+            "Randomly either\n----------\nEnergy -25\nMood -1\nSkill points +10\nEtsuko Otonashi bond -10\n----------\n\n----------\nEnergy -15\nMood +1\nSkill points +10\nEtsuko Otonashi bond +15",
+            "Energy -20\nSkill points +10\nEtsuko Otonashi bond +10"
+        ],
+        "Nothing Quite like Everyday Life": [
+            "Power +10\nWit +10",
+            "Stamina +20"
+        ],
+        "Bubble Wrap Your Bubbly Feelings": [
+            "Guts +10\nSkill points +15",
+            "Wit +20"
+        ],
+        "A Lady to Rival the Cherry Blossom": [
+            "Power +20\n(random) Get Practice Perfect ○ status",
+            "Speed +20\n(random) Get Practice Perfect ○ status"
+        ],
+        "Fashion Trends of Yesteryear": [
+            "Speed +10",
+            "Wit +10"
+        ],
+        "The Disciplinary Committee Chairman's Award": [
+            "Energy +5\nPower +5",
+            "Stamina +10"
+        ],
+        "Dosukoi! Study through Sumo!": [
+            "Speed +10\nGuts +5",
+            "Pace Chaser Savvy ○ hint +1"
+        ],
+        "Overly Delicious Manju": [
+            "Energy +10\nSkill points +5",
+            "Randomly either\n----------\nEnergy +30\nSkill points +10\nor (~10%)\nor (~10%)\nEnergy +30\nSkill points +10\nSpeed -5\nPower +5\nGet Slow Metabolism status"
+        ],
+        "I Want to Be Dependable!": [
+            "Guts +10",
+            "Stamina +10"
+        ],
+        "Learning by Example": [
+            "Power +10",
+            "Speed +10"
+        ],
+        "What Dependability Means": [
+            "Wit +10",
+            "Speed +10",
+            "Power +10"
+        ],
+        "Arcade Buddies": [
+            "Speed +10",
+            "Stamina +10"
+        ],
+        "Umamusume Enka Contest!": [
+            "Power +10",
+            "Speed +5\nGuts +5"
+        ],
+        "After the Tenno Sho (Autumn): A Hand to the Sky": [
+            "All stats +3\nSpeed +45\nTazuna Hayakawa bond +4\nObjective race changed to Yasuda Kinen",
+            "All stats +3\nSpeed +45\nTazuna Hayakawa bond +4\nObjective race changed to Takarazuka Kinen"
+        ],
+        "After the Tenno Sho (Autumn): A Thick Wall": [
+            "All stats +2\nSpeed +45\nTazuna Hayakawa bond +4\nObjective race changed to Yasuda Kinen",
+            "All stats +2\nSpeed +45\nTazuna Hayakawa bond +4\nObjective race changed to Takarazuka Kinen"
+        ],
+        "After the Tenno Sho (Autumn): All My Heart": [
+            "All stats +1\nSpeed +35\nTazuna Hayakawa bond +4\nObjective race changed to Yasuda Kinen",
+            "All stats +1\nSpeed +35\nTazuna Hayakawa bond +4\nObjective race changed to Takarazuka Kinen"
+        ],
+        "After the Japan Cup: Overcoming Fate": [
+            "All stats +3\nSkill points +75\nHead-On hint +3\nYayoi Akikawa bond +4"
+        ],
+        "After the Arima Kinen: Victory": [
+            "Energy -15\n1 random stat +10\nSkill points +75\nFeature Act hint +1"
+        ],
+        "Bonus at start": [
+            "Skill points +120"
+        ],
+        "Failed training (Get Well Soon!)": [
+            "Mood -1\nLast trained stat -5\n(random) Get Practice Poor status",
+            "Randomly either\n----------\nMood -1\nLast trained stat -10\n(random) Get Practice Poor status\n----------\n\n----------\nGet Practice Perfect ○ status"
+        ],
+        "Failed training (Don't Overdo It!)": [
+            "Energy +10\nMood -2\nLast trained stat -10\n2 random stats -10\n(random) Get Practice Poor status",
+            "Randomly either\n----------\nMood -3\nLast trained stat -10\n2 random stats -10\nGet Practice Poor status\n----------\n\n----------\nEnergy +10\nGet Practice Perfect ○ status"
+        ],
+        "Extra Training": [
+            "Energy -5\nLast trained stat +5\n(random) Heal a negative status effect\nYayoi Akikawa bond +5",
+            "Energy +5"
+        ],
+        "At Summer Camp (Year 2)": [
+            "Power +10",
+            "Guts +10"
+        ],
+        "Fan Letter": [
+            "Mood +1\nSkill points +30"
+        ],
+        "Dance Lesson": [
+            "Wit +10",
+            "Power +10"
+        ],
+        "New Year's Resolutions": [
+            "Wit +10",
+            "Energy +20",
+            "Skill points +20"
+        ],
+        "New Year's Shrine Visit": [
+            "Energy +30",
+            "All stats +5",
+            "Skill points +35"
+        ],
+        "Acupuncture (Just an Acupuncturist, No Worries! ☆)": [
+            "Randomly either\n----------\nAll stats +20\nor (~70%)\nor (~70%)\nMood -2\nAll stats -15\nGet Night Owl status",
+            "Randomly either\n----------\nObtain Corner Recovery ○ skill\nObtain Straightaway Recovery skill\nor (~55%)\nor (~55%)\nEnergy -20\nMood -2",
+            "Randomly either\n----------\nMaximum Energy +12\nEnergy +40\nHeal all negative status effects\nor (~30%)\nor (~30%)\nEnergy -20\nMood -2\nGet Practice Poor status",
+            "Randomly either\n----------\nEnergy +20\nMood +1\nGet Charming ○ status\nor (~15%)\nor (~15%)\nEnergy -10/-20\nMood -1\n(random) Get Practice Poor status",
+            "Energy +10"
         ]
     },
     "Seiun Sky": {
@@ -8199,6 +8397,16 @@
         ],
         "Floral Dialogue": [
             "Randomly either\n----------\nEnergy +15\nMood -1\nGuts -5\n----------\n\n----------\nEnergy +15\nGuts -5\nGet Slacker status\n----------\n\n----------\nEnergy +15\nMood -1\nGuts -5\nGet Slacker status"
+        ],
+        "New Year's ☆ Home Performance": [
+            "Speed +7\nStamina +7\nWit +7"
+        ],
+        "Sprint! The Lucky Umamusume Race!": [
+            "Randomly either\n----------\nSpeed +10\nSkill points +40\nPrepared to Pass hint +2\n----------\n\n----------\nSpeed +5\nSkill points +30"
+        ],
+        "A New Allure": [
+            "Tether hint +1\n(random) Get Charming ○ status",
+            "Power +10\n(random) Get Charming ○ status"
         ]
     },
     "Taiki Shuttle": {
