@@ -1,32 +1,273 @@
-import React, { useContext, useEffect, useState } from "react"
-import { View, Text, ScrollView, StyleSheet, Modal, TouchableOpacity, Dimensions } from "react-native"
-import { useNavigation } from "@react-navigation/native"
+import React, {useState, useContext, useEffect} from 'react';
+import {
+    StyleSheet,
+    View,
+    Text,
+    TouchableOpacity,
+    Modal,
+    Dimensions,
+    ScrollView,
+    ViewStyle,
+    useWindowDimensions,
+} from 'react-native';
 import { useTheme } from "../../context/ThemeContext"
 import { BotStateContext, defaultSettings } from "../../context/BotStateContext"
 import PageHeader from "../../components/PageHeader"
-import NavigationLink from "../../components/NavigationLink"
 import { Divider } from "react-native-paper"
 import DraggablePriorityList from "../../components/DraggablePriorityList"
 import CustomButton from "../../components/CustomButton"
 import CustomCheckbox from "../../components/CustomCheckbox"
+import CustomSelect from "../../components/CustomSelect"
+import CustomTitle from "../../components/CustomTitle"
+
+import pluginsJson from "../../data/plugins.json"
+
+interface PluginConfig {
+    name: string
+    description: string
+    enabled: boolean
+}
+
+export const pluginConfigs: PluginConfig[] = pluginsJson as PluginConfig[]
+
+interface PriorityListItem {
+    name: string
+    description: string
+    defaultEnabled: boolean
+}
+
+interface PriorityListProps {
+    items: PriorityListItem[]
+    selectedItems: string[]
+    setSelectedItems: (value: string[]) => void
+    mode: "checkbox" | "priority"
+    useModal: boolean
+    style?: ViewStyle
+    title?: string
+    description?: string
+}
+
+const PriorityList: React.FC<PriorityListProps> = ({
+    items,
+    selectedItems,
+    setSelectedItems,
+    mode = "checkbox",
+    useModal = false,
+    style = { height: 200 },
+    title = "",
+    description = "",
+}) => {
+    const { colors } = useTheme()
+
+    const [modalVisible, setModalVisible] = useState(false)
+
+    const defaultSelectedItems: PriorityListItem[] = items.filter((item) => item.defaultEnabled === true)
+
+    const getListItems = () => items.map((item) => ({
+        id: item.name,
+        label: item.name,
+        description: item.description,
+    }))
+
+    const toggleItem = (item: string) => {
+        if (selectedItems.includes(item)) {
+            setSelectedItems(selectedItems.filter((s) => s !== item))
+        } else {
+            setSelectedItems([...selectedItems, item])
+        }
+    }
+
+    const onReset = () => {
+        setSelectedItems(defaultSelectedItems.map((item) => item.name))
+    }
+
+    const onSelectAll = () => {
+        if (selectedItems.length === items.length) {
+            setSelectedItems([])
+            return
+        }
+
+        // Add any missing items to the current list, preserving order.
+        const missingItems = items.filter((item) => !selectedItems.includes(item.name))
+        setSelectedItems([...selectedItems, ...(missingItems.map((item) => item.name))])
+    }
+
+    const styles = StyleSheet.create({
+        section: {
+            marginBottom: 24,
+        },
+        row: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+        },
+        label: {
+            fontSize: 16,
+            color: colors.foreground,
+            flex: 1,
+        },
+        pressableText: {
+            fontSize: 16,
+            color: colors.primary,
+            textDecorationLine: "underline",
+        },
+        modal: {
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "rgba(70, 70, 70, 0.5)",
+        },
+        modalContent: {
+            backgroundColor: colors.background,
+            borderRadius: 12,
+            padding: 20,
+            width: Dimensions.get("window").width * 0.85,
+            maxHeight: Dimensions.get("window").height * 0.7,
+        },
+        modalHeader: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 20,
+        },
+        modalTitle: {
+            fontSize: 20,
+            fontWeight: "bold",
+            color: colors.foreground,
+        },
+        closeButton: {
+            padding: 8,
+        },
+        closeText: {
+            fontSize: 18,
+            color: colors.primary,
+        },
+        buttonRow: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: 20,
+        },
+    })
+    
+    const renderPriority = () => (
+        <DraggablePriorityList
+            items={getListItems()}
+            selectedItems={selectedItems}
+            onSelectionChange={setSelectedItems}
+            onOrderChange={(orderedItems) => setSelectedItems(orderedItems)}
+            style={style}
+        />
+    )
+
+    const renderCheckbox = () => (
+        items.map((item) => (
+            <CustomCheckbox
+                key={item.name}
+                id={`item-${item.name.toLowerCase()}`}
+                checked={selectedItems.includes(item.name)}
+                onCheckedChange={() => toggleItem(item.name)}
+                label={item.name}
+                className="my-2"
+            />
+        ))
+    )
+
+    const renderList = () => (
+        <>
+            {mode === "priority" ? renderPriority() : renderCheckbox()}
+            <View style={styles.buttonRow}>
+                <CustomButton onPress={() => onReset()} variant="destructive">Reset</CustomButton>
+                <CustomButton onPress={() => onSelectAll()} variant="outline">Select All</CustomButton>
+            </View>
+        </>
+    )
+
+    const renderModal = () => (
+        <View style={styles.section}>
+            <View style={styles.row}>
+                <Text style={styles.label}>{title}</Text>
+                <TouchableOpacity onPress={() => setModalVisible(true)}>
+                    <Text style={styles.pressableText}>{selectedItems.length === 0 ? "None" : selectedItems.join(", ")}</Text>
+                </TouchableOpacity>
+            </View>
+            {description && <Text style={[styles.label, { fontSize: 14, color: colors.foreground, opacity: 0.7, marginTop: 4 }]}>{description}</Text>}
+
+            <Modal visible={modalVisible} transparent={true} animationType="fade" onRequestClose={() => setModalVisible(false)}>
+                <TouchableOpacity style={styles.modal} activeOpacity={1} onPress={() => setModalVisible(false)}>
+                    <TouchableOpacity style={styles.modalContent} activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>{title}</Text>
+                            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                                <Text style={styles.closeText}>✕</Text>
+                            </TouchableOpacity>
+                        </View>
+                        {renderList()}
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
+        </View>
+    )
+
+    const renderNoModal = () => (
+        <View style={styles.section}>
+            <CustomTitle title={title} description={description} />
+            {renderList()}
+        </View>
+    )
+
+    if (useModal === true) {
+        return renderModal()
+    } else {
+        return renderNoModal()
+    }
+}
 
 const DailyTasksSettings = () => {
+    const { height } = useWindowDimensions()
     const { colors } = useTheme()
-    const navigation = useNavigation()
     const bsc = useContext(BotStateContext)
-    const [saleItemsModalVisible, setSaleItemsModalVisible] = useState(false)
 
     const { settings, setSettings } = bsc
+
+    const [plugins, setPlugins] = useState<string[]>(() =>
+        settings.dailyTasks?.plugins !== undefined ? settings.dailyTasks.plugins : defaultSettings.dailyTasks.plugins,
+    )
 
     const [saleItems, setSaleItems] = useState<string[]>(() =>
         settings.dailyTasks?.saleItems !== undefined ? settings.dailyTasks.saleItems : defaultSettings.dailyTasks.saleItems,
     )
+
+    const dailyTasksSettings = {
+        ...defaultSettings.dailyTasks,
+        ...settings.dailyTasks,
+        plugins: plugins,
+        saleItems: saleItems,
+    }
+
+    const {
+        enableTeamTrialsUseParfaitOnExtraRewards,
+        dailyRaceName,
+        enableLegendRaceUseParfait,
+        clubRequestShoeType,
+        enableClubDonation,
+    } = dailyTasksSettings
+    
+    useEffect(() => {
+        updateSetting("plugins", plugins)
+    }, [plugins])
 
     useEffect(() => {
         updateSetting("saleItems", saleItems)
     }, [saleItems])
 
     // Sync local state when settings change (e.g., when switching profiles).
+    useEffect(() => {
+        if (settings.dailyTasks?.plugins !== undefined) {
+            setPlugins(settings.dailyTasks.plugins)
+        }
+    }, [settings.dailyTasks?.plugins])
+
     useEffect(() => {
         if (settings.dailyTasks?.saleItems !== undefined) {
             setSaleItems(settings.dailyTasks.saleItems)
@@ -41,24 +282,6 @@ const DailyTasksSettings = () => {
                 [key]: value,
             },
         })
-    }
-
-    const toggleItem = (item: string, list: string[], setList: (value: string[]) => void) => {
-        if (list.includes(item)) {
-            setList(list.filter((s) => s !== item))
-        } else {
-            setList([...list, item])
-        }
-    }
-
-    const clearAll = (setList: (value: string[]) => void) => {
-        setList([])
-    }
-
-    const selectAll = (setList: (value: string[]) => void, currentList: string[]) => {
-        // Add any missing items from default settings to the current list, preserving order.
-        const missingItems = defaultSettings.dailyTasks.saleItems.filter((item) => !currentList.includes(item))
-        setList([...currentList, ...missingItems])
     }
 
     const styles = StyleSheet.create({
@@ -147,139 +370,7 @@ const DailyTasksSettings = () => {
             color: colors.warningText,
             lineHeight: 20,
         },
-        row: {
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 16,
-        },
-        label: {
-            fontSize: 16,
-            color: colors.foreground,
-            flex: 1,
-        },
-        pressableText: {
-            fontSize: 16,
-            color: colors.primary,
-            textDecorationLine: "underline",
-        },
-        modal: {
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: "rgba(70, 70, 70, 0.5)",
-        },
-        modalContent: {
-            backgroundColor: colors.background,
-            borderRadius: 12,
-            padding: 20,
-            width: Dimensions.get("window").width * 0.85,
-            maxHeight: Dimensions.get("window").height * 0.7,
-        },
-        modalHeader: {
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 20,
-        },
-        modalTitle: {
-            fontSize: 20,
-            fontWeight: "bold",
-            color: colors.foreground,
-        },
-        closeButton: {
-            padding: 8,
-        },
-        closeText: {
-            fontSize: 18,
-            color: colors.primary,
-        },
-        buttonRow: {
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginTop: 20,
-        },
     })
-
-    const renderSelector = (
-        title: string,
-        selectedItems: string[],
-        setSelectedItems: (value: string[]) => void,
-        modalVisible: boolean,
-        setModalVisible: React.Dispatch<React.SetStateAction<boolean>>,
-        description?: string,
-        mode: "checkbox" | "priority" = "checkbox",
-    ) => (
-        <View style={styles.section}>
-            <View style={styles.row}>
-                <Text style={styles.label}>{title}</Text>
-                <TouchableOpacity onPress={() => setModalVisible(true)}>
-                    <Text style={styles.pressableText}>{selectedItems.length === 0 ? "None" : selectedItems.join(", ")}</Text>
-                </TouchableOpacity>
-            </View>
-            {description && <Text style={[styles.label, { fontSize: 14, color: colors.foreground, opacity: 0.7, marginTop: 4 }]}>{description}</Text>}
-
-            <Modal visible={modalVisible} transparent={true} animationType="fade" onRequestClose={() => setModalVisible(false)}>
-                <TouchableOpacity style={styles.modal} activeOpacity={1} onPress={() => setModalVisible(false)}>
-                    <TouchableOpacity style={styles.modalContent} activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>{title}</Text>
-                            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                                <Text style={styles.closeText}>✕</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {mode === "priority" ? (
-                            <DraggablePriorityList
-                                items={defaultSettings.dailyTasks.saleItems.map((item) => ({
-                                    id: item,
-                                    label: item,
-                                }))}
-                                selectedItems={selectedItems}
-                                onSelectionChange={setSelectedItems}
-                                onOrderChange={(orderedItems) => {
-                                    // Update the order when items are reordered.
-                                    setSelectedItems(orderedItems)
-                                }}
-                            />
-                        ) : (
-                            defaultSettings.dailyTasks.saleItems.map((item) => (
-                                <CustomCheckbox
-                                    key={item}
-                                    id={`item-${item.toLowerCase()}`}
-                                    checked={selectedItems.includes(item)}
-                                    onCheckedChange={() => toggleItem(item, selectedItems, setSelectedItems)}
-                                    label={item}
-                                    className="my-2"
-                                />
-                            ))
-                        )}
-
-                        <View style={styles.buttonRow}>
-                            <CustomButton
-                                onPress={() => {
-                                    if (mode === "priority") {
-                                        // For prioritization, reset to default and dismiss modal.
-                                        setSelectedItems(defaultSettings.dailyTasks.saleItems)
-                                        setModalVisible(false)
-                                    } else {
-                                        // For blacklist, just clear the list.
-                                        clearAll(setSelectedItems)
-                                    }
-                                }}
-                                variant="destructive"
-                            >
-                                Clear All
-                            </CustomButton>
-                            <CustomButton onPress={() => selectAll(setSelectedItems, selectedItems)} variant="outline">
-                                Select All
-                            </CustomButton>
-                        </View>
-                    </TouchableOpacity>
-                </TouchableOpacity>
-            </Modal>
-        </View>
-    )
 
     return (
         <View style={styles.root}>
@@ -288,30 +379,124 @@ const DailyTasksSettings = () => {
                 Configure settings for the Daily Tasks routine.
             </Text>
             <Divider style={{ marginBottom: 16 }} />
-            <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+            <ScrollView
+                scrollEnabled={true}
+                nestedScrollEnabled={true}
+                showsVerticalScrollIndicator={false}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ flexGrow: 1 }}
+            >
                 <View style={styles.section}>
-                    <View className="m-1">
-                        <NavigationLink
-                            title="Select Daily Task Plugins"
-                            description="Enable and re-order plugins to run during daily tasks handling."
-                            onPress={() => navigation.navigate("DailyTasksPluginSettings" as never)}
-                            style={{ ...styles.section, marginTop: 0 }}
+                    <PriorityList
+                        items={pluginConfigs.map((item) => ({
+                            name: item.name,
+                            description: item.description,
+                            defaultEnabled: item.enabled,
+                        }))}
+                        selectedItems={plugins}
+                        setSelectedItems={(value) => setPlugins(value)}
+                        mode={"priority"}
+                        useModal={false}
+                        style={{ height: height / 3 }}
+                        title={"Daily Task Plugins"}
+                        description={"Enable and re-order plugins to run during daily tasks handling."}
+                    />
+                </View>
+                <Divider style={{ marginBottom: 16 }} />
+                {plugins.includes("Team Trials") && (
+                    <View style={styles.inputContainer}>
+                        <CustomTitle title="Team Trials Settings" />
+                        <CustomCheckbox
+                            id="enable-team-trials-use-parfait-on-extra-rewards"
+                            checked={enableTeamTrialsUseParfaitOnExtraRewards}
+                            onCheckedChange={(checked) => updateSetting("enableTeamTrialsUseParfaitOnExtraRewards", checked)}
+                            label="Use Parfait when Extra Rewards are Available"
+                            description="When enabled, the bot will use a Pleasing Parfait item when the current team trials opponent gives an extra reward on every win."
+                            className="my-2"
                         />
                     </View>
-                </View>
-                <View style={styles.section}>
-                    <View className="m-1">
-                        {renderSelector(
-                            "Daily Sale Items to Purchase",
-                            saleItems,
-                            (value) => setSaleItems(value),
-                            saleItemsModalVisible,
-                            setSaleItemsModalVisible,
-                            "Select which Daily Sale items to purchase. If the Daily Sale plugin is disabled, then this setting has no effect.",
-                            "checkbox",
-                        )}
+                )}
+                {plugins.includes("Daily Races") && (
+                    <View style={styles.inputContainer}>
+                        <CustomTitle title="Daily Race Settings" />
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Daily Race Selection</Text>
+                            <CustomSelect
+                                options={[
+                                    { value: "moonlight_sho", label: "Moonlight Sho" },
+                                    { value: "jupiter_cup", label: "Jupiter Cup" },
+                                ]}
+                                value={dailyRaceName}
+                                onValueChange={(value) => updateSetting("dailyRaceName", value)}
+                                placeholder="Select Daily Race"
+                            />
+                            <Text style={styles.inputDescription}>The race strategy to use for all races during Junior Year. If Auto is selected, the bot will auto-select the best strategy that puts them cloest to the front of the pack.</Text>
+                        </View>
                     </View>
-                </View>
+                )}
+                {plugins.includes("Legend Race") && (
+                    <View style={styles.inputContainer}>
+                        <CustomTitle title="Legend Race Settings" />
+                        <CustomCheckbox
+                            id="enable-legend-race-use-parfait"
+                            checked={enableLegendRaceUseParfait}
+                            onCheckedChange={(checked) => updateSetting("enableLegendRaceUseParfait", checked)}
+                            label="Use Parfait on Legend Races"
+                            description="When enabled, the bot will use a Pleasing Parfait item for all legend races."
+                            className="my-2"
+                        />
+                    </View>
+                )}
+                {plugins.includes("Club Activity") && (
+                    <View style={styles.inputContainer}>
+                        <CustomTitle title="Club Activity Settings" />
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Request Shoe Type</Text>
+                            <CustomSelect
+                                options={[
+                                    { value: "sprint", label: "Sprint" },
+                                    { value: "mile", label: "Mile" },
+                                    { value: "medium", label: "Medium" },
+                                    { value: "long", label: "Long" },
+                                    { value: "dirt", label: "Dirt" },
+                                ]}
+                                value={clubRequestShoeType}
+                                onValueChange={(value) => updateSetting("clubRequestShoeType", value)}
+                                placeholder="Select Shoe Type"
+                            />
+                            <Text style={styles.inputDescription}>The shoe type to request from club members.</Text>
+                        </View>
+                        <View style={styles.inputContainer}>
+                            <CustomCheckbox
+                                id="enable-club-donation"
+                                checked={enableClubDonation}
+                                onCheckedChange={(checked) => updateSetting("enableClubDonation", checked)}
+                                label="Enable Donations to Club"
+                                description="When enabled, the bot will attempt to donate to all club members."
+                                className="my-2"
+                            />
+                        </View>
+                    </View>
+                )}
+                {plugins.includes("Daily Sale") && (
+                    <View style={styles.section}>
+                        <View className="m-1">
+                            <PriorityList
+                                items={defaultSettings.dailyTasks.saleItems.map((item) => ({
+                                    name: item,
+                                    description: "",
+                                    defaultEnabled: true,
+                                }))}
+                                selectedItems={saleItems}
+                                setSelectedItems={(value) => setSaleItems(value)}
+                                mode={"checkbox"}
+                                useModal={true}
+                                title={"Daily Sale Items to Purchase"}
+                                description={"Select which Daily Sale items to purchase. If the Daily Sale plugin is disabled, then this setting has no effect."}
+                            />
+                        </View>
+                    </View>
+                )}
             </ScrollView>
         </View>
     )

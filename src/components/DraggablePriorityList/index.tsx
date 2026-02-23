@@ -29,6 +29,8 @@ const DraggablePriorityList: React.FC<DraggablePriorityListProps> = ({ items, se
     const dragOrderRef = useRef<string[]>([]) // Track drag order separately.
     const dragListRef = useRef<any>(null)
 
+    const scrollOffset = useRef<number>(0)
+
     const [contentHeight, setContentHeight] = useState(0)
     const [containerHeight, setContainerHeight] = useState(0)
 
@@ -79,16 +81,17 @@ const DraggablePriorityList: React.FC<DraggablePriorityListProps> = ({ items, se
         onSelectionChange(newSelection)
     }
 
-    const scrollToTop = () => {
+    const scrollUp = () => {
         if (dragListRef.current && dragListRef.current.scrollToIndex) {
-            dragListRef.current.scrollToIndex({ index: 0, animated: true })
+            const newOffset = Math.max(0, scrollOffset.current - (containerHeight * 0.75))
+            dragListRef.current.scrollToOffset({ offset: newOffset, animated: true })
         }
     }
 
-    const scrollToBottom = () => {
+    const scrollDown = () => {
         if (dragListRef.current && dragListRef.current.scrollToIndex) {
-            const lastIndex = orderedItems.length - 1
-            dragListRef.current.scrollToIndex({ index: lastIndex, animated: true })
+            const newOffset = scrollOffset.current + (containerHeight * 0.75)
+            dragListRef.current.scrollToOffset({ offset: newOffset, animated: true })
         }
     }
 
@@ -103,6 +106,7 @@ const DraggablePriorityList: React.FC<DraggablePriorityListProps> = ({ items, se
                     style={{ justifyContent: "space-between", backgroundColor: colors.input }}
                     activeOpacity={0.7}
                     className="flex flex-row items-center gap-2 border border-border rounded-lg p-2"
+                    onPress={() => toggleItem(item.id)}
                 >
                     <View style={{ flex: 1, flexDirection: "row", gap: 10 }}>
                         {/* Priority Number */}
@@ -135,33 +139,34 @@ const DraggablePriorityList: React.FC<DraggablePriorityListProps> = ({ items, se
     }
 
     return (
-        <View style={style}>
+        <View style={{ flexGrow: 1}}>
             <Text style={{ fontSize: 12, color: colors.mutedForeground, paddingBottom: 10 }}>Drag items to reorder. Top to bottom = highest to lowest priority.</Text>
 
             {/* Always show the DragList, regardless of selection state */}
-            <ScrollView scrollEnabled={true}>
+            <ScrollView scrollEnabled={true} nestedScrollEnabled={true} style={{ flexGrow: 1}}>
                 <DragList
-                    scrollEnabled={false}
+                    scrollEnabled={true}
                     ref={dragListRef}
                     data={orderedItems.map((id) => items.find((item) => item.id === id)!).filter(Boolean)}
                     keyExtractor={(item) => item.id}
                     onReordered={handleReordered}
                     renderItem={renderItem}
-                    style={{ height: 200 }}
+                    style={style}
                     onLayout={handleContainerLayout}
                     onContentSizeChange={handleContentSizeChange}
+                    onScroll={(e) => {scrollOffset.current = e.nativeEvent.contentOffset.y}}
                     showsVerticalScrollIndicator={false}
                 />
 
                 {/* Scroll helper buttons for very long lists */}
                 {contentHeight > containerHeight && (
                     <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 10 }}>
-                        <TouchableOpacity style={{ borderColor: colors.primary }} className="px-3 py-1 border rounded" onPress={scrollToTop}>
+                        <TouchableOpacity style={{ borderColor: colors.primary }} className="px-3 py-1 border rounded" onPress={scrollUp}>
                             <Text style={{ color: colors.foreground }} className="text-xs">
                                 ↑ Scroll Up
                             </Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={{ borderColor: colors.primary }} className="px-3 py-1 border rounded" onPress={scrollToBottom}>
+                        <TouchableOpacity style={{ borderColor: colors.primary }} className="px-3 py-1 border rounded" onPress={scrollDown}>
                             <Text style={{ color: colors.foreground }} className="text-xs">
                                 ↓ Scroll Down
                             </Text>
