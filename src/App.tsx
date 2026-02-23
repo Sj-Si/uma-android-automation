@@ -19,7 +19,6 @@ import RacingPlanSettings from "./pages/RacingPlanSettings"
 import SkillSettings from "./pages/SkillSettings"
 import SkillPlanSettings, { skillPlanSettingsPages } from "./pages/SkillPlanSettings"
 import DailyTasksSettings from "./pages/DailyTasksSettings"
-import DailyTasksPluginSettings from "./pages/DailyTasksPluginSettings"
 import EventLogVisualizer from "./pages/EventLogVisualizer"
 import ImportSettingsPreview from "./pages/ImportSettingsPreview"
 import DebugSettings from "./pages/DebugSettings"
@@ -59,7 +58,6 @@ function SettingsStack() {
                 </Stack.Screen>
             ))}
             <Stack.Screen name="DailyTasksSettings" component={DailyTasksSettings} />
-            <Stack.Screen name="DailyTasksPluginSettings" component={DailyTasksPluginSettings} />
             <Stack.Screen name="EventLogVisualizer" component={EventLogVisualizer} />
             <Stack.Screen name="ImportSettingsPreview" component={ImportSettingsPreview} />
             <Stack.Screen name="DebugSettings" component={DebugSettings} />

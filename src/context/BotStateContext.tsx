@@ -2,6 +2,7 @@ import { createContext, useState } from "react"
 import { startTiming } from "../lib/performanceLogger"
 import racesData from "../data/races.json"
 import { skillPlanSettingsPages } from "../pages/SkillPlanSettings"
+import { pluginConfigs } from "../pages/DailyTasksSettings"
 
 interface SkillPlanSettingsConfig {
     enabled: boolean
@@ -226,16 +227,11 @@ export const defaultSettings: Settings = {
         }, {} as Record<string, SkillPlanSettingsConfig>),
     },
     dailyTasks: {
-        plugins: [
-            "Team Trials",
-            "Daily Races",
-            "Legend Race",
-            "Champions Meeting",
-            "Club Activity",
-            "Special Missions",
-            "Presents",
-            "Daily Sale",
-        ],
+        // All enabled plugin names as a list.
+        plugins: pluginConfigs
+            .filter((item) => item.enabled === true)
+            .map((item) => item.name),
+        // Individual plugin settings.
         saleItems: [
             "Star Piece",
             "Alarm Clock",

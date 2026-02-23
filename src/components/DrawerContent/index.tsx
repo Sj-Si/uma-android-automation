@@ -32,7 +32,6 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         "SkillSettings",
         ...Object.values(skillPlanSettingsPages).flatMap((item) => item.name),
         "DailyTasksSettings",
-        "DailyTasksPluginSettings",
         "DebugSettings",
     ]
 
@@ -210,13 +209,6 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
                     name: "DailyTasksSettings",
                     label: "Daily Tasks Settings",
                     icon: () => "calendar-outline",
-                    nested: [
-                        {
-                            name: "DailyTasksPluginSettings",
-                            label: "Daily Tasks Plugin Settings",
-                            icon: () => "extension-puzzle-outline",
-                        },
-                    ],
                 },
                 {
                     name: "EventLogVisualizer",
@@ -286,11 +278,6 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
                 .includes(currentScreen)
         ) {
             newExpanded.add("SkillSettings")
-        }
-
-        // Auto-expand Daily Tasks Settings if Daily Tasks Plugin Settings is active.
-        if (currentScreen === "DailyTasksPluginSettings") {
-            newExpanded.add("DailyTasksSettings")
         }
 
         // Merge with existing expanded sections to preserve user's manual expansions.

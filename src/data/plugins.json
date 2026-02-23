@@ -1,0 +1,107 @@
+[
+    {
+        "name": "Team Trials",
+        "description": "Races Team Trials until out of RP.",
+        "enabled": true
+    },
+    {
+        "name": "Daily Races",
+        "description": "Races Daily Races until out of tickets.",
+        "enabled": true
+    },
+    {
+        "name": "Legend Race",
+        "description": "Races Legend Race until out of attempts.",
+        "enabled": true
+    },
+    {
+        "name": "Champions Meeting",
+        "description": "Races Champions Meeting races until out of attempts.",
+        "enabled": false
+    },
+    {
+        "name": "Club Activity",
+        "description": "Automatically requests donations and donates to club members.",
+        "enabled": false
+    },
+    {
+        "name": "Special Missions",
+        "description": "Collects all Special Missions rewards.",
+        "enabled": true
+    },
+    {
+        "name": "Presents",
+        "description": "Collects all Presents.",
+        "enabled": true
+    },
+    {
+        "name": "Daily Sale",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    },
+    {
+        "name": "1",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    },
+    {
+        "name": "2",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    },
+    {
+        "name": "3",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    },
+    {
+        "name": "4",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    },
+    {
+        "name": "5",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    },
+    {
+        "name": "6",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    },
+    {
+        "name": "7",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    },
+    {
+        "name": "8",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    },
+    {
+        "name": "9",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    },
+    {
+        "name": "10",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    },
+    {
+        "name": "11",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    },
+    {
+        "name": "12",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    },
+    {
+        "name": "13",
+        "description": "Automatically purchases items from daily sales when they appear.",
+        "enabled": true
+    }
+]
