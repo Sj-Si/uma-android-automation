@@ -34,14 +34,10 @@ class DailyTasks(game: Game) : Campaign(game) {
     private val bEnableSpecialMissions: Boolean = true
     private val bEnableTeamTrials: Boolean = true
 
-    override fun handleDialogs(dialog: DialogInterface?): Pair<Boolean, DialogInterface?> {
-        val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
-        return Pair(false, dialog)
-    }
-
     fun pluginDialogHandler(dialog: DialogInterface? = null): DialogHandlerResult {
-        val result: Pair<Boolean, DialogInterface?> = handleDialogs(dialog)
-        val dialog: DialogInterface = result.second ?: return DialogHandlerResult.NoDialogDetected
+        val dialog: DialogInterface = dialog ?:
+            DialogUtils.getDialog(game.imageUtils) ?:
+            return DialogHandlerResult.NoDialogDetected
 
         when (dialog.name) {
             "date_changed" -> {
