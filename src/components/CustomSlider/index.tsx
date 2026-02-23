@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react"
+import React, { useMemo,  useState, useRef, useEffect } from "react"
 import { View, Text, StyleSheet, Animated, LayoutChangeEvent, ViewStyle } from "react-native"
 import Slider from "@react-native-community/slider"
 import { useTheme } from "../../context/ThemeContext"
@@ -45,7 +45,7 @@ const CustomSlider: React.FC<CustomSliderProps> = ({
     const thumbScale = useRef(new Animated.Value(1)).current
     const tooltipOpacity = useRef(new Animated.Value(0)).current
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         container: {
             marginVertical: 16,
         },
@@ -130,7 +130,7 @@ const CustomSlider: React.FC<CustomSliderProps> = ({
             color: colors.foreground,
             marginLeft: 4,
         },
-    })
+    }), [colors])
 
     const calculateTooltipPosition = (currentValue: number) => {
         if (sliderWidth === 0) return 0

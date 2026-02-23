@@ -11,33 +11,31 @@
  * 
  * Example usage:
  * 
- * import com.steve1316.uma_android_automation.components.DialogUtils
- * import com.steve1316.uma_android_automation.components.DialogInterface
- * 
- * fun handleDialogs() {
- *     val dialog: DialogInterface? = DialogUtils.getDialog(imageUtils=game.imageUtils)
- *     if (dialog == null) {
- *         MessageLog.i(TAG, "\n[DIALOG] No dialog found.")
- *         return
- *     }
- * 
+ * // Call the centralized handler through the campaign or game.
+ * val (bDialogHandled, dialog) = game.campaign.handleDialogs()
+ *
+ * // Or pass arguments via the map.
+ * game.campaign.handleDialogs(args = mapOf("overrideIgnoreConsecutiveRaceWarning" to true))
+ *
+ * // Example of how logic is implemented within a DialogHandler:
+ * open fun handleDialogs(dialog: DialogInterface? = null, args: Map<String, Any> = mapOf()): Pair<Boolean, DialogInterface?> {
+ *     val dialog = dialog ?: DialogUtils.getDialog(game.imageUtils) ?: return Pair(false, null)
  *     when (dialog.name) {
  *         "open_soon" -> {
- *             dialog.close(imageUtils=game.imageUtils)
  *             game.notificationMessage = "open_soon"
  *             MessageLog.i(TAG, "\n[DIALOG] Open Soon!")
+ *             dialog.close(game.imageUtils)
  *         }
  *         "continue_career" -> {
  *             dialog.close(imageUtils=game.imageUtils)
- *             //ButtonClose.click(imageUtils=game.imageUtils)
  *             MessageLog.i(TAG, "\n[DIALOG] Continue Career")
  *         }
  *         else -> {
  *             MessageLog.i(TAG, "\n[DIALOG] ${dialog.name}")
- *             game.notificationMessage = "${dialog.name}"
  *             dialog.close(imageUtils=game.imageUtils)
  *         }
  *     }
+ *     return Pair(true, dialog)
  * }
  */
 
@@ -372,7 +370,6 @@ object DialogObjects {
         DialogPurchaseAlarmClock,           // Career
         DialogPurchaseCarats,               // Anywhere (ALWAYS THROW ERROR)
         DialogPurchaseDailyRaceTicket,      // Daily Races
-        DialogQuickModeSettings,            // Career
         DialogRaceDetails,                  // Daily Races, Special Events, and Career
         DialogRacePlayback,                 // Career
         DialogRaceRecommendations,          // Career

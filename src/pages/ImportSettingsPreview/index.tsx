@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { View, Text, ScrollView, StyleSheet } from "react-native"
 import { useNavigation, useRoute, CommonActions } from "@react-navigation/native"
 import { useTheme } from "../../context/ThemeContext"
@@ -34,7 +35,7 @@ const ImportSettingsPreview = () => {
         return acc
     }, {} as Record<string, SettingsChange[]>)
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         root: {
             flex: 1,
             flexDirection: "column",
@@ -138,7 +139,7 @@ const ImportSettingsPreview = () => {
             alignItems: "center",
             backgroundColor: colors.background,
         },
-    })
+    }), [colors])
 
     const handleConfirm = async () => {
         if (fileUri) {

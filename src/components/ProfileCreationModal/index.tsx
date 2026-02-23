@@ -25,7 +25,7 @@ const ProfileCreationModal: React.FC<ProfileCreationModalProps> = ({ visible, on
     const [profileName, setProfileName] = useState("")
     const [isCreating, setIsCreating] = useState(false)
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         modal: {
             flex: 1,
             justifyContent: "center",
@@ -121,7 +121,7 @@ const ProfileCreationModal: React.FC<ProfileCreationModalProps> = ({ visible, on
             gap: 8,
             marginTop: 16,
         },
-    })
+    }), [colors])
 
     // Format the training settings into a preview string.
     const settingsPreview = useMemo(() => {

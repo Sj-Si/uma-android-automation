@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useMemo } from "react"
 import { StyleSheet, Text, View } from "react-native"
 import type { FileDividerRecord } from "../../lib/eventLogParser"
 import { useTheme } from "../../context/ThemeContext"
@@ -10,7 +10,7 @@ type Props = {
 const FileDivider: React.FC<Props> = ({ divider }) => {
     const { colors } = useTheme()
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         container: {
             flexDirection: "row",
             alignItems: "center",
@@ -28,7 +28,7 @@ const FileDivider: React.FC<Props> = ({ divider }) => {
             fontWeight: "500",
             color: colors.lightlyMuted,
         },
-    })
+    }), [colors])
 
     return (
         <View style={styles.container}>

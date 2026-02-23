@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect } from "react"
+import { useMemo,  useContext, useState, useEffect } from "react"
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-native"
 import { Divider } from "react-native-paper"
 import { useTheme } from "../../context/ThemeContext"
@@ -174,7 +174,7 @@ const RacingPlanSettings = () => {
         }
     }
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         root: {
             flex: 1,
             flexDirection: "column",
@@ -187,11 +187,6 @@ const RacingPlanSettings = () => {
             opacity: 0.7,
             marginBottom: 16,
             lineHeight: 20,
-        },
-        title: {
-            fontSize: 24,
-            fontWeight: "bold",
-            color: colors.foreground,
         },
         section: {
             marginBottom: 24,
@@ -257,7 +252,7 @@ const RacingPlanSettings = () => {
             fontSize: 14,
             fontWeight: "600",
         },
-    })
+    }), [colors])
 
     const renderOptions = () => {
         return (

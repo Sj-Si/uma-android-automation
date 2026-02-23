@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useMemo } from "react"
 import { StyleSheet, Text, View } from "react-native"
 import type { YearSummary } from "../../lib/eventLogParser"
 import { useTheme } from "../../context/ThemeContext"
@@ -10,7 +10,7 @@ type Props = {
 const YearSummaryCard: React.FC<Props> = ({ summary }) => {
     const { colors } = useTheme()
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         container: {
             paddingVertical: 16,
             paddingHorizontal: 16,
@@ -92,7 +92,7 @@ const YearSummaryCard: React.FC<Props> = ({ summary }) => {
             fontWeight: "600",
             color: colors.foreground,
         },
-    })
+    }), [colors])
 
     // Build the title string, including "+ Finals" for Senior Year if the logs covered the Finals days (turns 73-75).
     const titleText = summary.hasFinals ? `${summary.year} Year + Finals` : `${summary.year} Year`

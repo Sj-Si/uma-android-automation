@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useMemo } from "react"
 import { StyleSheet, Text, View } from "react-native"
 import type { DayRecord } from "../../lib/eventLogParser"
 import { useTheme } from "../../context/ThemeContext"
@@ -11,7 +11,7 @@ type Props = {
 const DayRow: React.FC<Props> = ({ record, showTriggers }) => {
     const { colors } = useTheme()
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         container: {
             paddingVertical: 12,
             paddingHorizontal: 12,
@@ -74,7 +74,7 @@ const DayRow: React.FC<Props> = ({ record, showTriggers }) => {
             color: colors.lightlyMuted,
             fontSize: 12,
         },
-    })
+    }), [colors])
 
     const renderTriggers = (title: string, lines: string[]) => {
         if (!lines || lines.length === 0) return null

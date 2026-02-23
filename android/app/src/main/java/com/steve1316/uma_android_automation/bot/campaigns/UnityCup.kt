@@ -45,8 +45,8 @@ class UnityCup(game: Game) : Campaign(game) {
      * The boolean is true when a dialog has been handled by this function.
      * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
      */
-    override fun handleDialogs(dialog: DialogInterface?): Pair<Boolean, DialogInterface?> {
-        val (bDialogHandled, dialog) = super.handleDialogs(dialog)
+    override fun handleDialogs(dialog: DialogInterface?, args: Map<String, Any>): Pair<Boolean, DialogInterface?> {
+        val (bDialogHandled, dialog) = super.handleDialogs(dialog, args)
         if (bDialogHandled) {
             return Pair(bDialogHandled, dialog)
         }

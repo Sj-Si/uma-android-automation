@@ -27,12 +27,12 @@ class Racing (private val game: Game) {
     private val TAG: String = "[${MainActivity.loggerTag}]Racing"
 
     private val enableFarmingFans = SettingsHelper.getBooleanSetting("racing", "enableFarmingFans")
-    private val ignoreConsecutiveRaceWarning = SettingsHelper.getBooleanSetting("racing", "ignoreConsecutiveRaceWarning")
+    internal val ignoreConsecutiveRaceWarning = SettingsHelper.getBooleanSetting("racing", "ignoreConsecutiveRaceWarning")
     private val daysToRunExtraRaces: Int = SettingsHelper.getIntSetting("racing", "daysToRunExtraRaces")
-    val disableRaceRetries: Boolean = SettingsHelper.getBooleanSetting("racing", "disableRaceRetries")
-    val enableFreeRaceRetry: Boolean = SettingsHelper.getBooleanSetting("racing", "enableFreeRaceRetry")
-    val enableCompleteCareerOnFailure: Boolean = SettingsHelper.getBooleanSetting("racing", "enableCompleteCareerOnFailure")
-    val enableForceRacing = SettingsHelper.getBooleanSetting("racing", "enableForceRacing")
+    internal val disableRaceRetries: Boolean = SettingsHelper.getBooleanSetting("racing", "disableRaceRetries")
+    internal val enableFreeRaceRetry: Boolean = SettingsHelper.getBooleanSetting("racing", "enableFreeRaceRetry")
+    internal val enableCompleteCareerOnFailure: Boolean = SettingsHelper.getBooleanSetting("racing", "enableCompleteCareerOnFailure")
+    internal val enableForceRacing = SettingsHelper.getBooleanSetting("racing", "enableForceRacing")
 
     private val enableRacingPlan = SettingsHelper.getBooleanSetting("racing", "enableRacingPlan")
     private val lookAheadDays = SettingsHelper.getIntSetting("racing", "lookAheadDays")
@@ -49,8 +49,8 @@ class Racing (private val game: Game) {
     private val enableUserInGameRaceAgenda = SettingsHelper.getBooleanSetting("racing", "enableUserInGameRaceAgenda")
     private val selectedUserAgenda = SettingsHelper.getStringSetting("racing", "selectedUserAgenda")
 
-    private var raceRetries = 3
-    var raceRepeatWarningCheck = false
+    internal var raceRetries = 3
+    internal var raceRepeatWarningCheck = false
     var encounteredRacingPopup = false
     var firstTimeRacing = true
     var hasFanRequirement = false  // Indicates that a fan requirement has been detected on the main screen.
@@ -60,12 +60,12 @@ class Racing (private val game: Game) {
     private var nextSmartRaceDay: Int? = null  // Tracks the specific day to race based on opportunity cost analysis.
     private var hasLoadedUserRaceAgenda = false  // Tracks if the user's race agenda has been loaded this career.
 
-    private val enableStopOnMandatoryRace: Boolean = SettingsHelper.getBooleanSetting("racing", "enableStopOnMandatoryRaces")
-    var detectedMandatoryRaceCheck = false
+    internal val enableStopOnMandatoryRace: Boolean = SettingsHelper.getBooleanSetting("racing", "enableStopOnMandatoryRaces")
+    internal var detectedMandatoryRaceCheck = false
 
     // Race strategy override settings.
-    private val juniorYearRaceStrategy = SettingsHelper.getStringSetting("racing", "juniorYearRaceStrategy")
-    private val userSelectedOriginalStrategy = SettingsHelper.getStringSetting("racing", "originalRaceStrategy")
+    internal val juniorYearRaceStrategy = SettingsHelper.getStringSetting("racing", "juniorYearRaceStrategy")
+    internal val userSelectedOriginalStrategy = SettingsHelper.getStringSetting("racing", "originalRaceStrategy")
     private var detectedOriginalStrategy: String? = null
     private var hasAppliedStrategyOverride = false
 
@@ -133,161 +133,13 @@ class Racing (private val game: Game) {
     /**
      * Clears all racing requirement flags like fan and trophy requirements.
      */
-    private fun clearRacingRequirementFlags() {
+    internal fun clearRacingRequirementFlags() {
         hasFanRequirement = false
         hasTrophyRequirement = false
         hasPreOpOrAboveRequirement = false
         hasG3OrAboveRequirement = false
     }
 
-    /**
-     * Detects and handles any dialog popups.
-     *
-     * To prevent the bot moving too fast, we add a 500ms delay to the
-     * exit of this function whenever we close the dialog.
-     * This gives the dialog time to close since there is a very short
-     * animation that plays when a dialog closes.
-     *
-     * @param dialog An optional dialog to evaluate. This allows chaining
-     * dialog handler calls for improved performance.
-     *
-     * @return A pair of a boolean and a nullable DialogInterface.
-     * The boolean is true when a dialog has been handled by this function.
-     * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
-     */
-    fun handleDialogs(dialog: DialogInterface? = null, overrideIgnoreConsecutiveRaceWarning: Boolean = false): Pair<Boolean, DialogInterface?> {
-        val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(imageUtils = game.imageUtils)
-        if (dialog == null) {
-            Log.d(TAG, "[RACE] No dialog found.")
-            return Pair(false, null)
-        }
-
-        when (dialog.name) {
-            "consecutive_race_warning" -> {
-                raceRepeatWarningCheck = true
-                if (overrideIgnoreConsecutiveRaceWarning || enableForceRacing || ignoreConsecutiveRaceWarning) {
-                    MessageLog.i(TAG, "[RACE] Consecutive race warning! Racing anyway...")
-                    dialog.ok(imageUtils = game.imageUtils)
-                    // This dialog requires a little extra delay since it loads the
-                    // race list instead of just closing the dialog.
-                    game.wait(1.0, skipWaitingForLoading = true)
-                } else {
-                    MessageLog.i(TAG, "[RACE] Consecutive race warning! Aborting racing...")
-                    clearRacingRequirementFlags()
-                    dialog.close(imageUtils = game.imageUtils)
-                }
-            }
-            "race_details" -> dialog.ok(imageUtils = game.imageUtils)
-            "race_playback" -> {
-                // Select portrait mode to prevent game from switching to landscape.
-                RadioPortrait.click(game.imageUtils)
-                // Click the checkbox to prevent this popup in the future.
-                Checkbox.click(game.imageUtils)
-                dialog.ok(game.imageUtils)
-            }
-            "runners" -> dialog.close(imageUtils = game.imageUtils)
-            "strategy" -> {
-                if (!game.trainee.bHasUpdatedAptitudes) {
-                    game.trainee.bTemporaryRunningStyleAptitudesUpdated = updateRaceScreenRunningStyleAptitudes()
-                }
-
-                var runningStyle: RunningStyle? = null
-                val runningStyleString: String = when {
-                    // Special case for when the bot has not been able to check the date
-                    // i.e. when the bot starts at the race screen.
-                    game.currentDate.day == 1 -> userSelectedOriginalStrategy
-                    game.currentDate.year == DateYear.JUNIOR -> juniorYearRaceStrategy
-                    else -> userSelectedOriginalStrategy
-                }
-                when (runningStyleString.uppercase()) {
-                    // Do not select a strategy. Use what is already selected.
-                    "DEFAULT" -> {
-                        MessageLog.i(TAG, "[DIALOG] strategy:: Using the default running style.")
-                        dialog.ok(imageUtils = game.imageUtils)
-                        game.trainee.bHasSetRunningStyle = true
-                        return Pair(true, dialog)
-                    }
-                    // Auto-select the optimal running style based on trainee aptitudes.
-                    "AUTO" -> {
-                        MessageLog.i(TAG, "[DIALOG] strategy:: Auto-selecting the trainee's optimal running style.")
-                        runningStyle = game.trainee.runningStyle
-                    }
-                    else -> {
-                        MessageLog.i(TAG, "[DIALOG] strategy:: Using user-specified running style: $runningStyleString")
-                        runningStyle = RunningStyle.fromShortName(runningStyleString)
-                    }
-                }
-
-                when (runningStyle) {
-                    RunningStyle.FRONT_RUNNER -> ButtonRaceStrategyFront.click(imageUtils = game.imageUtils)
-                    RunningStyle.PACE_CHASER -> ButtonRaceStrategyPace.click(imageUtils = game.imageUtils)
-                    RunningStyle.LATE_SURGER -> ButtonRaceStrategyLate.click(imageUtils = game.imageUtils)
-                    RunningStyle.END_CLOSER -> ButtonRaceStrategyEnd.click(imageUtils = game.imageUtils)
-                    null -> {
-                        // This indicates programmer error.
-                        MessageLog.e(TAG, "[DIALOG] strategy:: Invalid running style: $runningStyle")
-                        dialog.close(imageUtils = game.imageUtils)
-                        game.trainee.bHasSetRunningStyle = false
-                        return Pair(true, dialog)
-                    }
-                }
-
-                // We only want to set this flag if the date has been checked.
-                // Otherwise, if the day is still 1, that means we probably started
-                // the bot at the racing screen. In this case, we still want to set
-                // the running style the next time we get back to the race
-                // selection screen after verifying the date.
-                if (game.currentDate.day != 1) {
-                    game.trainee.bHasSetRunningStyle = true
-                }
-                dialog.ok(imageUtils = game.imageUtils)
-            }
-            "trophy_won" -> dialog.close(imageUtils = game.imageUtils)
-            "try_again" -> {
-                // All branches need a slight delay to allow the dialog to close
-                // since the runRaceWithRetries loop handles dialogs at the start
-                // of each iteration. Can cause problem where we handle one branch
-                // then immediately handle dialogs again and handle a second branch
-                // for the same dialog instance.
-                if (disableRaceRetries) {
-                    if (enableFreeRaceRetry && IconOneFreePerDayTooltip.check(game.imageUtils)) {
-                        MessageLog.i(TAG, "[RACE] Failed mandatory race. Using daily free race retry...")
-                        raceRetries--
-                        dialog.ok(game.imageUtils)
-                        game.wait(0.5, skipWaitingForLoading = true)
-                        return Pair(true, dialog)
-                    }
-                    if (enableCompleteCareerOnFailure) {
-                        MessageLog.i(TAG, "[RACE] Failed a mandatory race and no retries remaining. Completing career...")
-                        // Manually set retries to -1 to break the race retry loop.
-                        raceRetries = -1
-                        dialog.close(game.imageUtils)
-                        game.wait(0.5, skipWaitingForLoading = true)
-                        return Pair(true, dialog)
-                    }
-                    MessageLog.i(TAG, "\n[END] Stopping the bot due to failing a mandatory race.")
-                    MessageLog.i(TAG, "********************")
-                    game.notificationMessage = "Stopping the bot due to failing a mandatory race."
-                    throw IllegalStateException()
-                }
-                raceRetries--
-                dialog.ok(game.imageUtils)
-                game.wait(0.5, skipWaitingForLoading = true)
-            }
-            "unlock_requirements" -> dialog.close(imageUtils = game.imageUtils)
-            // This dialog shows runner details other than our own.
-            // We have to make sure we're handling this before handling dialogs
-            // in the Campaign class since this dialog has the same name as
-            // the one in Campaign.
-            "umamusume_details" -> dialog.close(imageUtils = game.imageUtils)
-            else -> {
-                Log.w(TAG, "[RACE] Unknown dialog \"${dialog.name}\" detected so it will not be handled.")
-                return Pair(false, dialog)
-            }
-        }
-
-        return Pair(true, dialog)
-    }
 
     /**
      * Retrieves the user's planned races from saved settings.
@@ -445,12 +297,12 @@ class Racing (private val game: Game) {
             game.tap(loc.x, loc.y + 100, IconRaceDayRibbon.template.path, ignoreWaiting = true)
             game.wait(0.5, skipWaitingForLoading = true)
             // Check for the consecutive race dialog before proceeding.
-            handleDialogs(overrideIgnoreConsecutiveRaceWarning = true)
+            game.campaign.handleDialogs(args = mapOf("overrideIgnoreConsecutiveRaceWarning" to true))
             return handleMandatoryRace()
         } else if (!game.trainee.bHasCompletedMaidenRace && !isScheduledRace && ButtonRaceSelectExtra.click(imageUtils = game.imageUtils)) {
             game.wait(1.0, skipWaitingForLoading = true)
             // Check for the consecutive race dialog before proceeding.
-            handleDialogs(overrideIgnoreConsecutiveRaceWarning = true)
+            game.campaign.handleDialogs(args = mapOf("overrideIgnoreConsecutiveRaceWarning" to true))
             return handleMaidenRace()
         } else if ((!game.currentDate.bIsPreDebut && ButtonRaceSelectExtra.click(imageUtils = game.imageUtils)) || isScheduledRace) {
             var overrideIgnore = false
@@ -460,7 +312,7 @@ class Racing (private val game: Game) {
             }
             game.wait(0.5, skipWaitingForLoading = true)
             // Check for the consecutive race dialog before proceeding.
-            val (bWasDialogHandled, dialog) = handleDialogs(overrideIgnoreConsecutiveRaceWarning = overrideIgnore)
+            val (bWasDialogHandled, dialog) = game.campaign.handleDialogs(args = mapOf("overrideIgnoreConsecutiveRaceWarning" to overrideIgnore))
             if (dialog != null && dialog.name == "consecutive_race_warning" && !(overrideIgnore || enableForceRacing || ignoreConsecutiveRaceWarning)) {
                 MessageLog.i(TAG, "[RACE] Consecutive race warning but conditions dictate to not race. Skipping...")
                 return false
@@ -724,7 +576,7 @@ class Racing (private val game: Game) {
         // Confirm the selection and the resultant popup and then wait for the game to load.
         ButtonRace.click(imageUtils = game.imageUtils)
         game.wait(0.5, skipWaitingForLoading = true)
-        val (bWasDialogHandled, dialog) = handleDialogs()
+        val (bWasDialogHandled, dialog) = game.campaign.handleDialogs()
         if (!bWasDialogHandled || (dialog != null && dialog.name != "race_details")) {
             Log.w(TAG, "[RACE] Failed to handle dialogs. Aborting racing...")
             return false
@@ -1387,7 +1239,7 @@ class Racing (private val game: Game) {
         game.waitForLoading()
 
         // We are forced to race, so we need to ignore this warning dialog.
-        handleDialogs(overrideIgnoreConsecutiveRaceWarning = true)
+        game.campaign.handleDialogs(args = mapOf("overrideIgnoreConsecutiveRaceWarning" to true))
 
         game.waitForLoading()
 
@@ -1881,7 +1733,7 @@ class Racing (private val game: Game) {
         return enableFarmingFans && !enableRacingPlan && (turnsRemaining % daysToRunExtraRaces == 0) && !raceRepeatWarningCheck
     }
 
-    fun updateRaceScreenRunningStyleAptitudes(): Boolean {
+    internal fun updateRaceScreenRunningStyleAptitudes(): Boolean {
         val bitmap = game.imageUtils.getSourceBitmap()
         val bbox = BoundingBox(
             x = game.imageUtils.relX(0.0, 125),
@@ -1954,7 +1806,7 @@ class Racing (private val game: Game) {
 			ButtonChangeRunningStyle.click(imageUtils = game.imageUtils, tries = 10)
 			game.wait(0.5, skipWaitingForLoading = true)
 			var tries = 10
-			while (tries > 0 && !handleDialogs().first) {
+			while (tries > 0 && !game.campaign.handleDialogs().first) {
 				tries--
 			}
 		} else if (!game.trainee.bHasSetRunningStyle || needsOverride || needsReversion) {
@@ -1970,7 +1822,7 @@ class Racing (private val game: Game) {
 			ButtonChangeRunningStyle.click(imageUtils = game.imageUtils, tries = 10)
 			game.wait(0.5, skipWaitingForLoading = true)
 			var tries = 10
-			while (tries > 0 && !handleDialogs().first) {
+			while (tries > 0 && !game.campaign.handleDialogs().first) {
 				tries--
 			}
 		}

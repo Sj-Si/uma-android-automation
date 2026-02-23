@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react"
+import React, { useMemo,  useState, useEffect, useRef } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, ScrollView, ViewStyle } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import CustomCheckbox from "../CustomCheckbox"
@@ -114,7 +114,7 @@ const MultiSelector: React.FC<MultiSelectorProps> = ({
     // Filter options based on search query.
     const filteredOptions = options.filter((option) => option.toLowerCase().includes(searchQuery.toLowerCase()))
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         container: {
             marginBottom: 24,
         },
@@ -251,7 +251,7 @@ const MultiSelector: React.FC<MultiSelectorProps> = ({
             padding: 8,
             marginLeft: 8,
         },
-    })
+    }), [colors])
 
     return (
         <View style={[styles.container, style]}>

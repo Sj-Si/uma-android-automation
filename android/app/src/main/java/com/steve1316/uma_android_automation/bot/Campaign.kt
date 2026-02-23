@@ -25,14 +25,14 @@ import java.util.concurrent.TimeUnit
  * Campaign-specific logic should be implemented in subclasses by overriding the appropriate methods.
  * By default, URA Finale is handled by this base class.
  */
-open class Campaign(val game: Game) {
+open class Campaign(game: Game) : DialogHandler(game) {
 	protected open val TAG: String = "[${MainActivity.loggerTag}]Normal"
 
     private val mustRestBeforeSummer: Boolean = SettingsHelper.getBooleanSetting("training", "mustRestBeforeSummer")
     private val enableFarmingFans: Boolean = SettingsHelper.getBooleanSetting("racing", "enableFarmingFans")
 
     // Should always check fan count at bot start unless in pre-debut.
-    protected var bNeedToCheckFans: Boolean = true
+    internal var bNeedToCheckFans: Boolean = true
     // Flag used to prevent us from attempting to check fans multiple times in a day.
     // This helps us avoid infinite loops.
     protected var bHasTriedCheckingFansToday: Boolean = false
@@ -52,208 +52,6 @@ open class Campaign(val game: Game) {
     // Flag to skip redundant date checks when no game-advancing action was taken.
     // Reset to false when training, resting, racing, or other game-advancing actions complete.
     protected var bHasCheckedDateThisTurn: Boolean = false
-
-    /**
-     * Detects and handles any dialog popups.
-     *
-     * To prevent the bot moving too fast, we add a 500ms delay to the
-     * exit of this function whenever we close the dialog.
-     * This gives the dialog time to close since there is a very short
-     * animation that plays when a dialog closes.
-     *
-     * @param dialog An optional dialog to evaluate. This allows chaining
-     * dialog handler calls for improved performance.
-     *
-     * @return A pair of a boolean and a nullable DialogInterface.
-     * The boolean is true when a dialog has been handled by this function.
-     * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
-     */
-    open fun handleDialogs(dialog: DialogInterface? = null): Pair<Boolean, DialogInterface?> {
-        val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(imageUtils = game.imageUtils)
-        if (dialog == null) {
-            Log.d(TAG, "\n[DIALOG] No dialog found.")
-            return Pair(false, null)
-        }
-
-        when (dialog.name) {
-            "agenda_details" -> dialog.close(imageUtils = game.imageUtils)
-            "bonus_umamusume_details" -> dialog.close(imageUtils = game.imageUtils)
-            "career" -> dialog.close(imageUtils = game.imageUtils)
-            "career_event_details" -> dialog.close(imageUtils = game.imageUtils)
-            "career_profile" -> dialog.close(imageUtils = game.imageUtils)
-            "choices" -> dialog.close(imageUtils = game.imageUtils)
-            "concert_skip_confirmation" -> {
-                // Click the checkbox to prevent this popup in the future.
-                Checkbox.click(imageUtils = game.imageUtils)
-                dialog.ok(imageUtils = game.imageUtils)
-            }
-            "epithets" -> dialog.close(imageUtils = game.imageUtils)
-            "fans" -> dialog.close(imageUtils = game.imageUtils)
-            "featured_cards" -> dialog.close(imageUtils = game.imageUtils)
-            "give_up" -> dialog.close(imageUtils = game.imageUtils)
-            "goal_not_reached" -> {
-                // We are handling the logic for when to race on our own.
-                // Thus we just close this warning.
-                game.racing.encounteredRacingPopup = true
-                dialog.close(imageUtils = game.imageUtils)
-            }
-            "goals" -> dialog.close(imageUtils = game.imageUtils)
-            "infirmary" -> {
-                Checkbox.click(imageUtils = game.imageUtils)
-                dialog.ok(imageUtils = game.imageUtils)
-            }
-            "insufficient_fans" -> {
-                // We are handling the logic for when to race on our own.
-                // Thus we just close this warning.
-                game.racing.encounteredRacingPopup = true
-                dialog.close(imageUtils = game.imageUtils)
-            }
-            "log" -> dialog.close(imageUtils = game.imageUtils)
-            "menu" -> dialog.close(imageUtils = game.imageUtils)
-            "mood_effect" -> dialog.close(imageUtils = game.imageUtils)
-            "my_agendas" -> dialog.close(imageUtils = game.imageUtils)
-            "no_retries" -> dialog.ok(imageUtils = game.imageUtils)
-            "options" -> dialog.close(imageUtils = game.imageUtils)
-            "perks" -> dialog.close(imageUtils = game.imageUtils)
-            "placing" -> dialog.close(imageUtils = game.imageUtils)
-            "purchase_alarm_clock" -> {
-                throw InterruptedException("Ran out of alarm clocks. Stopping bot...")
-            }
-            "quick_mode_settings" -> {
-                val bbox = BoundingBox(
-                    x = game.imageUtils.relX(0.0, 160),
-                    y = game.imageUtils.relY(0.0, 770),
-                    w = game.imageUtils.relWidth(70),
-                    h = game.imageUtils.relHeight(460),
-                )
-                val optionLocations: ArrayList<Point> = IconHorseshoe.findAll(
-                    imageUtils = game.imageUtils,
-                    region = bbox.toIntArray(),
-                    confidence = 0.0,
-                )
-                if (optionLocations.size == 4) {
-                    MessageLog.d(TAG, "[DIALOG] quick_mode_settings: Using findAll method.")
-                    val loc: Point = optionLocations[1]
-                    game.tap(loc.x, loc.y, IconHorseshoe.template.path)
-                } else {
-                    MessageLog.d(TAG, "[DIALOG] quick_mode_settings: Using image OCR method.")
-                    // Fallback to image detection.
-                    RadioCareerQuickShortenAllEvents.click(imageUtils = game.imageUtils)
-                }
-                
-                dialog.ok(imageUtils = game.imageUtils)
-            }
-            "race_details" -> {
-                dialog.ok(imageUtils = game.imageUtils)
-            }
-            "race_recommendations" -> {
-                ButtonRaceRecommendationsCenterStage.click(imageUtils = game.imageUtils)
-                Checkbox.click(imageUtils = game.imageUtils)
-                dialog.ok(imageUtils = game.imageUtils)
-            }
-            "recreation" -> {
-                Checkbox.click(imageUtils = game.imageUtils)
-                dialog.ok(imageUtils = game.imageUtils)
-            }
-            "rest" -> {
-                Checkbox.click(imageUtils = game.imageUtils)
-                dialog.ok(imageUtils = game.imageUtils)
-            }
-            "rest_and_recreation" -> {
-                // Does not have a checkbox unlike the other rest/rec/etc.
-                dialog.ok(imageUtils = game.imageUtils)
-            }
-            "scheduled_race_available" -> {
-                MessageLog.i(TAG, "[INFO] There is a scheduled race today. Racing it now...")
-                dialog.ok(imageUtils = game.imageUtils)
-                if (!handleRaceEvents(isScheduledRace = true) && handleRaceEventFallback()) {
-                    MessageLog.i(TAG, "\n[END] Stopping the bot due to failing to handle a scheduled race.")
-                    MessageLog.i(TAG, "********************")
-                    game.notificationMessage = "Stopping the bot due to failing to handle a scheduled race."
-                    throw IllegalStateException()
-                }
-            }
-            "scheduled_races" -> dialog.close(imageUtils = game.imageUtils)
-            "schedule_settings" -> dialog.close(imageUtils = game.imageUtils)
-            "skill_details" -> dialog.close(imageUtils = game.imageUtils)
-            "song_acquired" -> dialog.close(imageUtils = game.imageUtils)
-            "spark_details" -> dialog.close(imageUtils = game.imageUtils)
-            "sparks" -> dialog.close(imageUtils = game.imageUtils)
-            "team_info" -> dialog.close(imageUtils = game.imageUtils)
-            "umamusume_class" -> {
-                val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
-                val templateBitmap: Bitmap? = game.imageUtils.getBitmaps(LabelUmamusumeClassFans.template.path).second
-                if (templateBitmap == null) {
-                    MessageLog.e(TAG, "[DIALOG] umamusume_class: Could not get template bitmap for LabelUmamusumeClassFans: ${LabelUmamusumeClassFans.template.path}.")
-                    dialog.close(imageUtils = game.imageUtils)
-                    return Pair(true, dialog)
-                }
-                val point: Point? = LabelUmamusumeClassFans.find(imageUtils = game.imageUtils).first
-                if (point == null) {
-                    MessageLog.w(TAG, "[DIALOG] umamusume_class: Could not find LabelUmamusumeClassFans.")
-                    dialog.close(imageUtils = game.imageUtils)
-                    return Pair(true, dialog)
-                }
-
-                // Add a small 8px buffer to vertical component.
-                val bbox = BoundingBox(
-                    x = game.imageUtils.relX(0.0, (point.x + (templateBitmap.width / 2)).toInt()),
-                    y = game.imageUtils.relY(0.0, (point.y - (templateBitmap.height / 2) - 4).toInt()),
-                    w = game.imageUtils.relWidth(300),
-                    h = game.imageUtils.relHeight(templateBitmap.height + 4),
-                )
-
-                val croppedBitmap = game.imageUtils.createSafeBitmap(
-                    bitmap,
-                    bbox.x,
-                    bbox.y,
-                    bbox.w,
-                    bbox.h,
-                    "dialog::umamusume_class: Cropped bitmap.",
-                )
-                if (croppedBitmap == null) {
-                    MessageLog.e(TAG, "[DIALOG] umamusume_class: Failed to crop bitmap.")
-                    dialog.close(imageUtils = game.imageUtils)
-                    return Pair(true, dialog)
-                }
-                val fans = game.imageUtils.getUmamusumeClassDialogFanCount(croppedBitmap)
-                if (fans != null) {
-                    game.trainee.fans = fans
-                    bNeedToCheckFans = false
-                    MessageLog.d(TAG, "[DIALOG] umamusume_class: Updated fan count: ${game.trainee.fans}")
-                } else {
-                    MessageLog.w(TAG, "[DIALOG] umamusume_class: getUmamusumeClassDialogFanCount returned NULL.")
-                }
-                
-                dialog.close(imageUtils = game.imageUtils)
-
-                // Print the trainee info with the updated fan count.
-                game.trainee.logInfo()
-            }
-            "umamusume_details" -> {
-                val prevTrackSurface = game.trainee.trackSurface
-                val prevTrackDistance = game.trainee.trackDistance
-                val prevRunningStyle = game.trainee.runningStyle
-                game.trainee.updateAptitudes(imageUtils = game.imageUtils)
-                game.trainee.bTemporaryRunningStyleAptitudesUpdated = false
-
-                if (game.trainee.runningStyle != prevRunningStyle) {
-                    // Reset this flag since our preferred running style has changed.
-                    game.trainee.bHasSetRunningStyle = false
-                }
-
-                dialog.close(imageUtils = game.imageUtils)
-            }
-            "unity_cup_available" -> dialog.close(imageUtils = game.imageUtils)
-            "unmet_requirements" -> dialog.close(imageUtils = game.imageUtils)
-            else -> {
-                Log.w(TAG, "[DIALOG] Unknown dialog \"${dialog.name}\" detected so it will not be handled.")
-                return Pair(false, dialog)
-            }
-        }
-
-        return Pair(true, dialog)
-    }
 
 	/**
 	 * Handles the skill list screen to purchase skills.
@@ -308,7 +106,7 @@ open class Campaign(val game: Game) {
      */
     private fun waitForDialogProcessed() {
         while (true) {
-            if (!handleDialogs().first && !game.handleDialogs().first) {
+            if (!handleDialogs().first) {
                 break
             }
         }
@@ -805,7 +603,7 @@ open class Campaign(val game: Game) {
 	 *
 	 * @return True if the bot should break out of the main loop, false otherwise.
 	 */
-	private fun handleRaceEventFallback(): Boolean {
+	internal fun handleRaceEventFallback(): Boolean {
 		if (game.racing.detectedMandatoryRaceCheck) {
 			MessageLog.i(TAG, "\n[END] Stopping bot due to detection of Mandatory Race.")
 			game.notificationMessage = "Stopping bot due to detection of Mandatory Race."
@@ -867,7 +665,11 @@ open class Campaign(val game: Game) {
                 }
             } catch (e: InterruptedException) {
                 game.notificationMessage = "Campaign main loop exiting: ${e.message}"
-                MessageLog.e(TAG, "Campaign main loop exiting: ${e.message}")
+                if (e.message?.contains("Bot had reached end of run") == true) {
+                    MessageLog.i(TAG, "Campaign main loop exiting: ${e.message}")
+                } else {
+                    MessageLog.e(TAG, "Campaign main loop exiting: ${e.message}")
+                }
                 break
             }
 		}

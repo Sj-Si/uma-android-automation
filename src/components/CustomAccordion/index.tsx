@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useMemo } from "react"
 import { Text, StyleSheet, ViewStyle } from "react-native"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
 import { useTheme } from "../../context/ThemeContext"
@@ -20,14 +20,14 @@ interface CustomAccordionProps {
 const CustomAccordion: React.FC<CustomAccordionProps> = ({ sections, type = "single", defaultValue = [], className, style }) => {
     const { colors } = useTheme()
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         sectionTitle: {
             fontSize: 16,
             fontWeight: "600",
             color: colors.foreground,
             marginBottom: 0,
         },
-    })
+    }), [colors])
 
     return (
         <Accordion type={type} defaultValue={defaultValue} className={className} style={style}>

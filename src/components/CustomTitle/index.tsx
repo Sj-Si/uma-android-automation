@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { Text, StyleSheet, TextStyle } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 
@@ -10,7 +11,7 @@ interface CustomTitleProps {
 const CustomTitle = ({ title, description, style }: CustomTitleProps) => {
     const { colors } = useTheme()
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         sectionTitle: {
             fontSize: 18,
             fontWeight: "600",
@@ -24,7 +25,7 @@ const CustomTitle = ({ title, description, style }: CustomTitleProps) => {
             marginBottom: 16,
             lineHeight: 20,
         },
-    })
+    }), [colors])
 
     return (
         <>

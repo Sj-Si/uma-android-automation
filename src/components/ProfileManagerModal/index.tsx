@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react"
+import React, { useMemo,  useState, useEffect, useCallback, useRef } from "react"
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal as RNModal } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import CustomButton from "../CustomButton"
@@ -94,7 +94,7 @@ const ProfileManagerModal: React.FC<ProfileManagerModalProps> = ({
         isScrolling.current = false
     }
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         modal: {
             flex: 1,
             justifyContent: "center",
@@ -186,7 +186,7 @@ const ProfileManagerModal: React.FC<ProfileManagerModalProps> = ({
             color: colors.foreground,
             opacity: 0.6,
         },
-    })
+    }), [colors])
 
     useEffect(() => {
         if (visible) {

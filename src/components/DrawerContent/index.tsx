@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from "react"
+import React, { useMemo,  useState, useEffect, useContext, useRef } from "react"
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
 import { DrawerContentScrollView, DrawerContentComponentProps, useDrawerStatus } from "@react-navigation/drawer"
 import { CommonActions } from "@react-navigation/native"
@@ -35,7 +35,7 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         "DebugSettings",
     ]
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         container: {
             flex: 1,
             backgroundColor: colors.card,
@@ -91,9 +91,6 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
             padding: 4,
             marginLeft: 8,
             borderRadius: 4,
-        },
-        chevronIcon: {
-            marginLeft: 8,
         },
         nestedContainer: {
             overflow: "hidden",
@@ -154,7 +151,7 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
             color: colors.primary,
             fontWeight: "500",
         },
-    })
+    }), [colors])
 
     // Define the menu item configurations for the drawer.
     const menuItems: MenuItem[] = [

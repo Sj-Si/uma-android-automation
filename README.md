@@ -4,9 +4,9 @@
 
 > Discord here: https://discord.gg/5Yv4kqjAbm
 
-This Android application written in Kotlin is designed to fully automate a run of Uma Musume Pretty Derby by offering a set of options to customize what event rewards the bot should prioritise, stats to focus on, etc. Building on top of the work done for ![Uma Android Training Helper](https://github.com/steve1316/uma-android-training-helper), this aims to solve the issue of spending too much hands-on time with completing a run for Uma Musume Pretty Derby.
+This Android application written in Kotlin is designed to fully automate a run of Uma Musume Pretty Derby by offering a comprehensive set of options to customize event rewards, stat prioritization, race scheduling, automatic skill point buying, and more. Featuring a robust modern frontend built on React Native (Expo) and an extensive computer-vision driven backend, this app aims to solve the issue of spending too much hands-on time completing runs into something you can set and forget.
 
-https://user-images.githubusercontent.com/18709555/125517168-61b72aa4-28be-4868-b160-2ff4aa4d73f6.mp4
+https://github.com/user-attachments/assets/962adaf4-5e78-4807-8c25-e39be9a68fb4
 
 # Disclaimer
 
@@ -16,7 +16,7 @@ This project is purely for educational purposes to learn about Android automatio
 
 -   Android Device or Emulator (Nougat 7.0+)
     -   Hard requirement for Android phones is 1080p and 240 DPI or 450 DPI (for Samsung phones). If your device do not meet these, you can try the `Basic Template Matching Test` in the Settings under the `Debug Tests` section to determine the best scale to use in the `Custom Scale for Template Matching` setting. If not, then you can also try the [To set the phone's resolution to 1080p (faster and more accurate)](#to-set-the-phones-resolution-to-1080p-faster-and-more-accurate) section to forcibly set the display resolution and DPI of your Android phone. Note that may come with the side-effect of your device UI being scrunched in or zoomed out.
-        -   If you change the display resolution while the overlay button is still active, you will need to restart the app in order for the display changes to persist to the `MediaProjection` service.
+        -   Note: If you change the display resolution while the overlay button is still active, you will need to restart the app in order for the display changes to persist to the `MediaProjection` service.
     -   Tested emulators are Bluestacks 5 (Pie 64-bit, but other versions should work) and MuMu. The following setup is required:
         -   Portrait Mode needs to be forced on always.
         -   Bluestacks itself needs to be updated to the latest version to avoid Uma Musume crashing.
@@ -30,27 +30,30 @@ This project is purely for educational purposes to learn about Android automatio
 
 # Features
 
--   [x] Able to complete a run from start/midway to its completion.
--   [x] Settings to customize preferences and stat prioritization for Training Events.
--   [x] Handles races, both via skipping and running the race manually.
+-   [x] Completes a full run from start/midway to its conclusion.
+-   [x] Supports multiple scenarios including **URA Finale**, **Unity Cup**, and those in the future to come.
+-   [x] Advanced OpenCV template matching for real-time gamestate awareness.
+-   [x] Tesseract OCR integrated with rapid fuzzy string matching.
+-   [x] Modern user interface built using React Native, Typescript and Expo for full configurability.
+-   [x] Settings to customize preferences and stat prioritizations for Training Events.
+-   [x] Import/Export customizable skill point buying plans and training configurations.
 -   [x] Runs extra races to farm fans when enabled in the settings.
 -   [x] A multitude of settings to configure including setting preferred stat targets per distance.
 
 # Instructions
 
-1. Download the .apk file from the `Releases` section on the right of this page and install it on your Android device.
-2. Once you have it running, select the scenario for the required section (URA Finale, Unity Cup, etc.) marked with \* in the Settings page of the application.
-3. Now go back to the Home page after you have finished customizing the settings. The settings you have selected will be shown to you in the text box below the `Start` button.
-4. Now tap on the `Start` button. If this is the first time, it will ask you to give the application `Overlay` permission and starting up the `Accessibility` service.
-    1. You are also required to enable `Allow restricted settings` in the `App Info` page of the app in the Android Settings for later Android versions.
-5. Once it is enabled, tapping on the `Start` button again will create a popup asking if you want `MediaProjection` to work on `A single app` or `Entire screen`. Select the `Entire screen` option. A floating overlay button will now appear that you can move around the screen.
-6. **IMPORTANT:** Move the overlay button to the far left edge of the screen and centered in the middle of the screen's height. Otherwise, you run the risk of the overlay button covering crucial elements on the screen.
-7. Navigate yourself to the screen below that shows available options like Rest, Train, Buy Skills, Races, etc.
+1. Download the latest `.apk` file from the `Releases` section on the right of this page and install it on your Android device.
+2. Open the application. Upon launching, navigate through the user-friendly frontend to select your desired scenario (URA Finale, Unity Cup, etc.) and configure your training priorities, races, and other settings.
+3. You can review your loaded settings and configurations directly on the Home page.
+4. Tap the `Start` button. If this is the first time, you will be prompted to grant `Overlay` permissions and enable the `Accessibility` service.
+    1. On newer Android versions, you're required to enable `Allow restricted settings` in the app's `App Info` settings.
+5. Once enabled, tapping `Start` will request `MediaProjection` access (select `Entire screen` if prompted). A floating overlay button will appear that you can drag around the screen.
+6. **IMPORTANT:** Follow the guidance overlay when you drag the overlay button for the places on the screen to safely leave the button at to avoid covering important UI elements.
+7. Navigate to the main training menu in Uma Musume (where Rest, Train, Buy Skills, Races, etc. are visible).
 
 > <img width="270" height="585" alt="main screen" src="https://github.com/user-attachments/assets/05239856-878e-4e49-a325-db60013d7c75" />
 
-
-8. Press the overlay button to start the automation process. For enabling app notifications, it is recommended to have a notification style that is small enough that it does not fully cover the top part of the screen where it contains the date, energy, turn number, etc. Or disable notifications if you do not want to worry about it.
+8. Tap the overlay button to start automation. (Tip: Use minimal or deactivated notifications to prevent interference with OCR scanning the top of the screen).
 
 ## To view Logs in Real-time
 
@@ -70,7 +73,7 @@ This project is purely for educational purposes to learn about Android automatio
 2. Install [**Shizuku**](https://github.com/RikkaApps/Shizuku), then start it by following [these instructions](https://shizuku.rikka.app/guide/setup/#start-via-wireless-debugging).
 3. With **Shizuku** started, you can then use **aShell You** to send the following adb commands:
    - **Change resolution to 1080p:** `wm size 1080x1920 && wm density 240`
-   - **Revert changes:** `wm size reset && wm density reset`
+   - **Revert to original:** `wm size reset && wm density reset`
 
     You can also bookmark the commands for your own convenience.
 
@@ -84,26 +87,28 @@ Alternatively, you can do the same on a computer if you cannot get the above to 
 
 Note: If your home button disappears, reset the DPI back to default.
 
-Make sure to use 1.0 scaling, as well as 80% confidence for best results in 1080p.
+Make sure to use 1.0 scaling, and an 80% confidence threshold for best results in 1080p natively.
 
 # For Developers
 
-1. Download and extract the project repository.
-2. Go to `https://opencv.org/releases/` and download OpenCV (make sure to download the Android version of OpenCV) and extract it. As of 2025-07-20, the OpenCV version used in this project is 4.12.0.
-3. Create a new folder inside the `/android` folder named `opencv` and copy the extracted files in `/OpenCV-android-sdk/sdk/` from Step 2 into it.
-4. Open up the root of the folder in your preferred IDE/terminal and execute `yarn install` to install the React Native dependencies from the `package.json`.
-5. Your dev environment should now be set up. You can run the app on your connected Android device/emulator to have hot-reload changes for the frontend via the Metro HTTP server with `yarn android`. You can also now build the APK with `yarn build` or `yarn build:clean` if you encounter problems.
-6. You can set `universalApk` to `true` in the app's `build.gradle` to build a one-for-all .apk file or adjust the `include 'arm64-v8a'` to customize which ABI to build the .apk file for.
-7. Note: New to React Native, you should not run the app directly from Android Studio. Have the Metro bundler run the app for you.
+This project is separated into a React Native frontend configured via Expo and an extensive Kotlin/OpenCV backend.
+
+1. Download and extract the repository.
+2. Download OpenCV for Android (v4.12.0) from `https://opencv.org/releases/`. Create `/android/opencv` and copy the extracted `/OpenCV-android-sdk/sdk/` contents into it.
+3. The project utilizes Expo. Run `yarn install` from the root directory to install frontend dependencies.
+4. The dev environment is ready. Run `yarn start` or `npx expo start` to run the Metro HTTP server.
+5. To test Android builds, execute `yarn android` to compile and install the application directly on your device. Use `yarn build` for release APK generation.
+6. *Note*: Do not run the React Native shell app directly from Android Studio. Always rely on the Expo Metro bundler for correct bridging.
 
 # Technologies Used
 
-1. [jpn.traineddata from UmaUmaCruise by @amate](https://github.com/amate/UmaUmaCruise)
-2. [eng.traineddata from tessdata](https://github.com/tesseract-ocr/tessdata)
-3. [MediaProjection - Used to obtain full screenshots](https://developer.android.com/reference/android/media/projection/MediaProjection)
-4. [AccessibilityService - Used to dispatch gestures like tapping and scrolling](https://developer.android.com/reference/android/accessibilityservice/AccessibilityService)
-5. [OpenCV Android - Used to template match](https://opencv.org/releases/)
-6. [Tesseract4Android - For performing OCR on the screen](https://github.com/adaptech-cz/Tesseract4Android)
+1. [eng.traineddata from tessdata](https://github.com/tesseract-ocr/tessdata)
+2. [MediaProjection - Used to obtain full screenshots](https://developer.android.com/reference/android/media/projection/MediaProjection)
+3. [AccessibilityService - Used to dispatch gestures like tapping and scrolling](https://developer.android.com/reference/android/accessibilityservice/AccessibilityService)
+4. [OpenCV Android - Used to template match](https://opencv.org/releases/)
+5. [Tesseract4Android - For performing OCR on the screen](https://github.com/adaptech-cz/Tesseract4Android)
 7. [string-similarity - For comparing string similarities during text detection](https://github.com/rrice/java-string-similarity)
 8. [AppUpdater - For automatically checking and notifying the user for new app updates](https://github.com/javiersantos/AppUpdater)
 9. [React Native - Used as the frontend](https://reactnative.dev/)
+10. [Expo - Modern modular frontend](https://expo.dev/)
+11. [SQLite - Local database via expo-sqlite](https://docs.expo.dev/versions/latest/sdk/sqlite/)

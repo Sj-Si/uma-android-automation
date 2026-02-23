@@ -1,4 +1,4 @@
-import { useContext, useEffect } from "react"
+import { useMemo,  useContext, useEffect } from "react"
 import { View, Text, ScrollView, StyleSheet } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Divider } from "react-native-paper"
@@ -45,33 +45,13 @@ const SkillSettings = () => {
         })
     }
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         root: {
             flex: 1,
             flexDirection: "column",
             justifyContent: "center",
             margin: 10,
             backgroundColor: colors.background,
-        },
-        header: {
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 20,
-        },
-        headerLeft: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-        },
-        menuButton: {
-            padding: 8,
-            borderRadius: 8,
-        },
-        title: {
-            fontSize: 24,
-            fontWeight: "bold",
-            color: colors.foreground,
         },
         description: {
             fontSize: 14,
@@ -83,12 +63,6 @@ const SkillSettings = () => {
         section: {
             marginBottom: 16,
         },
-        sectionTitle: {
-            fontSize: 18,
-            fontWeight: "600",
-            color: colors.foreground,
-            marginBottom: 12,
-        },
         inputContainer: {
             marginBottom: 16,
         },
@@ -97,41 +71,13 @@ const SkillSettings = () => {
             color: colors.foreground,
             marginBottom: 8,
         },
-        input: {
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 8,
-            padding: 12,
-            fontSize: 16,
-            color: colors.foreground,
-            backgroundColor: colors.background,
-        },
         inputDescription: {
             fontSize: 14,
             color: colors.foreground,
             opacity: 0.7,
             marginTop: 8,
         },
-        titleDescription: {
-            fontSize: 14,
-            color: colors.foreground,
-            opacity: 0.7,
-            marginBottom: 4,
-        },
-        warningContainer: {
-            backgroundColor: colors.warningBg,
-            borderLeftWidth: 4,
-            borderLeftColor: colors.warningBorder,
-            padding: 12,
-            marginTop: 12,
-            borderRadius: 8,
-        },
-        warningText: {
-            fontSize: 14,
-            color: colors.warningText,
-            lineHeight: 20,
-        },
-    })
+    }), [colors])
 
     return (
         <View style={styles.root}>

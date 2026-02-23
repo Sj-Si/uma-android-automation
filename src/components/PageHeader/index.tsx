@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from "react-native"
 import { useNavigation, DrawerActions } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
@@ -33,7 +34,7 @@ const PageHeader = ({ title, showHomeButton = true, rightComponent, style }: Pag
         navigation.navigate("Home" as never)
     }
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         header: {
             flexDirection: "row",
             justifyContent: "space-between",
@@ -58,7 +59,7 @@ const PageHeader = ({ title, showHomeButton = true, rightComponent, style }: Pag
             fontWeight: "bold",
             color: colors.foreground,
         },
-    })
+    }), [colors])
 
     return (
         <View style={[styles.header, style]}>

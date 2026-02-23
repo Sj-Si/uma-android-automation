@@ -50,47 +50,7 @@ class SkillList (private val game: Game) {
     var skillPoints: Int = 0
         private set
 
-    /**
-     * Detects and handles any dialog popups.
-     *
-     * To prevent the bot moving too fast, we add a 500ms delay to the
-     * exit of this function whenever we close the dialog.
-     * This gives the dialog time to close since there is a very short
-     * animation that plays when a dialog closes.
-     *
-     * @return A pair of a boolean and a nullable DialogInterface.
-     * The boolean is true when a dialog has been handled by this function.
-     * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
-     */
-    private fun handleDialogs(): Pair<Boolean, DialogInterface?> {
-        val dialog: DialogInterface? = DialogUtils.getDialog(game.imageUtils)
-        if (dialog == null) {
-            Log.d(TAG, "\n[SKILLS] No dialogs found.")
-            return Pair(false, null)
-        }
 
-        when (dialog.name) {
-            "skill_list_confirmation" -> {
-                dialog.ok(game.imageUtils)
-                // This dialog takes longer to close than others.
-                // Add an extra delay to make sure we don't skip anything.
-                game.wait(1.0)
-            }
-            "skill_list_confirm_exit" -> dialog.ok(game.imageUtils)
-            "skills_learned" -> dialog.close(game.imageUtils)
-            "umamusume_details" -> {
-                game.trainee.updateAptitudes(game.imageUtils)
-                dialog.close(game.imageUtils)
-            }
-            else -> {
-                Log.w(TAG, "[SKILLS] Unknown dialog \"${dialog.name}\" detected so it will not be handled.")
-                return Pair(false, dialog)
-            }
-        }
-
-        game.wait(0.5, skipWaitingForLoading = true)
-        return Pair(true, dialog)
-    }
 
     /** Creates a mapping of skill names to SkillListEntry objects.
      *
@@ -266,9 +226,9 @@ class SkillList (private val game: Game) {
         game.wait(0.5, skipWaitingForLoading = true)
         // Two dialogs will appear if we purchase any skills.
         // First is the purchase confirmation.
-        handleDialogs()
+        game.campaign.handleDialogs()
         // Second is the Skills Learned dialog.
-        handleDialogs()
+        game.campaign.handleDialogs()
         // Return to previous screen.
         ButtonBack.click(game.imageUtils)
     }
@@ -281,7 +241,7 @@ class SkillList (private val game: Game) {
         game.wait(0.5, skipWaitingForLoading = true)
         // As a failsafe, handle dialogs to catch the dialog for
         // aborting spending skill points.
-        handleDialogs()
+        game.campaign.handleDialogs()
     }
 
     /** Opens the stats dialog and parses it.
@@ -296,7 +256,7 @@ class SkillList (private val game: Game) {
     fun checkStats() {
         ButtonSkillListFullStats.click(game.imageUtils)
         game.wait(0.5, skipWaitingForLoading = true)
-        handleDialogs()
+        game.campaign.handleDialogs()
     }
 
     /** Extracts the title (skill name) from a cropped skill list entry bitmap.
@@ -748,7 +708,7 @@ class SkillList (private val game: Game) {
         }
 
         // Try to handle any skill list specific dialogs that may be up.
-        if (!handleDialogs().first) {
+        if (!game.campaign.handleDialogs().first) {
             return false
         }
 

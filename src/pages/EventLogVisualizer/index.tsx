@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../../components/ui/too
 import { Info } from "lucide-react-native"
 import CustomCheckbox from "../../components/CustomCheckbox"
 import PageHeader from "../../components/PageHeader"
+import WarningContainer from "../../components/WarningContainer"
 
 type MixedRecord = DayRecord | GapRecord | FileDividerRecord
 
@@ -29,7 +30,7 @@ const EventLogVisualizer: React.FC = () => {
     const [showTriggers, setShowTriggers] = useState<boolean>(false)
     const [viewMode, setViewMode] = useState<"timeline" | "years">("timeline")
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         root: {
             flex: 1,
             backgroundColor: colors.background,
@@ -37,28 +38,11 @@ const EventLogVisualizer: React.FC = () => {
         content: {
             padding: 12,
         },
-        title: {
-            fontSize: 20,
-            fontWeight: "bold",
-            color: colors.foreground,
-        },
         empty: {
             marginTop: 12,
             marginBottom: 12,
             color: "white",
             opacity: 0.8,
-        },
-        errorContainer: {
-            backgroundColor: colors.warningBg,
-            borderLeftWidth: 4,
-            borderLeftColor: colors.warningBorder,
-            padding: 12,
-            borderRadius: 8,
-        },
-        errorText: {
-            fontSize: 14,
-            color: colors.warningText,
-            lineHeight: 20,
         },
         totalTimeTitle: {
             fontSize: 18,
@@ -102,7 +86,7 @@ const EventLogVisualizer: React.FC = () => {
         toggleButtonTextInactive: {
             color: colors.foreground,
         },
-    })
+    }), [colors])
 
     async function onPickFiles() {
         try {
@@ -179,14 +163,14 @@ const EventLogVisualizer: React.FC = () => {
                             </TouchableOpacity>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" style={{ backgroundColor: isDark ? colors.muted : "black", maxWidth: 300 }}>
-                            <View style={styles.errorContainer}>
+                            <WarningContainer>
                                 <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
                                     <Text style={{ fontWeight: "bold", color: colors.warningText }}>⚠️ File Explorer Note:</Text>
-                                    <Text style={styles.errorText}>
+                                    <Text style={{ fontSize: 14, color: colors.warningText, lineHeight: 20 }}>
                                         To manually access files, you need a file explorer app that can access the /Android/data folder (like CX File Explorer). Standard file managers will not work.
                                     </Text>
                                 </View>
-                            </View>
+                            </WarningContainer>
                             <Text style={styles.empty}>
                                 Select one or more .txt logs named like "log @ yyyy-mm-dd HH_mm_ss.txt" to visualize per-day actions. Files are sorted by filename. Gaps between days are shown.{" "}
                                 {"\n\n"}

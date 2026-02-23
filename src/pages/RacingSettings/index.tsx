@@ -1,4 +1,4 @@
-import { useContext } from "react"
+import { useMemo,  useContext } from "react"
 import { View, Text, ScrollView, StyleSheet } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { useTheme } from "../../context/ThemeContext"
@@ -9,6 +9,7 @@ import CustomTitle from "../../components/CustomTitle"
 import { Input } from "../../components/ui/input"
 import NavigationLink from "../../components/NavigationLink"
 import PageHeader from "../../components/PageHeader"
+import WarningContainer from "../../components/WarningContainer"
 
 const RacingSettings = () => {
     const { colors } = useTheme()
@@ -55,7 +56,7 @@ const RacingSettings = () => {
         }
     }
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         root: {
             flex: 1,
             flexDirection: "column",
@@ -65,12 +66,6 @@ const RacingSettings = () => {
         },
         section: {
             marginBottom: 24,
-        },
-        sectionTitle: {
-            fontSize: 18,
-            fontWeight: "600",
-            color: colors.foreground,
-            marginBottom: 12,
         },
         inputContainer: {
             marginBottom: 16,
@@ -95,20 +90,7 @@ const RacingSettings = () => {
             opacity: 0.7,
             marginTop: 4,
         },
-        warningContainer: {
-            backgroundColor: colors.warningBg,
-            borderLeftWidth: 4,
-            borderLeftColor: colors.warningBorder,
-            padding: 12,
-            marginTop: 12,
-            borderRadius: 8,
-        },
-        warningText: {
-            fontSize: 14,
-            color: colors.warningText,
-            lineHeight: 20,
-        },
-    })
+    }), [colors])
 
     return (
         <View style={styles.root}>
@@ -168,15 +150,14 @@ const RacingSettings = () => {
                             className="my-2"
                         />
                         {disableRaceRetries && (
-                            <View style={{ marginTop: 8, marginLeft: 20 }}>
-                                <CustomCheckbox
-                                    id="enable-free-race-retry"
-                                    checked={enableFreeRaceRetry}
-                                    onCheckedChange={(checked) => updateRacingSetting("enableFreeRaceRetry", checked)}
-                                    label="Allow Daily Free Race Retry"
-                                    description="When enabled, the bot will attempt to retry a failed mandatory race only if the daily free race retry is available."
-                                />
-                            </View>
+                            <CustomCheckbox
+                                id="enable-free-race-retry"
+                                checked={enableFreeRaceRetry}
+                                onCheckedChange={(checked) => updateRacingSetting("enableFreeRaceRetry", checked)}
+                                label="Allow Daily Free Race Retry"
+                                description="When enabled, the bot will attempt to retry a failed mandatory race only if the daily free race retry is available."
+                                className="my-2"
+                            />
                         )}
                         <CustomCheckbox
                             id="enable-complete-career-on-failure"
@@ -211,7 +192,9 @@ const RacingSettings = () => {
                             onValueChange={(value) => updateRacingSetting("juniorYearRaceStrategy", value)}
                             placeholder="Select strategy"
                         />
-                        <Text style={styles.inputDescription}>The race strategy to use for all races during Junior Year. If Auto is selected, the bot will auto-select the best strategy that puts them cloest to the front of the pack.</Text>
+                        <Text style={styles.inputDescription}>
+                            The race strategy to use for all races during Junior Year. If Auto is selected, the bot will auto-select the best strategy that puts them cloest to the front of the pack.
+                        </Text>
                     </View>
                     <View style={styles.inputContainer}>
                         <Text style={styles.inputLabel}>Original Race Strategy</Text>
@@ -228,7 +211,10 @@ const RacingSettings = () => {
                             onValueChange={(value) => updateRacingSetting("originalRaceStrategy", value)}
                             placeholder="Select strategy"
                         />
-                        <Text style={styles.inputDescription}>The race strategy to reset to after Junior Year. The bot will use this strategy for races in Year 2 and beyond. If Auto is selected, the bot will auto-select the best strategy that puts them cloest to the front of the pack. If Default is selected, the bot will not change whatever strategy is currently in effect.</Text>
+                        <Text style={styles.inputDescription}>
+                            The race strategy to reset to after Junior Year. The bot will use this strategy for races in Year 2 and beyond. If Auto is selected, the bot will auto-select the best
+                            strategy that puts them cloest to the front of the pack. If Default is selected, the bot will not change whatever strategy is currently in effect.
+                        </Text>
                     </View>
 
                     <View style={styles.section}>
@@ -240,11 +226,7 @@ const RacingSettings = () => {
                             description="When enabled, the bot will skip all training, rest, and mood recovery activities and focus exclusively on racing every day."
                             className="my-2"
                         />
-                        {enableForceRacing && (
-                            <View style={styles.warningContainer}>
-                                <Text style={styles.warningText}>⚠️ Warning: Enabling this will override all other racing settings and they will be ignored.</Text>
-                            </View>
-                        )}
+                        {enableForceRacing && <WarningContainer>⚠️ Warning: Enabling this will override all other racing settings and they will be ignored.</WarningContainer>}
                     </View>
 
                     <CustomCheckbox

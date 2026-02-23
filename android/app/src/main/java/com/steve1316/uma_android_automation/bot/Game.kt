@@ -91,10 +91,10 @@ class Game(val myContext: Context) {
 	////////////////////////////////////////////////////////////////////
 
     // Tracks the number of connection error retries. After hitting max, bot stops.
-    private val maxConnectionErrorRetryAttempts: Int = 3
-    private var connectionErrorRetryAttempts: Int = 0
-    private var lastConnectionErrorRetryTimeMs: Long = 0
-    private val connectionErrorRetryCooldownTimeMs: Long = 10000 // 10 seconds
+    internal val maxConnectionErrorRetryAttempts: Int = 3
+    internal var connectionErrorRetryAttempts: Int = 0
+    internal var lastConnectionErrorRetryTimeMs: Long = 0
+    internal val connectionErrorRetryCooldownTimeMs: Long = 10000 // 10 seconds
 
 	// Misc
     var currentDate: GameDate = GameDate(day = 1)
@@ -104,90 +104,14 @@ class Game(val myContext: Context) {
     private var stopBeforeFinalsInitialTurnNumber: Int = -1
     private var scenarioCheckPerformed: Boolean = false
 
-    /**
-     * Detects and handles any dialog popups.
-     *
-     * To prevent the bot moving too fast, we add a 500ms delay to the
-     * exit of this function whenever we close the dialog.
-     * This gives the dialog time to close since there is a very short
-     * animation that plays when a dialog closes.
-     *
-     * @param dialog An optional dialog to evaluate. This allows chaining
-     * dialog handler calls for improved performance.
-     *
-     * @return A pair of a boolean and a nullable DialogInterface.
-     * The boolean is true when a dialog has been handled by this function.
-     * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
-     */
-    fun handleDialogs(dialog: DialogInterface? = null): Pair<Boolean, DialogInterface?> {
-        val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(imageUtils = imageUtils)
-        if (dialog == null) {
-            Log.d(TAG, "\n[DIALOG] No dialog found.")
-            return Pair(false, null)
-        }
-
-        MessageLog.d(TAG, "[DIALOG] ${dialog.name}")
-
-        when (dialog.name) {
-            "connection_error" -> {
-                val currTime: Long = System.currentTimeMillis()
-                // If the cooldown period has lapsed, reset our count.
-                if (currTime - lastConnectionErrorRetryTimeMs > connectionErrorRetryCooldownTimeMs) {
-                    connectionErrorRetryAttempts = 0
-                    lastConnectionErrorRetryTimeMs = currTime
-                }
-
-                if (connectionErrorRetryAttempts >= maxConnectionErrorRetryAttempts) {
-                    throw InterruptedException("Max connection error retry attempts reached. Stopping bot...")
-                }
-
-                connectionErrorRetryAttempts++
-                dialog.ok(imageUtils = imageUtils)
-                wait(0.5)
-            }
-            "display_settings" -> dialog.close(imageUtils = imageUtils)
-            "help_and_glossary" -> dialog.close(imageUtils = imageUtils)
-            "session_error" -> {
-                throw InterruptedException("Session error. Stopping bot...")
-            }
-            else -> {
-                Log.w(TAG, "[DIALOG] Unknown dialog \"${dialog.name}\" detected so it will not be handled.")
-                return Pair(false, dialog)
-            }
-        }
-
-        return Pair(true, dialog)
-    }
-
-    /** Attempts to handle dialogs for all components containing a dialogHandler.
+    /** Attempts to handle dialogs.
      *
      * @return Whether a dialog was successfully handled.
      * If no dialog is detected at all, then False is returned.
      * If an unhandled dialog was detected, throws an InterruptedException.
      */
     fun tryHandleAllDialogs(): Boolean {
-        // Attempt to handle any dialogs from the main dialog handler first.
-        var (bWasDialogHandled, dialog) = handleDialogs()
-
-        // If that failed, then try passing it to the campaign dialog handler.
-        if (!bWasDialogHandled && dialog != null) {
-            bWasDialogHandled = campaign.handleDialogs(dialog).first
-        }
-
-        // Finally, try the racing handler as a last ditch effort.
-        if (!bWasDialogHandled && dialog != null) {
-            bWasDialogHandled = racing.handleDialogs(dialog).first
-        }
-
-        // If we still couldn't handle it, then we're stuck with a dialog
-        // open. This shouldn't ever happen unless there is a new dialog
-        // or something else in the game changed.
-        if (!bWasDialogHandled && dialog != null) {
-            MessageLog.e(TAG, "[GAME] Failed to handle a detected dialog: ${dialog.name}")
-            throw InterruptedException("Failed to handle a detected dialog: ${dialog.name}")
-        }
-
-        return bWasDialogHandled
+        return campaign.handleDialogs().first
     }
 
 	////////////////////////////////////////////////////////////////////

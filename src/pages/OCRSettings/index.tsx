@@ -1,4 +1,4 @@
-import { useContext } from "react"
+import { useMemo,  useContext } from "react"
 import { View, ScrollView, StyleSheet } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { BotStateContext, defaultSettings } from "../../context/BotStateContext"
@@ -25,7 +25,7 @@ const OCRSettings = () => {
         })
     }
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         root: {
             flex: 1,
             flexDirection: "column",
@@ -36,13 +36,7 @@ const OCRSettings = () => {
         section: {
             marginBottom: 24,
         },
-        sectionTitle: {
-            fontSize: 18,
-            fontWeight: "600",
-            color: colors.foreground,
-            marginBottom: 12,
-        },
-    })
+    }), [colors])
 
     return (
         <View style={styles.root}>

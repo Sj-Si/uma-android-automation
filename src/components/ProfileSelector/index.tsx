@@ -33,7 +33,7 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({ currentTrainingSettin
     const [selectedProfileName, setSelectedProfileName] = useState<string>(DEFAULT_PROFILE_NAME)
     const [pendingProfileSwitch, setPendingProfileSwitch] = useState<string | null>(null)
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         container: {
             marginBottom: 20,
             padding: 16,
@@ -62,7 +62,7 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({ currentTrainingSettin
             color: colors.foreground,
             opacity: 0.7,
         },
-    })
+    }), [colors])
 
     // Initialize and sync selected profile with current active profile and available profiles.
     useEffect(() => {

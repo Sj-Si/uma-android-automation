@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react"
+import React, { useMemo,  useContext, useEffect, useState } from "react"
 import { View, Text, ScrollView, StyleSheet, Modal, TouchableOpacity, Dimensions } from "react-native"
 import { Snackbar } from "react-native-paper"
 import { useTheme } from "../../context/ThemeContext"
@@ -184,7 +184,7 @@ const TrainingSettings = () => {
         })
     }
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         root: {
             flex: 1,
             flexDirection: "column",
@@ -242,25 +242,12 @@ const TrainingSettings = () => {
             fontSize: 18,
             color: colors.primary,
         },
-        statItem: {
-            flexDirection: "row",
-            alignItems: "center",
-            marginBottom: 12,
-        },
-        statCheckbox: {
-            marginRight: 12,
-        },
-        statLabel: {
-            fontSize: 16,
-            color: colors.foreground,
-            flex: 1,
-        },
         buttonRow: {
             flexDirection: "row",
             justifyContent: "space-between",
             marginTop: 20,
         },
-    })
+    }), [colors])
 
     const toggleStat = (stat: string, list: string[], setList: (value: string[]) => void) => {
         if (list.includes(stat)) {

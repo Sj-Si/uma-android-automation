@@ -64,19 +64,22 @@ type ActionKey = (typeof ACTION_KEYS)[number]
 
 const REGEX = {
     // Example: "[DATE] It is currently Junior Year Late Dec / Turn Number 24.".
-    dateTurn: /\[DATE\][^\n]*Turn Number\s+(\d+)/i,
+    // New Example: "[DATE] New date: JUNIOR YEAR LATE JANUARY (Turn 2)"
+    dateTurn: /(?:Turn Number|Turn)\s+\(?(\d+)\)?/i,
     // Example: "[INFO] Detected date: Junior Year Late Dec".
     dateDetectedText: /\[INFO\][^\n]*Detected date:\s*(.+)$/i,
     // Example: "[DATE] It is currently Senior Year Late Dec / Turn Number 24."
     // Example: "[DATE] It is currently Finale Qualifier / Turn Number 73."
+    // New Example: "[DATE] New date: JUNIOR YEAR LATE JANUARY (Turn 2)"
     // This captures the date text from the formatted date line (used for Finals and regular dates).
-    dateFormattedText: /\[DATE\][^\n]*It is currently\s+(.+?)\s+\/ Turn Number/i,
+    dateFormattedText: /\[DATE\][^\n]*(?:It is currently|New date:)\s+(.+?)\s+(?:\/ Turn Number|\(Turn)/i,
     // Extract year from date text: "Junior Year", "Classic Year", or "Senior Year".
     yearExtract: /(Junior|Classic|Senior)\s+Year/i,
     // Extract training type: "[TRAINING] Executing the Power Training."
     trainingExecution: /\[TRAINING\]\s+Executing\s+the\s+(\w+)\s+Training/i,
-    // Extract stat gains: "[INFO] Speed Training stat gains: [14, 0, 6, 0, 0], failure chance: 0%."
-    trainingStatGains: /\[INFO\]\s+(\w+)\s+Training\s+stat\s+gains:\s+\[([\d,\s]+)\]/i,
+    // Extract stat gains: "[INFO] Speed Training stat gains: [14, 0, 6, 0, 0]"
+    // New Example: "SPEED Training: stats={SPEED=10, STAMINA=0, POWER=6, GUTS=0, WIT=0}"
+    trainingStatGains: /(?:\[INFO\]\s+)?(\w+)\s+Training(?:.*?stat\s+gains:\s+\[([\d,\s]+)\]|:\s+stats=\{SPEED=(-?\d+),\s*STAMINA=(-?\d+),\s*POWER=(-?\d+),\s*GUTS=(-?\d+),\s*WIT=(-?\d+)\})/i,
     // Extract timestamp: "00:12:22.190" or "00:00:14.810"
     timestamp: /^(\d{2}):(\d{2}):(\d{2})\.(\d{3})/,
 }
@@ -308,16 +311,23 @@ export function parseLogs(files: LogFileInput[]): ParseResult {
             // Extract training stat gains for any training type (usually logged before execution).
             const statGainsMatch = line.match(REGEX.trainingStatGains)
             if (statGainsMatch) {
-                const trainingType = statGainsMatch[1]
-                const gainsStr = statGainsMatch[2]
-                const gains = gainsStr
-                    .split(",")
-                    .map((s) => parseInt(s.trim(), 10))
-                    .filter((n) => !isNaN(n))
+                const trainingType = statGainsMatch[1].toLowerCase()
+                let gains: number[] = []
+                if (statGainsMatch[2]) {
+                    // Old format
+                    gains = statGainsMatch[2]
+                        .split(",")
+                        .map((s) => parseInt(s.trim(), 10))
+                        .filter((n) => !isNaN(n))
+                } else if (statGainsMatch[3] !== undefined) {
+                    // New format
+                    gains = [parseInt(statGainsMatch[3], 10), parseInt(statGainsMatch[4], 10), parseInt(statGainsMatch[5], 10), parseInt(statGainsMatch[6], 10), parseInt(statGainsMatch[7], 10)]
+                }
+
                 if (gains.length === 5) {
                     statGainsByType.set(trainingType, gains)
                     // If execution already happened for this type, update stat gains immediately.
-                    if (day.trainingType === trainingType) {
+                    if (day.trainingType && day.trainingType.toLowerCase() === trainingType) {
                         day.trainingStatGains = gains
                     }
                 }
@@ -329,7 +339,7 @@ export function parseLogs(files: LogFileInput[]): ParseResult {
                 const executedType = trainingExec[1]
                 day.trainingType = executedType
                 // Match stat gains if available for this training type (from earlier in the log).
-                const storedGains = statGainsByType.get(executedType)
+                const storedGains = statGainsByType.get(executedType.toLowerCase())
                 if (storedGains) {
                     day.trainingStatGains = storedGains
                 }

@@ -315,7 +315,7 @@ const TrainingEventSettings = () => {
 
     const keyExtractor = useCallback((item: { key: string; characterOrSupport: string; eventName: string; options: string[]; type: "character" | "support" }) => item.key, [])
 
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         root: {
             flex: 1,
             flexDirection: "column",
@@ -485,7 +485,7 @@ const TrainingEventSettings = () => {
             opacity: 0.6,
             padding: 20,
         },
-    })
+    }), [colors])
 
     return (
         <View style={styles.root}>

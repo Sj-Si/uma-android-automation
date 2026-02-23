@@ -2,6 +2,7 @@ import React, { useMemo } from "react"
 import { View, Text, StyleSheet } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import CustomButton from "../CustomButton"
+import WarningContainer from "../WarningContainer"
 import { SettingsCategory } from "../../hooks/useProfileManager"
 
 interface ProfileComparisonProps {
@@ -43,14 +44,10 @@ const ProfileComparison: React.FC<ProfileComparisonProps> = ({ comparison, onCon
      * the unified ScrollView of the ProfileManagerModal. This simplifies
      * the layout and prevents nested scroll conflicts.
      */
-    const styles = StyleSheet.create({
+    const styles = useMemo(() => StyleSheet.create({
         container: {
             marginTop: 16,
             padding: 16,
-            backgroundColor: colors.warningBg,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: colors.warningBorder,
         },
         title: {
             fontSize: 16,
@@ -93,14 +90,14 @@ const ProfileComparison: React.FC<ProfileComparisonProps> = ({ comparison, onCon
             gap: 8,
             marginTop: 12,
         },
-    })
+    }), [colors])
 
     if (!hasChanges) {
         return null
     }
 
     return (
-        <View style={styles.container}>
+        <WarningContainer style={styles.container}>
             <Text style={styles.title}>{title}</Text>
 
             <View style={styles.section}>
@@ -126,7 +123,7 @@ const ProfileComparison: React.FC<ProfileComparisonProps> = ({ comparison, onCon
                     {buttonLabel}
                 </CustomButton>
             </View>
-        </View>
+        </WarningContainer>
     )
 }
 
