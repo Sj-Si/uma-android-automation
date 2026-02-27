@@ -160,10 +160,13 @@ class TeamTrials(
             PageTeamTrialsRaceQuickModeOn -> {
                 PageTeamTrialsRaceQuickModeOn.next(game.imageUtils, bitmap)
                 waitForButton(ButtonSkip, bShouldClickButton = true)
-                waitForPage(PageTeamTrialsRaceFinished)
             }
             PageTeamTrialsRaceFinished -> {
-                PageTeamTrialsRaceFinished.next(game.imageUtils, bitmap)
+                waitForButton(
+                    ButtonNext,
+                    bShouldClickButton = true,
+                    bShouldWaitForButtonToGoAway = true,
+                )
                 waitForPage(
                     listOf(PageTeamTrialsPreRaceResults, PageTeamTrialsRaceResults),
                     bShouldTapWhileWaiting = true,
@@ -171,8 +174,6 @@ class TeamTrials(
             }
             PageTeamTrialsPreRaceResults -> {
                 PageTeamTrialsPreRaceResults.next(game.imageUtils, bitmap)
-                waitForButton(ButtonNext, bShouldTapWhileWaiting = true, bShouldClickButton = true)
-                waitForPage(PageTeamTrialsRaceResults, bShouldTapWhileWaiting = true)
             }
             PageTeamTrialsRaceResults -> {
                 if (bIsComplete) {
