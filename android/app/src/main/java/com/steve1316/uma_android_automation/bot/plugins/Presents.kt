@@ -39,7 +39,10 @@ class Presents(
                     result.dialog.ok(game.imageUtils)
                 }
             }
-            "rewards_collected" -> result.dialog.close(game.imageUtils)
+            "rewards_collected" -> {
+                bIsComplete = true
+                result.dialog.close(game.imageUtils)
+            }
             else -> return DialogHandlerResult.Unhandled(result.dialog)
         }
         game.wait(0.5, skipWaitingForLoading = true)
