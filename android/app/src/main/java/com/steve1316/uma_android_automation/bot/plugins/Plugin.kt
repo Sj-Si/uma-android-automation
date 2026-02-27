@@ -17,13 +17,14 @@ import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
 
 import com.steve1316.uma_android_automation.components.BaseComponentInterface
-import com.steve1316.uma_android_automation.components.DialogUtils
-import com.steve1316.uma_android_automation.components.DialogInterface
-import com.steve1316.uma_android_automation.components.PageInterface
-import com.steve1316.uma_android_automation.components.PageHome
-import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonClose
+import com.steve1316.uma_android_automation.components.ButtonNext
+import com.steve1316.uma_android_automation.components.DialogInterface
+import com.steve1316.uma_android_automation.components.DialogUtils
+import com.steve1316.uma_android_automation.components.IconTaskClearToast
 import com.steve1316.uma_android_automation.components.MenuBar
+import com.steve1316.uma_android_automation.components.PageHome
+import com.steve1316.uma_android_automation.components.PageInterface
 
 import com.steve1316.uma_android_automation.bot.plugins.ChampionsMeeting
 import com.steve1316.uma_android_automation.bot.plugins.ClubActivity
@@ -38,6 +39,8 @@ sealed class DialogHandlerResult {
     data class Handled(val dialog: DialogInterface) : DialogHandlerResult()
     data class Unhandled(val dialog: DialogInterface) : DialogHandlerResult()
     data object NoDialogDetected : DialogHandlerResult()
+    data object TaskClearToastDetected: DialogHandlerResult()
+    data class Error(val message: String) : DialogHandlerResult()
 }
 
 typealias DialogHandlerCallback = (DialogInterface?) -> DialogHandlerResult
@@ -73,7 +76,7 @@ abstract class Plugin(
      * @return The current page after progressing the state.
      */
     protected open fun progress(bitmap: Bitmap? = null): PageInterface? {
-        val dialogResult: DialogHandlerResult = handleDialogs()
+        var dialogResult: DialogHandlerResult = handleDialogs()
         when (dialogResult) {
             // If it is handled, just return to continue with the loop.
             // Don't want to checkPage here since it would take unnecessary
@@ -84,10 +87,38 @@ abstract class Plugin(
             is DialogHandlerResult.Unhandled -> throw IllegalStateException("Unhandled dialog: ${dialogResult.dialog.name}")
             // If no dialog detected, we can just continue with this function.
             is DialogHandlerResult.NoDialogDetected -> {}
+            // If a toast blocked the dialog and we are here, then we timed out while waiting
+            // for the toast to go away, just continue with the function and hope for the best.
+            // Rather do this than throw an error and completely stop operation.
+            is DialogHandlerResult.TaskClearToastDetected -> {}
+            is DialogHandlerResult.Error -> throw IllegalStateException("Dialog handler produced an error: ${dialogResult.message}")
         }
 
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
         return checkPage(bitmap)
+    }
+
+    /** Wait for any toasts at the top of the page to disappear.
+     *
+     * These toasts can cause dialog handling to fail for tall dialogs.
+     *
+     * @param timeoutMs The max time to wait for dialogs to disappear.
+     *
+     * @return A bitmap screenshot taken as soon as the toast disappears.
+     * This helps us process the screen with no toasts in case another toast
+     * appears immediately after the first one goes away.
+     * If no toast is ever detected, or if we timed out waiting for toasts
+     * to disappear, then NULL is returned instead.
+     */
+    private fun waitForToasts(timeoutMs: Int = 10000): Bitmap? {
+        val startTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            if (!IconTaskClearToast.check(game.imageUtils)) {
+                return game.imageUtils.getSourceBitmap()
+            }
+        }
+
+        return null
     }
 
     /** Detects and handles any dialog popups.
@@ -100,16 +131,32 @@ abstract class Plugin(
      *  - Handled: If the dialog was fully handled.
      *  - Unhandled: If a dialog was detected but not handled by this function.
      *  - NoDialogDetected: If no dialog was detected.
+     *  - TaskClearToastDetected: If a toast is detected at the top of the screen,
+     *      which could blocked the dialog's title bar.
      *  - Error: If an error occurred during dialog detection/handling.
      */
     protected open fun handleDialogs(dialog: DialogInterface? = null): DialogHandlerResult {
         if (commonDialogHandler != null) {
             return commonDialogHandler(dialog)
         }
-        val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
+
+        var dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
         if (dialog == null) {
-            return DialogHandlerResult.NoDialogDetected
+            // Toasts will block the top of tall dialogs. This may be why we failed
+            // to detect any dialogs. Wait for any to disappear before trying again.
+            // If this returns a bitmap, then we want to use it for dialog detection
+            // in case another toast tries to pop up afterward.
+            val noToastBitmap: Bitmap? = waitForToasts()
+            // Now that toasts are gone, check again for a dialog.
+            dialog = DialogUtils.getDialog(game.imageUtils, bitmap = noToastBitmap)
+
+            // If the dialog is still null, then just return this result.
+            if (dialog == null) {
+                return DialogHandlerResult.NoDialogDetected
+            }
         }
+
+        // Return the dialog as unhandled so that subclasses can handle it.
         return DialogHandlerResult.Unhandled(dialog)
     }
 

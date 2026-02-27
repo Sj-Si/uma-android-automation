@@ -171,3 +171,8 @@ object IconChampionsMeetingRewardChest : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]IconChampionsMeetingRewardChest"
     override val template = Template("components/icon/champions_meeting_reward_chest", region = Region.middle)
 }
+
+object IconTaskClearToast : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]IconTaskClearToast"
+    override val template = Template("components/icon/task_clear_toast", region = Region.topHalf)
+}
