@@ -205,7 +205,7 @@ object PageExtraRacesRunnerSelection : PageInterface {
 }
 
 // Appears before race prep screen.
-object PageDailyRacesPreRacePrep : PageInterface {
+object PageExtraRacesPreRacePrep : PageInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]PageDailyRacesPreRacePrep"
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
     override val identifyingComponents: List<ComponentInterface> = listOf(
@@ -219,7 +219,7 @@ object PageDailyRacesPreRacePrep : PageInterface {
     override val nextButton: ComponentInterface? = ButtonNext
 }
 
-object PageDailyRacesRacePrep : PageInterface {
+object PageExtraRacesRacePrep : PageInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]PageDailyRacesRacePrep"
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
     override val identifyingComponents: List<ComponentInterface> = listOf(
@@ -313,7 +313,7 @@ object PageLegendRaceHome : PageInterface {
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
     override val identifyingComponents: List<ComponentInterface> = listOf(
         ButtonBack,
-        ButtonLegendRaceSpecialMissions,
+        ButtonSpecialMissions,
     )
 
     override val prevButton: ComponentInterface? = ButtonBack

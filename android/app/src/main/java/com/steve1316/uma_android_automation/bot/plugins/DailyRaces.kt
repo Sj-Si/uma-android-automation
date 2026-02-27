@@ -21,8 +21,8 @@ import com.steve1316.uma_android_automation.components.PageInterface
 import com.steve1316.uma_android_automation.components.PageDailyRacesRaceSelection
 import com.steve1316.uma_android_automation.components.PageDailyRacesDifficultySelection
 import com.steve1316.uma_android_automation.components.PageExtraRacesRunnerSelection
-import com.steve1316.uma_android_automation.components.PageDailyRacesPreRacePrep
-import com.steve1316.uma_android_automation.components.PageDailyRacesRacePrep
+import com.steve1316.uma_android_automation.components.PageExtraRacesPreRacePrep
+import com.steve1316.uma_android_automation.components.PageExtraRacesRacePrep
 import com.steve1316.uma_android_automation.components.PageDailyRacesResultsPlacing
 import com.steve1316.uma_android_automation.components.PageDailyRacesResultsRewards
 import com.steve1316.uma_android_automation.components.ButtonDailyRacesMoonlightSho
@@ -154,8 +154,8 @@ class DailyRaces(
             PageDailyRacesRaceSelection,
             PageDailyRacesDifficultySelection,
             PageExtraRacesRunnerSelection,
-            PageDailyRacesPreRacePrep,
-            PageDailyRacesRacePrep,
+            PageExtraRacesPreRacePrep,
+            PageExtraRacesRacePrep,
             PageDailyRacesResultsPlacing,
             PageDailyRacesResultsRewards,
         ).find { it.check(game.imageUtils, bitmap) }
@@ -176,10 +176,10 @@ class DailyRaces(
             PageExtraRacesRunnerSelection -> {
                 PageExtraRacesRunnerSelection.next(game.imageUtils)
             }
-            PageDailyRacesPreRacePrep -> {
-                PageDailyRacesPreRacePrep.next(game.imageUtils)
+            PageExtraRacesPreRacePrep -> {
+                PageExtraRacesPreRacePrep.next(game.imageUtils)
             }
-            PageDailyRacesRacePrep -> {
+            PageExtraRacesRacePrep -> {
                 if (ButtonViewResults.checkDisabled(game.imageUtils) == true) {
                     ButtonRaceManual.click(game.imageUtils)
                 } else {
