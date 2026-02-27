@@ -613,11 +613,6 @@ object ButtonLegendRace : ComponentInterface {
     override val template = Template("components/button/legend_race")
 }
 
-object ButtonLegendRaceSpecialMissions : ComponentInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonLegendRaceSpecialMissions"
-    override val template = Template("components/button/legend_race_special_missions")
-}
-
 object ButtonEventExclusiveMissionsStoryEvent : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonEventExclusiveMissionsStoryEvent"
     override val template = Template("components/button/event_exclusive_missions_story_event")

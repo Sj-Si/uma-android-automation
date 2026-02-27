@@ -9,22 +9,32 @@ import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.plugins.Plugin
+import com.steve1316.uma_android_automation.bot.plugins.PluginFactory
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 
 import com.steve1316.uma_android_automation.components.BaseComponentInterface
-import com.steve1316.uma_android_automation.components.ComponentInterface
-import com.steve1316.uma_android_automation.components.DialogInterface
-import com.steve1316.uma_android_automation.components.PageInterface
-import com.steve1316.uma_android_automation.components.PageLegendRaceHome
-import com.steve1316.uma_android_automation.components.PageExtraRacesRunnerSelection
-import com.steve1316.uma_android_automation.components.ButtonSkip
+import com.steve1316.uma_android_automation.components.ButtonCollectAll
+import com.steve1316.uma_android_automation.components.ButtonEventMissionsTabLimitedTime
+import com.steve1316.uma_android_automation.components.ButtonLegendRace
 import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonRaceEvents
-import com.steve1316.uma_android_automation.components.ButtonLegendRace
+import com.steve1316.uma_android_automation.components.ButtonRaceExclamation
+import com.steve1316.uma_android_automation.components.ButtonRaceManual
+import com.steve1316.uma_android_automation.components.ButtonSkip
+import com.steve1316.uma_android_automation.components.ButtonSpecialMissions
+import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabDaily
+import com.steve1316.uma_android_automation.components.ButtonViewResults
+import com.steve1316.uma_android_automation.components.ComponentInterface
+import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.IconExtraRacePill
 import com.steve1316.uma_android_automation.components.IconPleasingParfait
 import com.steve1316.uma_android_automation.components.MenuBar
+import com.steve1316.uma_android_automation.components.PageExtraRacesPreRacePrep
+import com.steve1316.uma_android_automation.components.PageExtraRacesRacePrep
+import com.steve1316.uma_android_automation.components.PageExtraRacesRunnerSelection
+import com.steve1316.uma_android_automation.components.PageInterface
+import com.steve1316.uma_android_automation.components.PageLegendRaceHome
 
 class LegendRace(
     game: Game,
@@ -35,37 +45,34 @@ class LegendRace(
 
     private val bShouldUseParfait: Boolean = SettingsHelper.getBooleanSetting("dailyTasks", "enableLegendRaceUseParfait")
 
+    private val specialMissionsTabs: List<ComponentInterface> = listOf(
+        ButtonSpecialMissionsTabDaily,
+        ButtonEventMissionsTabLimitedTime,
+    )
+
+    private var bHasHandledSpecialMissions: Boolean = false
+
     private fun selectRace(bitmap: Bitmap? = null): Boolean {
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
 
         val pillBitmap: Bitmap = IconExtraRacePill.template.getBitmap(game.imageUtils)!!
 
         // Always select the hardest available race.
-        val locs: ArrayList<Point> = IconExtraRacePill.findAll(game.imageUtils, sourceBitmap = bitmap)
+        val locs: List<Point> = IconExtraRacePill.findAll(
+            game.imageUtils,
+            sourceBitmap = bitmap,
+            ignoreDisabled = true,
+        ).toList().sortedBy { it.y }
+
         if (locs.isEmpty()) {
-            return false
-        }
-
-        // Check color at the top left of the pill bitmap region. If it is greyed
-        // out, then the race isn't available.
-        val enabledLocs: List<Point> = locs
-            .mapNotNull {
-                val x: Int = (it.x - (pillBitmap.width / 2)).toInt()
-                val y: Int = (it.y - (pillBitmap.height / 2)).toInt()
-                val bIsEnabled: Boolean = game.imageUtils.checkColorAtCoordinates(x, y, intArrayOf(162, 159, 164))
-                if (bIsEnabled) it else null
-            }
-            .sortedBy { it.y }
-
-        // If there are no available races, then we've completed them all.
-        if (enabledLocs.isEmpty()) {
             bIsComplete = true
+            MessageLog.w(TAG, "[LEGEND_RACE] No more races available today. Finishing up.")
             return true
         }
 
-        val loc: Point = enabledLocs.first()
+        val loc: Point = locs.first()
         game.tap(loc.x, loc.y, IconExtraRacePill.template.path)
-        game.wait(0.5)
+        game.waitForLoading()
 
         return true
     }
@@ -77,6 +84,16 @@ class LegendRace(
         }
 
         when (result.dialog.name) {
+            "daily_sale" -> {
+                val dailySale: Plugin? = PluginFactory.create("DailySale", game, menuBar, commonDialogHandler)
+                if (dailySale == null) {
+                    result.dialog.close(game.imageUtils)
+                } else {
+                    result.dialog.ok(game.imageUtils)
+                    game.wait(0.5)
+                    dailySale.start()
+                }
+            }
             "items_selected" -> {
                 if (bShouldUseParfait) {
                     IconPleasingParfait.click(game.imageUtils)
@@ -84,6 +101,12 @@ class LegendRace(
                 result.dialog.ok(game.imageUtils)
             }
             "race_details" -> result.dialog.ok(game.imageUtils)
+            "special_missions" -> {
+                handleSpecialMissionsTabs()
+                result.dialog.close(game.imageUtils)
+            }
+            "rewards_collected" -> result.dialog.close(game.imageUtils)
+            "trophy_won" -> result.dialog.close(game.imageUtils)
             else -> return DialogHandlerResult.Unhandled(result.dialog)
         }
         game.wait(0.5, skipWaitingForLoading = true)
@@ -96,7 +119,25 @@ class LegendRace(
         return listOf<PageInterface>(
             PageLegendRaceHome,
             PageExtraRacesRunnerSelection,
+            PageExtraRacesPreRacePrep,
+            PageExtraRacesRacePrep,
         ).find { it.check(game.imageUtils, bitmap) }
+    }
+
+    private fun handleTab(tab: ComponentInterface) {
+        tab.click(game.imageUtils)
+        game.wait(0.1, skipWaitingForLoading = true)
+        if (ButtonCollectAll.checkDisabled(game.imageUtils) == true) {
+            return
+        }
+        ButtonCollectAll.click(game.imageUtils)
+        game.wait(0.5)
+        handleDialogs()
+    }
+
+    private fun handleSpecialMissionsTabs() {
+        specialMissionsTabs.forEach { handleTab(it) }
+        bHasHandledSpecialMissions = true
     }
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
@@ -106,14 +147,31 @@ class LegendRace(
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
         when (currentPage) {
             PageLegendRaceHome -> {
+                if (ButtonSpecialMissions.click(game.imageUtils)) {
+                    game.wait(0.5)
+                    handleDialogsUntilNoneRemain()
+                }
+
                 selectRace()
             }
             PageExtraRacesRunnerSelection -> {
                 PageExtraRacesRunnerSelection.next(game.imageUtils)
             }
+            PageExtraRacesPreRacePrep -> {
+                PageExtraRacesPreRacePrep.next(game.imageUtils)
+            }
+            PageExtraRacesRacePrep -> {
+                if (ButtonViewResults.checkDisabled(game.imageUtils) == true) {
+                    ButtonRaceManual.click(game.imageUtils)
+                } else {
+                    ButtonViewResults.click(game.imageUtils)
+                }
+            }
             else -> {
-                if (!ButtonSkip.click(game.imageUtils) &&
-                    !ButtonNext.click(game.imageUtils)
+                // Catch-all for various intermediate screens.
+                if (!ButtonSkip.click(game.imageUtils, sourceBitmap = bitmap) &&
+                    !ButtonNext.click(game.imageUtils, sourceBitmap = bitmap) &&
+                    !ButtonRaceExclamation.click(game.imageUtils, sourceBitmap = bitmap)
                 ) {
                     game.tap(350.0, 750.0, "ok", taps = 1)
                 }
