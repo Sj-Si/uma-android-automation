@@ -169,7 +169,7 @@ abstract class Plugin(
      */
     protected fun handleDialogsUntilNoneRemain(timeoutMs: Int = 10000): Boolean {
         var bWasDialogHandled: Boolean = false
-        var dialogResult: DialogHandlerResult = handleDialogs()
+        var dialogResult: DialogHandlerResult = DialogHandlerResult.NoDialogDetected
         // Keep handling dialogs until there are none left.
         val startTime = System.currentTimeMillis()
         while (System.currentTimeMillis() - startTime < timeoutMs) {
