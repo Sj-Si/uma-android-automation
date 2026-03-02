@@ -379,6 +379,7 @@ object DialogObjects {
         DialogRequestFulfilled,             // Transfer Requests
         DialogRest,                         // Career
         DialogRestAndRecreation,            // Career
+        DialogRetryRace,                    // Extra Races
         DialogRewardsCollected,             // Main Screen, Special Events
         DialogRunners,                      // Career -> Race screens
         DialogRunnerHistory,                // Champions Meeting
@@ -1461,6 +1462,19 @@ object DialogRestAndRecreation : DialogInterface {
     override val buttons: List<BaseComponentInterface> = listOf(
         ButtonCancel,
         ButtonOk,
+    )
+}
+
+object DialogRetryRace : DialogInterface {
+    // This one doesn't have a checkbox to not ask again for some reason.
+    override val TAG: String = "[${MainActivity.loggerTag}]DialogRetryRace"
+    override val name: String = "retry_race"
+    override val title: String = "Retry Race"
+    override val closeButton = null
+    override val okButton: BaseComponentInterface = ButtonResume
+    override val buttons: List<BaseComponentInterface> = listOf(
+        ButtonCancel,
+        ButtonResume,
     )
 }
 
