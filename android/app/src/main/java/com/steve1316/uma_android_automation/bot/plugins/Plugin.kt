@@ -419,7 +419,7 @@ abstract class Plugin(
         return menuBar.goToHome()
     }
 
-    open fun start(timeoutMs: Int = 60000 * 5): Boolean {
+    open fun start(timeoutMs: Int = 60000 * 10): Boolean {
         MessageLog.i(TAG, "[$name] Starting...")
 
         if (!goToStart()) {
