@@ -162,6 +162,8 @@ class LegendRace(
             }
             PageExtraRacesPreRacePrep -> {
                 PageExtraRacesPreRacePrep.next(game.imageUtils)
+                // Add a delay for the dialog to pop up.
+                game.wait(0.5, skipWaitingForLoading = true)
             }
             PageExtraRacesRacePrep -> {
                 if (ButtonViewResults.checkDisabled(game.imageUtils) == true) {
