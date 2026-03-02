@@ -53,6 +53,8 @@ class DailySale(
 
     private var bSaleExpired: Boolean = false
 
+    private val purchasedItems: MutableList<SaleItem> = mutableListOf()
+
     override fun handleDialogs(dialog: DialogInterface?): DialogHandlerResult {
         val result: DialogHandlerResult = super.handleDialogs(dialog)
         if (result !is DialogHandlerResult.Unhandled) {
@@ -184,7 +186,10 @@ class DailySale(
                 dialogResult is DialogHandlerResult.Handled &&
                 dialogResult.dialog.name == "exchange_complete"
             ) {
-                return false
+                purchasedItems.add(match)
+                // If we have purchased all requested items, then we return true
+                // to end the list processing immediately.
+                return purchasedItems.sorted() == saleItemsToBuy.sorted()
             }
         }
         return false
