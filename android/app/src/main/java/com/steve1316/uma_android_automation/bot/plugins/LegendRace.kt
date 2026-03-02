@@ -125,8 +125,9 @@ class LegendRace(
     }
 
     private fun handleTab(tab: ComponentInterface) {
+        game.wait(0.25, skipWaitingForLoading = true)
         tab.click(game.imageUtils)
-        game.wait(0.1, skipWaitingForLoading = true)
+        game.wait(0.25, skipWaitingForLoading = true)
         if (ButtonCollectAll.checkDisabled(game.imageUtils) == true) {
             return
         }
@@ -156,6 +157,8 @@ class LegendRace(
             }
             PageExtraRacesRunnerSelection -> {
                 PageExtraRacesRunnerSelection.next(game.imageUtils)
+                // Add a delay for the dialog to pop up.
+                game.wait(0.5, skipWaitingForLoading = true)
             }
             PageExtraRacesPreRacePrep -> {
                 PageExtraRacesPreRacePrep.next(game.imageUtils)

@@ -115,8 +115,9 @@ class SpecialMissions(
     }
 
     private fun handleTab(tab: ComponentInterface) {
+        game.wait(0.25, skipWaitingForLoading = true)
         tab.click(game.imageUtils)
-        game.wait(0.1, skipWaitingForLoading = true)
+        game.wait(0.25, skipWaitingForLoading = true)
         if (ButtonCollectAll.checkDisabled(game.imageUtils) == true) {
             return
         }
