@@ -40,7 +40,6 @@ class Presents(
                 }
             }
             "rewards_collected" -> {
-                bIsComplete = true
                 result.dialog.close(game.imageUtils)
             }
             else -> return DialogHandlerResult.Unhandled(result.dialog)
