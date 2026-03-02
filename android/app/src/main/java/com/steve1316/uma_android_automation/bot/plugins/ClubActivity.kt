@@ -215,7 +215,7 @@ class ClubActivity(
             else -> {}
         }
 
-        return checkPage()
+        return null
     }
 
     override fun goToStart(): Boolean {

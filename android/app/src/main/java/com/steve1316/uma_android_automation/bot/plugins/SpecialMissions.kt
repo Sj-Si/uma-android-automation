@@ -175,7 +175,7 @@ class SpecialMissions(
             ButtonBack.click(game.imageUtils)
         }
 
-        return checkPage()
+        return null
     }
 
      override fun goToStart(): Boolean {

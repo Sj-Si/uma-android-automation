@@ -224,7 +224,7 @@ class ChampionsMeeting(
             else -> handleDialogs()
         }
 
-        return checkPage()
+        return null
     }
 
     override fun goToStart(): Boolean {

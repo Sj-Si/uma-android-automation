@@ -209,7 +209,7 @@ class DailyRaces(
             }
         }
 
-        return checkPage()
+        return null
     }
 
     override fun goToStart(): Boolean {

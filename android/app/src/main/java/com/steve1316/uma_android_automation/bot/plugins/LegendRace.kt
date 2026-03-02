@@ -178,7 +178,7 @@ class LegendRace(
             }
         }
 
-        return checkPage()
+        return null
     }
 
     override fun goToStart(): Boolean {

@@ -144,7 +144,7 @@ class TeamTrials(
                 game.wait(1.0, skipWaitingForLoading = true)
                 if (!handleSelectOpponent(bitmap)) {
                     MessageLog.e(TAG, "progress: Failed to select opponent.")
-                    return checkPage()
+                    return null
                 }
                 waitForPage(PageTeamTrialsPreRace)
             }
@@ -201,7 +201,7 @@ class TeamTrials(
             }
         }
 
-        return checkPage()
+        return null
     }
 
     override fun goToHome(): Boolean {
