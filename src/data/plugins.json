@@ -22,7 +22,7 @@
     {
         "name": "Club Activity",
         "description": "Automatically requests donations and donates to club members.",
-        "enabled": false
+        "enabled": true
     },
     {
         "name": "Special Missions",
@@ -36,71 +36,6 @@
     },
     {
         "name": "Daily Sale",
-        "description": "Automatically purchases items from daily sales when they appear.",
-        "enabled": true
-    },
-    {
-        "name": "1",
-        "description": "Automatically purchases items from daily sales when they appear.",
-        "enabled": true
-    },
-    {
-        "name": "2",
-        "description": "Automatically purchases items from daily sales when they appear.",
-        "enabled": true
-    },
-    {
-        "name": "3",
-        "description": "Automatically purchases items from daily sales when they appear.",
-        "enabled": true
-    },
-    {
-        "name": "4",
-        "description": "Automatically purchases items from daily sales when they appear.",
-        "enabled": true
-    },
-    {
-        "name": "5",
-        "description": "Automatically purchases items from daily sales when they appear.",
-        "enabled": true
-    },
-    {
-        "name": "6",
-        "description": "Automatically purchases items from daily sales when they appear.",
-        "enabled": true
-    },
-    {
-        "name": "7",
-        "description": "Automatically purchases items from daily sales when they appear.",
-        "enabled": true
-    },
-    {
-        "name": "8",
-        "description": "Automatically purchases items from daily sales when they appear.",
-        "enabled": true
-    },
-    {
-        "name": "9",
-        "description": "Automatically purchases items from daily sales when they appear.",
-        "enabled": true
-    },
-    {
-        "name": "10",
-        "description": "Automatically purchases items from daily sales when they appear.",
-        "enabled": true
-    },
-    {
-        "name": "11",
-        "description": "Automatically purchases items from daily sales when they appear.",
-        "enabled": true
-    },
-    {
-        "name": "12",
-        "description": "Automatically purchases items from daily sales when they appear.",
-        "enabled": true
-    },
-    {
-        "name": "13",
         "description": "Automatically purchases items from daily sales when they appear.",
         "enabled": true
     }
