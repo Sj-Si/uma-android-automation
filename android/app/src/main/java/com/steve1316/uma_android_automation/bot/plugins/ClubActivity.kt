@@ -12,29 +12,30 @@ import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 
 import com.steve1316.uma_android_automation.components.BaseComponentInterface
-import com.steve1316.uma_android_automation.components.ComponentInterface
-import com.steve1316.uma_android_automation.components.DialogInterface
-import com.steve1316.uma_android_automation.components.PageInterface
-import com.steve1316.uma_android_automation.components.PageClubHome
-import com.steve1316.uma_android_automation.components.PageHome
+import com.steve1316.uma_android_automation.components.ButtonClose
 import com.steve1316.uma_android_automation.components.ButtonClub
 import com.steve1316.uma_android_automation.components.ButtonClubItemRequest
 import com.steve1316.uma_android_automation.components.ButtonClubViewRequests
 import com.steve1316.uma_android_automation.components.ButtonConfirm
-import com.steve1316.uma_android_automation.components.ButtonHome
-import com.steve1316.uma_android_automation.components.ButtonShoesSprint
-import com.steve1316.uma_android_automation.components.ButtonShoesMile
-import com.steve1316.uma_android_automation.components.ButtonShoesMedium
-import com.steve1316.uma_android_automation.components.ButtonShoesLong
-import com.steve1316.uma_android_automation.components.ButtonShoesDirt
 import com.steve1316.uma_android_automation.components.ButtonDonateToAll0
-import com.steve1316.uma_android_automation.components.LabelItemRequestExpired
+import com.steve1316.uma_android_automation.components.ButtonHome
+import com.steve1316.uma_android_automation.components.ButtonShoesDirt
+import com.steve1316.uma_android_automation.components.ButtonShoesLong
+import com.steve1316.uma_android_automation.components.ButtonShoesMedium
+import com.steve1316.uma_android_automation.components.ButtonShoesMile
+import com.steve1316.uma_android_automation.components.ButtonShoesSprint
+import com.steve1316.uma_android_automation.components.ComponentInterface
+import com.steve1316.uma_android_automation.components.DialogInterface
+import com.steve1316.uma_android_automation.components.LabelCurrentItemRequestStatus
+import com.steve1316.uma_android_automation.components.LabelItemRequestConfirm
 import com.steve1316.uma_android_automation.components.LabelItemRequestCooldown
+import com.steve1316.uma_android_automation.components.LabelItemRequestExpired
 import com.steve1316.uma_android_automation.components.LabelItemRequestMaxDonations
 import com.steve1316.uma_android_automation.components.LabelItemRequestSelectItem
-import com.steve1316.uma_android_automation.components.LabelItemRequestConfirm
-import com.steve1316.uma_android_automation.components.LabelCurrentItemRequestStatus
 import com.steve1316.uma_android_automation.components.MenuBar
+import com.steve1316.uma_android_automation.components.PageClubHome
+import com.steve1316.uma_android_automation.components.PageHome
+import com.steve1316.uma_android_automation.components.PageInterface
 
 enum class ShoeType {
     SPRINT,
@@ -247,6 +248,19 @@ class ClubActivity(
             return false
         }
 
-        return waitForPage(PageClubHome) != null
+        // Upon entering the club screen, we may get a Club Ranking Results overlay
+        // at the beginning of the month. Need to make sure we close this overlay.
+        if (waitForPage(PageClubHome) == null) {
+            MessageLog.d(TAG, "[$name] Timed out waiting for PageClubHome")
+            if (ButtonClose.click(game.imageUtils)) {
+                MessageLog.d(TAG, "[$name] Closed Club Ranking Results overlay.")
+                return waitForPage(PageClubHome) != null
+            } else {
+                MessageLog.e(TAG, "[$name] Could not find Club Ranking Results overlay to close. Aborting...")
+                return false
+            }
+        } else {
+            return true
+        }
     }
 }
