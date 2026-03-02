@@ -1,13 +1,16 @@
 import { NavigationContainer } from "@react-navigation/native"
 import { createDrawerNavigator } from "@react-navigation/drawer"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
+import { useCallback } from "react"
 import { PortalHost } from "@rn-primitives/portal"
 import { StatusBar } from "expo-status-bar"
-import { SafeAreaView } from "react-native-safe-area-context"
+import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context"
 import { BotStateProvider } from "./context/BotStateContext"
 import { MessageLogProvider } from "./context/MessageLogContext"
 import { SettingsProvider } from "./context/SettingsContext"
 import { ThemeProvider, useTheme } from "./context/ThemeContext"
+import { SearchProvider } from "./context/SearchRegistryContext"
+import { ProfileProvider } from "./context/ProfileContext"
 import { useBootstrap } from "./hooks/useBootstrap"
 import Home from "./pages/Home"
 import Settings from "./pages/Settings"
@@ -22,6 +25,7 @@ import DailyTasksSettings from "./pages/DailyTasksSettings"
 import EventLogVisualizer from "./pages/EventLogVisualizer"
 import ImportSettingsPreview from "./pages/ImportSettingsPreview"
 import DebugSettings from "./pages/DebugSettings"
+import DiscordSettings from "./pages/DiscordSettings"
 import DrawerContent from "./components/DrawerContent"
 import { NAV_THEME } from "./lib/theme"
 
@@ -36,7 +40,7 @@ const Stack = createNativeStackNavigator()
  */
 function SettingsStack() {
     return (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true }}>
             <Stack.Screen name="SettingsMain" component={Settings} />
             <Stack.Screen name="TrainingSettings" component={TrainingSettings} />
             <Stack.Screen name="TrainingEventSettings" component={TrainingEventSettings} />
@@ -45,22 +49,15 @@ function SettingsStack() {
             <Stack.Screen name="RacingPlanSettings" component={RacingPlanSettings} />
             <Stack.Screen name="SkillSettings" component={SkillSettings} />
             {Object.entries(skillPlanSettingsPages).map(([key, config]) => (
-                <Stack.Screen name={config.name}>
-                    {(props) => (
-                        <SkillPlanSettings
-                            {...props}
-                            planKey={config.planKey}
-                            name={config.name}
-                            title={config.title}
-                            description={config.description}
-                        />
-                    )}
+                <Stack.Screen key={key} name={config.name}>
+                    {(props) => <SkillPlanSettings {...props} planKey={config.planKey} name={config.name} title={config.title} description={config.description} />}
                 </Stack.Screen>
             ))}
             <Stack.Screen name="DailyTasksSettings" component={DailyTasksSettings} />
             <Stack.Screen name="EventLogVisualizer" component={EventLogVisualizer} />
             <Stack.Screen name="ImportSettingsPreview" component={ImportSettingsPreview} />
             <Stack.Screen name="DebugSettings" component={DebugSettings} />
+            <Stack.Screen name="DiscordSettings" component={DiscordSettings} />
         </Stack.Navigator>
     )
 }
@@ -68,9 +65,12 @@ function SettingsStack() {
 function MainDrawer() {
     const { colors } = useTheme()
 
+    // Stabilize the drawerContent callback to prevent unnecessary remounts.
+    const renderDrawerContent = useCallback((props: any) => <DrawerContent {...props} />, [])
+
     return (
         <Drawer.Navigator
-            drawerContent={(props) => <DrawerContent {...props} />}
+            drawerContent={renderDrawerContent}
             screenOptions={{
                 headerShown: false,
                 drawerType: "front",
@@ -108,21 +108,27 @@ function AppContent() {
     const { theme, colors } = useTheme()
 
     return (
-        <BotStateProvider>
-            <MessageLogProvider>
-                <SettingsProvider>
-                    <AppWithBootstrap theme={theme} colors={colors} />
-                </SettingsProvider>
-            </MessageLogProvider>
-        </BotStateProvider>
+        <SearchProvider>
+            <BotStateProvider>
+                <ProfileProvider>
+                    <MessageLogProvider>
+                        <SettingsProvider>
+                            <AppWithBootstrap theme={theme} colors={colors} />
+                        </SettingsProvider>
+                    </MessageLogProvider>
+                </ProfileProvider>
+            </BotStateProvider>
+        </SearchProvider>
     )
 }
 
 function App() {
     return (
-        <ThemeProvider>
-            <AppContent />
-        </ThemeProvider>
+        <SafeAreaProvider>
+            <ThemeProvider>
+                <AppContent />
+            </ThemeProvider>
+        </SafeAreaProvider>
     )
 }
 

@@ -310,6 +310,7 @@ enum class SkillCommunityTier {
  */
 data class SkillData(
     val id: Int,
+    val geneId: Int,
     val name: String,
     val description: String,
     val iconId: Int,
@@ -365,6 +366,7 @@ data class SkillData(
 
     constructor(
         id: Int,
+        geneId: Int,
         name: String,
         description: String,
         iconId: Int,
@@ -381,6 +383,7 @@ data class SkillData(
         downgrade: Int?,
     ) : this(
         id,
+        geneId,
         name,
         description,
         iconId,

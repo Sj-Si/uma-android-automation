@@ -31,6 +31,9 @@ export const THEME = {
         warningBg: "hsl(48, 100%, 90%)",
         warningBorder: "hsl(39, 100%, 50%)",
         warningText: "hsl(45, 94.1%, 26.9%)",
+        infoBg: "hsl(210, 100%, 96.1%)",
+        infoBorder: "hsl(210, 100%, 40%)",
+        infoText: "hsl(210, 100%, 20%)",
     },
     dark: {
         background: "hsl(0, 0%, 3.9%)",
@@ -62,6 +65,9 @@ export const THEME = {
         warningBg: "hsl(60, 100%, 8.4%)",
         warningBorder: "hsl(48, 94.5%, 42.7%)",
         warningText: "hsl(54, 100%, 88%)",
+        infoBg: "hsl(210, 50%, 10%)",
+        infoBorder: "hsl(210, 100%, 40%)",
+        infoText: "hsl(210, 100%, 90%)",
     },
 }
 

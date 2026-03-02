@@ -1,5 +1,6 @@
 import scenarios from "../../data/scenarios.json"
-import { useMemo,  useContext, useEffect, useState } from "react"
+import { useMemo, useContext, useEffect, useState, useRef } from "react"
+import { SearchPageProvider } from "../../context/SearchPageContext"
 import { BotStateContext } from "../../context/BotStateContext"
 import { ScrollView, StyleSheet, Text, View } from "react-native"
 import { Snackbar } from "react-native-paper"
@@ -18,9 +19,17 @@ import WarningContainer from "../../components/WarningContainer"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../components/ui/alert-dialog"
 import { useSettings } from "../../context/SettingsContext"
 import { useSettingsFileManager } from "../../hooks/useSettingsFileManager"
+import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 
+/**
+ * The main Settings page of the application.
+ * Provides scenario selection, navigation links to sub-settings pages,
+ * misc bot configuration options, and settings management (import/export/reset).
+ */
 const Settings = () => {
+    usePerformanceLogging("Settings")
     const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false)
+    const scrollViewRef = useRef<ScrollView>(null)
 
     const bsc = useContext(BotStateContext)
     const { colors } = useTheme()
@@ -29,15 +38,19 @@ const Settings = () => {
     const { openDataDirectory, resetSettings } = useSettings()
     const { handleImportSettings, handleExportSettings, showImportDialog, setShowImportDialog, showResetDialog, setShowResetDialog } = useSettingsFileManager()
 
-    const styles = useMemo(() => StyleSheet.create({
-        root: {
-            flex: 1,
-            flexDirection: "column",
-            justifyContent: "center",
-            margin: 10,
-            backgroundColor: colors.background,
-        },
-    }), [colors])
+    const styles = useMemo(
+        () =>
+            StyleSheet.create({
+                root: {
+                    flex: 1,
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    margin: 10,
+                    backgroundColor: colors.background,
+                },
+            }),
+        [colors]
+    )
 
     //////////////////////////////////////////////////
     //////////////////////////////////////////////////
@@ -49,6 +62,9 @@ const Settings = () => {
         setTimeout(() => setSnackbarOpen(false), 2500)
     }, [bsc.readyStatus])
 
+    /**
+     * Reset the settings to their default values.
+     */
     const handleResetSettings = async () => {
         const success = await resetSettings()
         if (success) {
@@ -65,6 +81,9 @@ const Settings = () => {
         return (
             <View>
                 <CustomSelect
+                    searchId="settings-scenario-picker"
+                    label="Scenario"
+                    description="Choose a scenario that will dictate the bot's logic and behavior."
                     placeholder="Select a Scenario"
                     width="100%"
                     groupLabel="Scenarios"
@@ -155,6 +174,16 @@ const Settings = () => {
         )
     }
 
+    const renderDiscordLink = () => {
+        return (
+            <NavigationLink
+                title="Go to Discord Settings"
+                description="Configure Discord bot notifications to receive DM updates when the bot stops."
+                onPress={() => navigation.navigate("DiscordSettings" as never)}
+            />
+        )
+    }
+
     const renderMiscSettings = () => {
         return (
             <View style={{ marginTop: 16 }}>
@@ -163,6 +192,7 @@ const Settings = () => {
                 <CustomTitle title="Misc Settings" description="General settings for the bot that don't fit into the other categories." />
 
                 <CustomCheckbox
+                    searchId="settings-popup-check"
                     checked={bsc.settings.general.enablePopupCheck}
                     onCheckedChange={(checked) => {
                         bsc.setSettings({
@@ -176,6 +206,7 @@ const Settings = () => {
                 />
 
                 <CustomCheckbox
+                    searchId="settings-stop-before-finals"
                     checked={bsc.settings.general.enableStopBeforeFinals}
                     onCheckedChange={(checked) => {
                         bsc.setSettings({
@@ -189,6 +220,7 @@ const Settings = () => {
                 />
 
                 <CustomCheckbox
+                    searchId="settings-crane-game-attempt"
                     checked={bsc.settings.general.enableCraneGameAttempt}
                     onCheckedChange={(checked) => {
                         bsc.setSettings({
@@ -202,6 +234,7 @@ const Settings = () => {
                 />
 
                 <CustomCheckbox
+                    searchId="settings-enable-settings-display"
                     checked={bsc.settings.misc.enableSettingsDisplay}
                     onCheckedChange={(checked) => {
                         bsc.setSettings({
@@ -215,6 +248,7 @@ const Settings = () => {
                 />
 
                 <CustomCheckbox
+                    searchId="settings-enable-message-id-display"
                     checked={bsc.settings.misc.enableMessageIdDisplay}
                     onCheckedChange={(checked) => {
                         bsc.setSettings({
@@ -228,6 +262,7 @@ const Settings = () => {
                 />
 
                 <CustomSlider
+                    searchId="settings-wait-delay"
                     value={bsc.settings.general.waitDelay}
                     placeholder={bsc.defaultSettings.general.waitDelay}
                     onValueChange={(value) => {
@@ -247,6 +282,7 @@ const Settings = () => {
                 />
 
                 <CustomSlider
+                    searchId="settings-overlay-button-size"
                     value={bsc.settings.misc.overlayButtonSizeDP}
                     placeholder={bsc.defaultSettings.misc.overlayButtonSizeDP}
                     onValueChange={(value) => {
@@ -267,7 +303,7 @@ const Settings = () => {
 
                 <Separator style={{ marginVertical: 16 }} />
 
-                <CustomTitle title="Settings Management" description="Import and export settings from JSON file or access the app's data directory." />
+                <CustomTitle searchId="settings-management-title" title="Settings Management" description="Import and export settings from JSON file or access the app's data directory." />
 
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                     <CustomButton onPress={handleImportSettings} variant="default" style={{ width: 150 }}>
@@ -308,20 +344,23 @@ const Settings = () => {
         <View style={styles.root}>
             <PageHeader title="Settings" rightComponent={<ThemeToggle />} />
 
-            <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
-                <View className="m-1">
-                    {renderCampaignPicker()}
-                    {renderTrainingLink()}
-                    {renderTrainingEventLink()}
-                    {renderOCRLink()}
-                    {renderRacingLink()}
-                    {renderSkillsLink()}
-                    {renderDailyTasksLink()}
-                    {renderEventLogVisualizerLink()}
-                    {renderDebugLink()}
-                    {renderMiscSettings()}
-                </View>
-            </ScrollView>
+            <SearchPageProvider page="SettingsMain" scrollViewRef={scrollViewRef}>
+                <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+                    <View className="m-1">
+                        {renderCampaignPicker()}
+                        {renderTrainingLink()}
+                        {renderTrainingEventLink()}
+                        {renderOCRLink()}
+                        {renderRacingLink()}
+                        {renderSkillsLink()}
+                        {renderEventLogVisualizerLink()}
+                        {renderDailyTasksLink()}
+                        {renderDiscordLink()}
+                        {renderDebugLink()}
+                        {renderMiscSettings()}
+                    </View>
+                </ScrollView>
+            </SearchPageProvider>
 
             <Snackbar
                 visible={snackbarOpen}

@@ -16,11 +16,18 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../../components/ui/too
 import { Info } from "lucide-react-native"
 import CustomCheckbox from "../../components/CustomCheckbox"
 import PageHeader from "../../components/PageHeader"
+import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import WarningContainer from "../../components/WarningContainer"
 
 type MixedRecord = DayRecord | GapRecord | FileDividerRecord
 
+/**
+ * The Event Log Visualizer page.
+ * Allows users to import bot log files and view a day-by-day timeline of actions, gap notices for missing days, file dividers,
+ * and aggregated year summaries with action counts, stat gains, and elapsed time.
+ */
 const EventLogVisualizer: React.FC = () => {
+    usePerformanceLogging("EventLogVisualizer")
     const { colors, isDark } = useTheme()
     const { openDataDirectory } = useSettings()
 
@@ -30,64 +37,71 @@ const EventLogVisualizer: React.FC = () => {
     const [showTriggers, setShowTriggers] = useState<boolean>(false)
     const [viewMode, setViewMode] = useState<"timeline" | "years">("timeline")
 
-    const styles = useMemo(() => StyleSheet.create({
-        root: {
-            flex: 1,
-            backgroundColor: colors.background,
-        },
-        content: {
-            padding: 12,
-        },
-        empty: {
-            marginTop: 12,
-            marginBottom: 12,
-            color: "white",
-            opacity: 0.8,
-        },
-        totalTimeTitle: {
-            fontSize: 18,
-            fontWeight: "bold",
-        },
-        totalTimeValue: {
-            fontSize: 18,
-            fontWeight: "600",
-        },
-        totalTimeHuman: {
-            fontSize: 14,
-        },
-        toggleContainer: {
-            flexDirection: "row",
-            backgroundColor: colors.card,
-            borderRadius: 8,
-            padding: 4,
-            gap: 4,
-        },
-        toggleButton: {
-            flex: 1,
-            paddingVertical: 8,
-            paddingHorizontal: 12,
-            borderRadius: 6,
-            alignItems: "center",
-            justifyContent: "center",
-        },
-        toggleButtonActive: {
-            backgroundColor: colors.primary,
-        },
-        toggleButtonInactive: {
-            backgroundColor: "transparent",
-        },
-        toggleButtonText: {
-            fontSize: 14,
-            fontWeight: "600",
-        },
-        toggleButtonTextActive: {
-            color: colors.primaryForeground,
-        },
-        toggleButtonTextInactive: {
-            color: colors.foreground,
-        },
-    }), [colors])
+    const styles = useMemo(
+        () =>
+            StyleSheet.create({
+                root: {
+                    flex: 1,
+                    backgroundColor: colors.background,
+                },
+                content: {
+                    padding: 12,
+                },
+                empty: {
+                    marginTop: 12,
+                    marginBottom: 12,
+                    color: "white",
+                    opacity: 0.8,
+                },
+                totalTimeTitle: {
+                    fontSize: 18,
+                    fontWeight: "bold",
+                },
+                totalTimeValue: {
+                    fontSize: 18,
+                    fontWeight: "600",
+                },
+                totalTimeHuman: {
+                    fontSize: 14,
+                },
+                toggleContainer: {
+                    flexDirection: "row",
+                    backgroundColor: colors.card,
+                    borderRadius: 8,
+                    padding: 4,
+                    gap: 4,
+                },
+                toggleButton: {
+                    flex: 1,
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderRadius: 6,
+                    alignItems: "center",
+                    justifyContent: "center",
+                },
+                toggleButtonActive: {
+                    backgroundColor: colors.primary,
+                },
+                toggleButtonInactive: {
+                    backgroundColor: "transparent",
+                },
+                toggleButtonText: {
+                    fontSize: 14,
+                    fontWeight: "600",
+                },
+                toggleButtonTextActive: {
+                    color: colors.primaryForeground,
+                },
+                toggleButtonTextInactive: {
+                    color: colors.foreground,
+                },
+            }),
+        [colors]
+    )
 
+    /**
+     * Handles file selection for log files by reading the selected files and parsing their contents.
+     */
     async function onPickFiles() {
         try {
             const result = await DocumentPicker.getDocumentAsync({ multiple: true, type: "text/plain", copyToCacheDirectory: true })
@@ -120,11 +134,20 @@ const EventLogVisualizer: React.FC = () => {
         }
     }
 
+    /**
+     * Aggregates year summaries from the records.
+     * @returns An array of year summaries.
+     */
     const yearSummariesResult = useMemo(() => {
         const dayRecords = records.filter((r) => r.kind === "day") as DayRecord[]
         return aggregateYearSummaries(dayRecords)
     }, [records])
 
+    /**
+     * Renders a list item based on the type of record.
+     * @param item The record to render.
+     * @returns A React component representing the list item.
+     */
     const renderItem = useCallback(
         ({ item }: { item: MixedRecord }) => {
             if (item.kind === "gap") {
@@ -135,9 +158,15 @@ const EventLogVisualizer: React.FC = () => {
             }
             return <DayRow record={item} showTriggers={showTriggers} />
         },
-        [showTriggers],
+        [showTriggers]
     )
 
+    /**
+     * Extracts a unique key for each list item based on its type and content.
+     * @param item The list item to extract a key from.
+     * @param idx The index of the list item.
+     * @returns A unique key for the list item.
+     */
     const keyExtractor = useCallback((item: MixedRecord, idx: number) => {
         if (item.kind === "day") return `day-${item.dayNumber}`
         if (item.kind === "gap") return `gap-${item.from}-${item.to}-${idx}`

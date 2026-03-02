@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback } from "react"
 import { View, StyleSheet, TouchableOpacity, Text } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import CustomSelect from "../CustomSelect"
-import { useProfileManager, DEFAULT_PROFILE_NAME } from "../../hooks/useProfileManager"
+import { useProfileManager } from "../../hooks/useProfileManager"
+import { DEFAULT_PROFILE_NAME } from "../../context/ProfileContext"
 import ProfileManagerModal from "../ProfileManagerModal"
 import ProfileCreationModal from "../ProfileCreationModal"
 import { Settings } from "../../context/BotStateContext"
@@ -10,21 +11,40 @@ import { databaseManager } from "../../lib/database"
 import { Plus, Settings as SettingsIcon } from "lucide-react-native"
 
 interface ProfileSelectorProps {
+    /** The current training settings, passed to profile creation and comparison. */
     currentTrainingSettings: Settings["training"]
+    /** The current training stat target settings, passed to profile creation and comparison. */
     currentTrainingStatTargetSettings: Settings["trainingStatTarget"]
+    /** Optional callback to apply a profile's settings to the current configuration. */
     onOverwriteSettings?: (settings: Partial<Settings>) => Promise<void>
+    /** Optional callback fired after a profile is deleted. */
     onProfileDeleted?: (deletedProfileName: string) => void
+    /** Optional callback fired when no differences are detected between current and profile settings. */
     onNoChangesDetected?: (profileName: string) => void
+    /** Optional callback fired when an error occurs. */
     onError?: (message: string) => void
 }
 
 /**
  * Get the profile name to select based on available profiles.
+ * @param profiles The list of available profiles.
+ * @returns The default profile name to select.
  */
 const getDefaultSelectedProfile = (profiles: Array<{ name: string }>): string => {
     return profiles.length > 0 ? profiles[0].name : DEFAULT_PROFILE_NAME
 }
 
+/**
+ * A profile selector component with a dropdown, create button, and manage button.
+ * Handles profile switching (loading settings from the selected profile),
+ * profile creation, and profile management via modals.
+ * @param currentTrainingSettings Current training settings passed to modals.
+ * @param currentTrainingStatTargetSettings Current stat target settings passed to modals.
+ * @param onOverwriteSettings Callback to apply profile settings.
+ * @param onProfileDeleted Callback fired after profile deletion.
+ * @param onNoChangesDetected Callback fired when no changes are detected between current and profile settings.
+ * @param onError Optional callback for error handling.
+ */
 const ProfileSelector: React.FC<ProfileSelectorProps> = ({ currentTrainingSettings, currentTrainingStatTargetSettings, onOverwriteSettings, onProfileDeleted, onNoChangesDetected, onError }) => {
     const { colors } = useTheme()
     const { profiles, loadProfiles, switchProfile, currentProfileName } = useProfileManager(onError)
@@ -33,36 +53,39 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({ currentTrainingSettin
     const [selectedProfileName, setSelectedProfileName] = useState<string>(DEFAULT_PROFILE_NAME)
     const [pendingProfileSwitch, setPendingProfileSwitch] = useState<string | null>(null)
 
-    const styles = useMemo(() => StyleSheet.create({
-        container: {
-            marginBottom: 20,
-            padding: 16,
-            backgroundColor: colors.background,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: colors.border,
-        },
-        row: {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-        },
-        selectContainer: {
-            flex: 1,
-        },
-        iconButton: {
-            padding: 8,
-            borderRadius: 8,
-            backgroundColor: colors.secondary,
-            justifyContent: "center",
-            alignItems: "center",
-        },
-        description: {
-            fontSize: 12,
-            color: colors.foreground,
-            opacity: 0.7,
-        },
-    }), [colors])
+    const styles = useMemo(
+        () =>
+            StyleSheet.create({
+                container: {
+                    padding: 16,
+                    backgroundColor: colors.background,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                },
+                row: {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                },
+                selectContainer: {
+                    flex: 1,
+                },
+                iconButton: {
+                    padding: 8,
+                    borderRadius: 8,
+                    backgroundColor: colors.secondary,
+                    justifyContent: "center",
+                    alignItems: "center",
+                },
+                description: {
+                    fontSize: 12,
+                    color: colors.foreground,
+                    opacity: 0.7,
+                },
+            }),
+        [colors]
+    )
 
     // Initialize and sync selected profile with current active profile and available profiles.
     useEffect(() => {
@@ -104,6 +127,10 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({ currentTrainingSettin
         return profiles.length === 0 ? [{ value: DEFAULT_PROFILE_NAME, label: DEFAULT_PROFILE_NAME }] : profiles.map((p) => ({ value: p.name, label: p.name }))
     }, [profiles])
 
+    /**
+     * Handles the change of the selected profile.
+     * @param value The new profile name to select.
+     */
     const handleProfileChange = useCallback(
         async (value: string | undefined) => {
             if (!value) {
@@ -162,9 +189,11 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({ currentTrainingSettin
                 <View style={styles.selectContainer}>
                     <CustomSelect placeholder="Select a profile" options={profileOptions} value={selectedProfileName} onValueChange={handleProfileChange} width="100%" />
                 </View>
+                {/* Create profile button */}
                 <TouchableOpacity style={styles.iconButton} onPress={() => setShowCreateModal(true)}>
                     <Plus size={20} color={colors.foreground} />
                 </TouchableOpacity>
+                {/* Manage profiles button */}
                 <TouchableOpacity style={styles.iconButton} onPress={() => setShowManageModal(true)}>
                     <SettingsIcon size={20} color={colors.foreground} />
                 </TouchableOpacity>
@@ -237,4 +266,4 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({ currentTrainingSettin
     )
 }
 
-export default ProfileSelector
+export default React.memo(ProfileSelector)

@@ -1,15 +1,8 @@
-import { useState, useEffect, useCallback } from "react"
+import { useCallback } from "react"
 import { databaseManager } from "../lib/database"
 import { logWithTimestamp, logErrorWithTimestamp } from "../lib/logger"
-import { Settings, defaultSettings } from "../context/BotStateContext"
-
-export interface Profile {
-    id: number
-    name: string
-    settings: Partial<Settings>
-    created_at: string
-    updated_at: string
-}
+import { Settings } from "../context/BotStateContext"
+import { Profile, DEFAULT_PROFILE_NAME, useProfileContext } from "../context/ProfileContext"
 
 /**
  * Type for settings categories.
@@ -17,23 +10,14 @@ export interface Profile {
 export type SettingsCategory = "training" | "trainingStatTarget"
 
 /**
- * The reserved name for the default profile.
- */
-export const DEFAULT_PROFILE_NAME = "Default Profile"
-
-/**
  * Hook for managing profiles.
- *
- * @param onError - Optional callback to handle errors for UI display (e.g., Snackbar).
+ * @param onError - Optional callback to handle errors for UI display (e.g., `Snackbar`).
  */
 export const useProfileManager = (onError?: (message: string) => void) => {
-    const [profiles, setProfiles] = useState<Profile[]>([])
-    const [currentProfileName, setCurrentProfileName] = useState<string | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
+    const { profiles, currentProfileName, isLoading, loadProfiles, loadCurrentProfileName, setCurrentProfileName } = useProfileContext()
 
     /**
      * Find a profile by ID in the profiles array.
-     *
      * @param id - The ID of the profile to find.
      * @returns The profile with the given ID, or undefined if not found.
      */
@@ -46,7 +30,6 @@ export const useProfileManager = (onError?: (message: string) => void) => {
 
     /**
      * Find a profile by name in the profiles array.
-     *
      * @param name - The name of the profile to find.
      * @returns The profile with the given name, or undefined if not found.
      */
@@ -59,7 +42,6 @@ export const useProfileManager = (onError?: (message: string) => void) => {
 
     /**
      * Check if a profile name already exists (case-insensitive).
-     *
      * @param name - The name of the profile to check.
      * @param excludeId - The ID of the profile to exclude from the check.
      * @returns True if the name already exists, false otherwise.
@@ -73,7 +55,6 @@ export const useProfileManager = (onError?: (message: string) => void) => {
 
     /**
      * Compare current settings with a profile to show differences.
-     *
      * @param profile - The profile to compare with.
      * @param currentSettings - The current settings.
      * @param categoriesToCompare - The categories to compare. If not provided, compares all categories in the profile.
@@ -111,60 +92,7 @@ export const useProfileManager = (onError?: (message: string) => void) => {
     }, [])
 
     /**
-     * Load all profiles from the database.
-     *
-     * @returns A promise that resolves when the profiles are loaded.
-     */
-    const loadProfiles = useCallback(async () => {
-        try {
-            setIsLoading(true)
-
-            const dbProfiles = await databaseManager.getAllProfiles()
-
-            const parsedProfiles: Profile[] = dbProfiles.map((p) => ({
-                id: p.id,
-                name: p.name,
-                settings: JSON.parse(p.settings),
-                created_at: p.created_at,
-                updated_at: p.updated_at,
-            }))
-
-            // Sort profiles alphabetically.
-            parsedProfiles.sort((a, b) => a.name.localeCompare(b.name))
-
-            setProfiles(parsedProfiles)
-            logWithTimestamp(`[ProfileManager] Loaded ${parsedProfiles.length} profiles.`)
-        } catch (error) {
-            logErrorWithTimestamp("[ProfileManager] Failed to load profiles:", error)
-            setProfiles([])
-        } finally {
-            setIsLoading(false)
-        }
-    }, [])
-
-    /**
-     * Load the current active profile name.
-     *
-     * @returns A promise that resolves when the current profile name is loaded.
-     */
-    const loadCurrentProfileName = useCallback(async () => {
-        try {
-            const profileName = await databaseManager.getCurrentProfileName()
-            setCurrentProfileName(profileName)
-        } catch (error) {
-            logErrorWithTimestamp("[ProfileManager] Failed to load current profile name:", error)
-            setCurrentProfileName(null)
-        }
-    }, [])
-
-    useEffect(() => {
-        loadProfiles()
-        loadCurrentProfileName()
-    }, [loadProfiles, loadCurrentProfileName])
-
-    /**
      * Create a new profile from current settings.
-     *
      * @param name - The name of the profile to create.
      * @param settings - The settings to create the profile with.
      * @returns A promise that resolves when the profile is created.
@@ -210,7 +138,6 @@ export const useProfileManager = (onError?: (message: string) => void) => {
 
     /**
      * Update an existing profile.
-     *
      * @param id - The ID of the profile to update.
      * @param updates - The updates to apply to the profile.
      * @returns A promise that resolves when the profile is updated.
@@ -270,7 +197,6 @@ export const useProfileManager = (onError?: (message: string) => void) => {
 
     /**
      * Delete a profile.
-     *
      * @param id - The ID of the profile to delete.
      * @returns A promise that resolves when the profile is deleted.
      */
@@ -309,12 +235,11 @@ export const useProfileManager = (onError?: (message: string) => void) => {
                 onError?.(errorMessage)
             }
         },
-        [profiles, currentProfileName, loadProfiles, findProfileById, onError]
+        [profiles, currentProfileName, loadProfiles, findProfileById, setCurrentProfileName, onError]
     )
 
     /**
      * Switch to a profile and apply its settings immediately.
-     *
      * @param profileName - The name of the profile to switch to.
      * @returns A promise that resolves when the profile is switched to.
      */
@@ -347,12 +272,11 @@ export const useProfileManager = (onError?: (message: string) => void) => {
                 return null
             }
         },
-        [profiles, findProfileByName, onError]
+        [profiles, findProfileByName, setCurrentProfileName, onError]
     )
 
     /**
      * Get the current active profile.
-     *
      * @returns The current active profile, or null if no profile is active.
      */
     const getCurrentProfile = useCallback((): Profile | null => {
@@ -365,7 +289,6 @@ export const useProfileManager = (onError?: (message: string) => void) => {
     /**
      * Overwrite a profile's settings with current settings.
      * This applies the profile's settings to the current settings.
-     *
      * @param profileId - The ID of the profile to overwrite the settings of.
      * @param applySettings - The function to apply the profile's settings to the current settings.
      * @returns A promise that resolves when the profile settings are overwritten.
@@ -398,6 +321,7 @@ export const useProfileManager = (onError?: (message: string) => void) => {
         currentProfileName,
         isLoading,
         loadProfiles,
+        loadCurrentProfileName,
         createProfile,
         updateProfile,
         deleteProfile,

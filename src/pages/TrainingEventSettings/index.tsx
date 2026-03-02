@@ -1,8 +1,9 @@
-import { useContext, useState, useMemo, useCallback } from "react"
+import { useContext, useState, useMemo, useCallback, useRef } from "react"
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, TextInput, Dimensions } from "react-native"
 import { FlashList } from "@shopify/flash-list"
 import { useTheme } from "../../context/ThemeContext"
 import { BotStateContext, defaultSettings } from "../../context/BotStateContext"
+import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomAccordion from "../../components/CustomAccordion"
 import CustomCheckbox from "../../components/CustomCheckbox"
 import CustomSelect from "../../components/CustomSelect"
@@ -10,6 +11,7 @@ import CustomTitle from "../../components/CustomTitle"
 import CustomButton from "../../components/CustomButton"
 import { Search, X } from "lucide-react-native"
 import PageHeader from "../../components/PageHeader"
+import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 
 // Import the data files.
 import charactersData from "../../data/characters.json"
@@ -38,9 +40,17 @@ const excludedEventNames = new Set([
     "A Team at Last",
 ])
 
+/**
+ * The Training Event Settings page.
+ * Allows configuration of special event option overrides (holiday, race results,
+ * training failures, misc), character/support event overrides via a searchable modal,
+ * and energy prioritization preferences.
+ */
 const TrainingEventSettings = () => {
+    usePerformanceLogging("TrainingEventSettings")
     const { colors } = useTheme()
     const bsc = useContext(BotStateContext)
+    const scrollViewRef = useRef<ScrollView>(null)
 
     const { settings, setSettings } = bsc
     // Merge current training event settings with defaults to handle missing properties.
@@ -105,6 +115,11 @@ const TrainingEventSettings = () => {
         { value: "Blue Bloom, like Rice Shower suggested", label: "Blue Bloom (Rice Shower)" },
     ]
 
+    /**
+     * Update a training event setting.
+     * @param key The key of the setting to update.
+     * @param value The value to set the setting to.
+     */
     const updateTrainingEventSetting = (key: keyof typeof settings.trainingEvent, value: any) => {
         setSettings({
             ...bsc.settings,
@@ -115,6 +130,12 @@ const TrainingEventSettings = () => {
         })
     }
 
+    /**
+     * Update a specific field for a special event override.
+     * @param eventName The name of the special event (e.g., `"New Year's Resolutions"`).
+     * @param field The field to update (`selectedOption` or `requiresConfirmation`).
+     * @param value The new value for the field.
+     */
     const updateSpecialEventOverride = (eventName: string, field: "selectedOption" | "requiresConfirmation", value: any) => {
         setSettings({
             ...bsc.settings,
@@ -131,8 +152,10 @@ const TrainingEventSettings = () => {
         })
     }
 
-    // Build a flat list of all events with their character/support names.
-    // Use the full data files so users can search through all events, not just selected ones.
+    /**
+     * Build a flattened list of all available events from character and support data.
+     * Filters out excluded events and events with fewer than two options.
+     */
     const allEvents = useMemo(() => {
         const events: Array<{ key: string; characterOrSupport: string; eventName: string; options: string[]; type: "character" | "support" }> = []
 
@@ -179,7 +202,9 @@ const TrainingEventSettings = () => {
         return events
     }, [])
 
-    // Filter events based on search query and exclude already-overridden events.
+    /**
+     * Filter the available events based on search query and existing overrides.
+     */
     const filteredEvents = useMemo(() => {
         const characterOverrides = characterEventOverrides || {}
         const supportOverrides = supportEventOverrides || {}
@@ -201,6 +226,11 @@ const TrainingEventSettings = () => {
         })
     }, [allEvents, eventOverrideSearchQuery, characterEventOverrides, supportEventOverrides])
 
+    /**
+     * Add or update an event override for a specific character or support event.
+     * @param eventKey The unique key identifying the event.
+     * @param optionIndex The index of the selected option.
+     */
     const updateEventOverride = (eventKey: string, optionIndex: number) => {
         const isCharacter = allEvents.find((e) => e.key === eventKey)?.type === "character"
 
@@ -232,6 +262,10 @@ const TrainingEventSettings = () => {
         setSelectedEventForOption(null)
     }
 
+    /**
+     * Remove an event override for a specific character or support event.
+     * @param eventKey The unique key identifying the event to remove.
+     */
     const removeEventOverride = (eventKey: string) => {
         const isCharacter = allEvents.find((e) => e.key === eventKey)?.type === "character"
 
@@ -258,7 +292,9 @@ const TrainingEventSettings = () => {
         }
     }
 
-    // Get all currently set overrides.
+    /**
+     * Retrieve a list of all current character and support event overrides.
+     */
     const currentOverrides = useMemo(() => {
         const overrides: Array<{ key: string; characterOrSupport: string; eventName: string; optionIndex: number; options: string[] }> = []
         const characterOverrides = characterEventOverrides || {}
@@ -291,7 +327,10 @@ const TrainingEventSettings = () => {
         return overrides
     }, [characterEventOverrides, supportEventOverrides, allEvents])
 
-    // Render function for event items - memoized for performance.
+    /**
+     * Render a single event item for the selection list.
+     * @param event The event data to render.
+     */
     const renderEventItem = useCallback(({ item: event }: { item: { key: string; characterOrSupport: string; eventName: string; options: string[]; type: "character" | "support" } }) => {
         return (
             <TouchableOpacity
@@ -313,418 +352,433 @@ const TrainingEventSettings = () => {
         )
     }, [])
 
+    /**
+     * Extract a unique key for an event item in the list.
+     * @param item The event item.
+     * @returns The unique key.
+     */
     const keyExtractor = useCallback((item: { key: string; characterOrSupport: string; eventName: string; options: string[]; type: "character" | "support" }) => item.key, [])
 
-    const styles = useMemo(() => StyleSheet.create({
-        root: {
-            flex: 1,
-            flexDirection: "column",
-            justifyContent: "center",
-            margin: 10,
-            backgroundColor: colors.background,
-        },
-        section: {
-            marginBottom: 24,
-        },
-        overrideCard: {
-            paddingVertical: 12,
-            paddingHorizontal: 12,
-            borderRadius: 8,
-            borderWidth: 1,
-            marginBottom: 10,
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-        },
-        overrideCardHeader: {
-            flexDirection: "row",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            marginBottom: 8,
-        },
-        overrideCharacterName: {
-            fontSize: 12,
-            color: colors.lightlyMuted,
-            marginBottom: 4,
-        },
-        overrideEventName: {
-            fontSize: 16,
-            fontWeight: "600",
-            color: colors.foreground,
-        },
-        removeButton: {
-            padding: 4,
-        },
-        overrideOptionContainer: {
-            marginTop: 8,
-            paddingTop: 8,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-        },
-        overrideOptionLabel: {
-            fontSize: 12,
-            color: colors.lightlyMuted,
-            marginBottom: 4,
-        },
-        overrideOptionText: {
-            fontSize: 14,
-            color: colors.foreground,
-        },
-        modalOverlay: {
-            flex: 1,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            justifyContent: "center",
-            alignItems: "center",
-        },
-        modalContent: {
-            backgroundColor: colors.background,
-            borderRadius: 16,
-            padding: 20,
-            width: Dimensions.get("window").width * 0.9,
-            maxHeight: Dimensions.get("window").height * 0.8,
-            flexDirection: "column",
-            justifyContent: "flex-start",
-        },
-        modalHeader: {
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 20,
-        },
-        modalTitle: {
-            fontSize: 20,
-            fontWeight: "bold",
-            color: colors.foreground,
-        },
-        closeButton: {
-            padding: 8,
-        },
-        searchContainer: {
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 8,
-            paddingHorizontal: 12,
-            marginBottom: 20,
-        },
-        searchInput: {
-            flex: 1,
-            paddingVertical: 12,
-            color: colors.foreground,
-            fontSize: 12,
-            backgroundColor: "transparent",
-        },
-        clearSearchButton: {
-            padding: 8,
-            marginLeft: 8,
-        },
-        eventList: {
-            height: 400,
-            minHeight: 400,
-        },
-        eventItem: {
-            paddingVertical: 12,
-            paddingHorizontal: 12,
-            borderRadius: 8,
-            borderWidth: 1,
-            marginBottom: 10,
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-        },
-        eventItemHeader: {
-            flexDirection: "row",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-        },
-        eventItemCharacterName: {
-            fontSize: 12,
-            color: colors.lightlyMuted,
-            marginBottom: 4,
-        },
-        eventItemEventName: {
-            fontSize: 16,
-            fontWeight: "600",
-            color: colors.foreground,
-            flex: 1,
-        },
-        optionSelectContainer: {
-            marginTop: 12,
-            paddingTop: 12,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-        },
-        optionSelectLabel: {
-            fontSize: 14,
-            color: colors.foreground,
-            marginBottom: 8,
-            fontWeight: "600",
-        },
-        optionButton: {
-            paddingVertical: 10,
-            paddingHorizontal: 12,
-            borderRadius: 6,
-            marginBottom: 8,
-            borderWidth: 1,
-            borderColor: colors.border,
-        },
-        optionButtonSelected: {
-            backgroundColor: colors.primary,
-            borderColor: colors.primary,
-        },
-        optionButtonText: {
-            fontSize: 14,
-            color: colors.foreground,
-        },
-        optionButtonTextSelected: {
-            color: colors.primaryForeground,
-        },
-        noResults: {
-            textAlign: "center",
-            color: colors.foreground,
-            opacity: 0.6,
-            padding: 20,
-        },
-    }), [colors])
+    const styles = useMemo(
+        () =>
+            StyleSheet.create({
+                root: {
+                    flex: 1,
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    margin: 10,
+                    backgroundColor: colors.background,
+                },
+                section: {
+                    marginBottom: 24,
+                },
+                overrideCard: {
+                    paddingVertical: 12,
+                    paddingHorizontal: 12,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    marginBottom: 10,
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                },
+                overrideCardHeader: {
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                    marginBottom: 8,
+                },
+                overrideCharacterName: {
+                    fontSize: 12,
+                    color: colors.lightlyMuted,
+                    marginBottom: 4,
+                },
+                overrideEventName: {
+                    fontSize: 16,
+                    fontWeight: "600",
+                    color: colors.foreground,
+                },
+                removeButton: {
+                    padding: 4,
+                },
+                overrideOptionContainer: {
+                    marginTop: 8,
+                    paddingTop: 8,
+                    borderTopWidth: 1,
+                    borderTopColor: colors.border,
+                },
+                overrideOptionLabel: {
+                    fontSize: 12,
+                    color: colors.lightlyMuted,
+                    marginBottom: 4,
+                },
+                overrideOptionText: {
+                    fontSize: 14,
+                    color: colors.foreground,
+                },
+                modalOverlay: {
+                    flex: 1,
+                    backgroundColor: "rgba(0, 0, 0, 0.5)",
+                    justifyContent: "center",
+                    alignItems: "center",
+                },
+                modalContent: {
+                    backgroundColor: colors.background,
+                    borderRadius: 16,
+                    padding: 20,
+                    width: Dimensions.get("window").width * 0.9,
+                    maxHeight: Dimensions.get("window").height * 0.8,
+                    flexDirection: "column",
+                    justifyContent: "flex-start",
+                },
+                modalHeader: {
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 20,
+                },
+                modalTitle: {
+                    fontSize: 20,
+                    fontWeight: "bold",
+                    color: colors.foreground,
+                },
+                closeButton: {
+                    padding: 8,
+                },
+                searchContainer: {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: colors.card,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 8,
+                    paddingHorizontal: 12,
+                    marginBottom: 20,
+                },
+                searchInput: {
+                    flex: 1,
+                    paddingVertical: 12,
+                    color: colors.foreground,
+                    fontSize: 12,
+                    backgroundColor: "transparent",
+                },
+                clearSearchButton: {
+                    padding: 8,
+                    marginLeft: 8,
+                },
+                eventList: {
+                    height: 400,
+                    minHeight: 400,
+                },
+                eventItem: {
+                    paddingVertical: 12,
+                    paddingHorizontal: 12,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    marginBottom: 10,
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                },
+                eventItemHeader: {
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                },
+                eventItemCharacterName: {
+                    fontSize: 12,
+                    color: colors.lightlyMuted,
+                    marginBottom: 4,
+                },
+                eventItemEventName: {
+                    fontSize: 16,
+                    fontWeight: "600",
+                    color: colors.foreground,
+                    flex: 1,
+                },
+                optionSelectContainer: {
+                    marginTop: 12,
+                    paddingTop: 12,
+                    borderTopWidth: 1,
+                    borderTopColor: colors.border,
+                },
+                optionSelectLabel: {
+                    fontSize: 14,
+                    color: colors.foreground,
+                    marginBottom: 8,
+                    fontWeight: "600",
+                },
+                optionButton: {
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    borderRadius: 6,
+                    marginBottom: 8,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                },
+                optionButtonSelected: {
+                    backgroundColor: colors.primary,
+                    borderColor: colors.primary,
+                },
+                optionButtonText: {
+                    fontSize: 14,
+                    color: colors.foreground,
+                },
+                optionButtonTextSelected: {
+                    color: colors.primaryForeground,
+                },
+                noResults: {
+                    textAlign: "center",
+                    color: colors.foreground,
+                    opacity: 0.6,
+                    padding: 20,
+                },
+            }),
+        [colors]
+    )
 
     return (
         <View style={styles.root}>
             <PageHeader title="Training Event Settings" />
 
-            <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
-                <View className="m-1">
-                    <View style={styles.section}>
-                        <CustomCheckbox
-                            id="prioritize-energy-options"
-                            checked={enablePrioritizeEnergyOptions}
-                            onCheckedChange={(checked) => updateTrainingEventSetting("enablePrioritizeEnergyOptions", checked)}
-                            label="Prioritize Energy Options"
-                            description="When enabled, the bot will prioritize training event choices that provide energy recovery or avoid energy consumption, helping to maintain optimal energy levels for training sessions."
-                            className="my-2"
+            <SearchPageProvider page="TrainingEventSettings" scrollViewRef={scrollViewRef}>
+                <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+                    <View className="m-1">
+                        <View style={styles.section}>
+                            <CustomCheckbox
+                                searchId="prioritize-energy-options"
+                                checked={enablePrioritizeEnergyOptions}
+                                onCheckedChange={(checked) => updateTrainingEventSetting("enablePrioritizeEnergyOptions", checked)}
+                                label="Prioritize Energy Options"
+                                description="When enabled, the bot will prioritize training event choices that provide energy recovery or avoid energy consumption, helping to maintain optimal energy levels for training sessions."
+                                className="my-2"
+                            />
+                        </View>
+
+                        <CustomTitle
+                            searchId="training-event-option-overrides"
+                            title="Training Event Option Overrides"
+                            description="Force the bot to select a specific option for character or support training events. Search through all available events and select which option to use. This overrides the normal stat prioritization logic."
+                        />
+
+                        <View style={styles.section}>
+                            <CustomButton onPress={() => setEventOverrideModalVisible(true)} variant="default">
+                                Search Events
+                            </CustomButton>
+                        </View>
+
+                        {currentOverrides.length > 0 && (
+                            <View style={styles.section}>
+                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Current Overrides ({currentOverrides.length})</Text>
+                                {currentOverrides.map((override) => {
+                                    const event = allEvents.find((e) => e.key === override.key)
+                                    return (
+                                        <TouchableOpacity
+                                            key={override.key}
+                                            style={styles.overrideCard}
+                                            onPress={() => {
+                                                if (event) {
+                                                    setSelectedEventForOption(event)
+                                                    setOptionSelectionModalVisible(true)
+                                                }
+                                            }}
+                                        >
+                                            <View style={styles.overrideCardHeader}>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={styles.overrideCharacterName}>{override.characterOrSupport}</Text>
+                                                    <Text style={styles.overrideEventName}>{override.eventName}</Text>
+                                                </View>
+                                                <TouchableOpacity
+                                                    onPress={(e) => {
+                                                        e.stopPropagation()
+                                                        removeEventOverride(override.key)
+                                                    }}
+                                                    style={styles.removeButton}
+                                                >
+                                                    <X size={20} color={colors.destructive} />
+                                                </TouchableOpacity>
+                                            </View>
+                                            <View style={styles.overrideOptionContainer}>
+                                                <Text style={styles.overrideOptionLabel}>Selected Option: {override.optionIndex + 1}</Text>
+                                                <Text style={styles.overrideOptionText}>{override.options[override.optionIndex]}</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    )
+                                })}
+                            </View>
+                        )}
+
+                        <CustomTitle
+                            searchId="special-event-overrides"
+                            title="Special Event Overrides"
+                            description="Override the bot's normal stat prioritization for specific training events. These settings bypass the standard weight calculation system."
+                        />
+
+                        <CustomAccordion
+                            type="single"
+                            style={{ marginBottom: 24 }}
+                            sections={[
+                                {
+                                    value: "holiday-events",
+                                    title: "Holiday Events",
+                                    children: (
+                                        <View>
+                                            <View style={styles.section}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>New Year's Resolutions (Classic Year)</Text>
+                                                <CustomSelect
+                                                    options={newYearResolutionsOptions}
+                                                    value={specialEventOverrides["New Year's Resolutions"]?.selectedOption || "Option 2: Energy +20"}
+                                                    onValueChange={(value) => updateSpecialEventOverride("New Year's Resolutions", "selectedOption", value)}
+                                                    placeholder="Select Option"
+                                                    width="100%"
+                                                />
+                                            </View>
+
+                                            <View style={styles.section}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>New Year's Shrine Visit (Senior Year)</Text>
+                                                <CustomSelect
+                                                    options={newYearShrineVisitOptions}
+                                                    value={specialEventOverrides["New Year's Shrine Visit"]?.selectedOption || "Option 1: Energy +30"}
+                                                    onValueChange={(value) => updateSpecialEventOverride("New Year's Shrine Visit", "selectedOption", value)}
+                                                    placeholder="Select Option"
+                                                    width="100%"
+                                                />
+                                            </View>
+                                        </View>
+                                    ),
+                                },
+                                {
+                                    value: "race-results",
+                                    title: "Race Result Events",
+                                    children: (
+                                        <View>
+                                            <View style={styles.section}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Victory!</Text>
+                                                <CustomSelect
+                                                    options={victoryOptions}
+                                                    value={specialEventOverrides["Victory!"]?.selectedOption || "Option 2: Energy -5 and random stat gain"}
+                                                    onValueChange={(value) => updateSpecialEventOverride("Victory!", "selectedOption", value)}
+                                                    placeholder="Select Option"
+                                                    width="100%"
+                                                />
+                                            </View>
+
+                                            <View style={styles.section}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Solid Showing</Text>
+                                                <CustomSelect
+                                                    options={solidShowingOptions}
+                                                    value={specialEventOverrides["Solid Showing"]?.selectedOption || "Option 2: Energy -5/-20 and random stat gain"}
+                                                    onValueChange={(value) => updateSpecialEventOverride("Solid Showing", "selectedOption", value)}
+                                                    placeholder="Select Option"
+                                                    width="100%"
+                                                />
+                                            </View>
+
+                                            <View style={styles.section}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Defeat</Text>
+                                                <CustomSelect
+                                                    options={defeatOptions}
+                                                    value={specialEventOverrides["Defeat"]?.selectedOption || "Option 1: Energy -25 and random stat gain"}
+                                                    onValueChange={(value) => updateSpecialEventOverride("Defeat", "selectedOption", value)}
+                                                    placeholder="Select Option"
+                                                    width="100%"
+                                                />
+                                            </View>
+                                        </View>
+                                    ),
+                                },
+                                {
+                                    value: "training-failures",
+                                    title: "Training Failure Events",
+                                    children: (
+                                        <View>
+                                            <View style={styles.section}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Get Well Soon!</Text>
+                                                <CustomSelect
+                                                    options={getWellSoonOptions}
+                                                    value={specialEventOverrides["Get Well Soon!"]?.selectedOption || "Option 2: (Random) Mood -1 / Stat decrease / Get Practice Poor negative status"}
+                                                    onValueChange={(value) => updateSpecialEventOverride("Get Well Soon!", "selectedOption", value)}
+                                                    placeholder="Select Option"
+                                                    width="100%"
+                                                />
+                                            </View>
+
+                                            <View style={styles.section}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Don't Overdo It!</Text>
+                                                <CustomSelect
+                                                    options={dontOverdoItOptions}
+                                                    value={
+                                                        specialEventOverrides["Don't Overdo It!"]?.selectedOption || "Option 2: (Random) Mood -3 / Stat decrease / Get Practice Poor negative status"
+                                                    }
+                                                    onValueChange={(value) => updateSpecialEventOverride("Don't Overdo It!", "selectedOption", value)}
+                                                    placeholder="Select Option"
+                                                    width="100%"
+                                                />
+                                            </View>
+                                        </View>
+                                    ),
+                                },
+                                {
+                                    value: "miscellaneous",
+                                    title: "Miscellaneous Events",
+                                    children: (
+                                        <View>
+                                            <View style={styles.section}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Extra Training</Text>
+                                                <CustomSelect
+                                                    options={extraTrainingOptions}
+                                                    value={specialEventOverrides["Extra Training"]?.selectedOption || "Option 2: Energy +5"}
+                                                    onValueChange={(value) => updateSpecialEventOverride("Extra Training", "selectedOption", value)}
+                                                    placeholder="Select Option"
+                                                    width="100%"
+                                                />
+                                            </View>
+
+                                            <View style={styles.section}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>Acupuncture (Just an Acupuncturist, No Worries! ☆)</Text>
+                                                <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: 12 }}>
+                                                    Select your preferred option for the Acupuncture event. Note: Options 1-4 have a 70%/55%/30%/15% chance to fail, while Option 5 will always succeed.
+                                                </Text>
+                                                <CustomSelect
+                                                    options={acupunctureOptions}
+                                                    value={specialEventOverrides["Acupuncture (Just an Acupuncturist, No Worries! ☆)"]?.selectedOption || "Option 5: Energy +10"}
+                                                    onValueChange={(value) => updateSpecialEventOverride("Acupuncture (Just an Acupuncturist, No Worries! ☆)", "selectedOption", value)}
+                                                    placeholder="Select Option"
+                                                    width="100%"
+                                                />
+                                            </View>
+
+                                            <View style={styles.section}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Etsuko's Exhaustive Coverage</Text>
+                                                <CustomSelect
+                                                    options={etsukoOptions}
+                                                    value={specialEventOverrides["Etsuko's Exhaustive Coverage"]?.selectedOption || "Option 2: Energy Down / Gain skill points"}
+                                                    onValueChange={(value) => updateSpecialEventOverride("Etsuko's Exhaustive Coverage", "selectedOption", value)}
+                                                    placeholder="Select Option"
+                                                    width="100%"
+                                                />
+                                            </View>
+
+                                            <View style={styles.section}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>A Team at Last (Unity Cup)</Text>
+                                                <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: 12 }}>
+                                                    Select your preferred team name for Unity Cup (must be available via your chosen trainee or supports). The available options depend on which
+                                                    characters you have bonded with. "Default" will always select the first option.
+                                                </Text>
+                                                <CustomSelect
+                                                    options={aTeamAtLastOptions}
+                                                    value={specialEventOverrides["A Team at Last"]?.selectedOption || "Default"}
+                                                    onValueChange={(value) => updateSpecialEventOverride("A Team at Last", "selectedOption", value)}
+                                                    placeholder="Select Team Name for Unity Cup"
+                                                    width="100%"
+                                                />
+                                            </View>
+                                        </View>
+                                    ),
+                                },
+                            ]}
                         />
                     </View>
-
-                    <CustomTitle
-                        title="Training Event Option Overrides"
-                        description="Force the bot to select a specific option for character or support training events. Search through all available events and select which option to use. This overrides the normal stat prioritization logic."
-                    />
-
-                    <View style={styles.section}>
-                        <CustomButton onPress={() => setEventOverrideModalVisible(true)} variant="default">
-                            Search Events
-                        </CustomButton>
-                    </View>
-
-                    {currentOverrides.length > 0 && (
-                        <View style={styles.section}>
-                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Current Overrides ({currentOverrides.length})</Text>
-                            {currentOverrides.map((override) => {
-                                const event = allEvents.find((e) => e.key === override.key)
-                                return (
-                                    <TouchableOpacity
-                                        key={override.key}
-                                        style={styles.overrideCard}
-                                        onPress={() => {
-                                            if (event) {
-                                                setSelectedEventForOption(event)
-                                                setOptionSelectionModalVisible(true)
-                                            }
-                                        }}
-                                    >
-                                        <View style={styles.overrideCardHeader}>
-                                            <View style={{ flex: 1 }}>
-                                                <Text style={styles.overrideCharacterName}>{override.characterOrSupport}</Text>
-                                                <Text style={styles.overrideEventName}>{override.eventName}</Text>
-                                            </View>
-                                            <TouchableOpacity
-                                                onPress={(e) => {
-                                                    e.stopPropagation()
-                                                    removeEventOverride(override.key)
-                                                }}
-                                                style={styles.removeButton}
-                                            >
-                                                <X size={20} color={colors.destructive} />
-                                            </TouchableOpacity>
-                                        </View>
-                                        <View style={styles.overrideOptionContainer}>
-                                            <Text style={styles.overrideOptionLabel}>Selected Option: {override.optionIndex + 1}</Text>
-                                            <Text style={styles.overrideOptionText}>{override.options[override.optionIndex]}</Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                )
-                            })}
-                        </View>
-                    )}
-
-                    <CustomTitle
-                        title="Special Event Overrides"
-                        description="Override the bot's normal stat prioritization for specific training events. These settings bypass the standard weight calculation system."
-                    />
-
-                    <CustomAccordion
-                        type="single"
-                        style={{ marginBottom: 24 }}
-                        sections={[
-                            {
-                                value: "holiday-events",
-                                title: "Holiday Events",
-                                children: (
-                                    <View>
-                                        <View style={styles.section}>
-                                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>New Year's Resolutions (Classic Year)</Text>
-                                            <CustomSelect
-                                                options={newYearResolutionsOptions}
-                                                value={specialEventOverrides["New Year's Resolutions"]?.selectedOption || "Option 2: Energy +20"}
-                                                onValueChange={(value) => updateSpecialEventOverride("New Year's Resolutions", "selectedOption", value)}
-                                                placeholder="Select Option"
-                                                width="100%"
-                                            />
-                                        </View>
-
-                                        <View style={styles.section}>
-                                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>New Year's Shrine Visit (Senior Year)</Text>
-                                            <CustomSelect
-                                                options={newYearShrineVisitOptions}
-                                                value={specialEventOverrides["New Year's Shrine Visit"]?.selectedOption || "Option 1: Energy +30"}
-                                                onValueChange={(value) => updateSpecialEventOverride("New Year's Shrine Visit", "selectedOption", value)}
-                                                placeholder="Select Option"
-                                                width="100%"
-                                            />
-                                        </View>
-                                    </View>
-                                ),
-                            },
-                            {
-                                value: "race-results",
-                                title: "Race Result Events",
-                                children: (
-                                    <View>
-                                        <View style={styles.section}>
-                                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Victory!</Text>
-                                            <CustomSelect
-                                                options={victoryOptions}
-                                                value={specialEventOverrides["Victory!"]?.selectedOption || "Option 2: Energy -5 and random stat gain"}
-                                                onValueChange={(value) => updateSpecialEventOverride("Victory!", "selectedOption", value)}
-                                                placeholder="Select Option"
-                                                width="100%"
-                                            />
-                                        </View>
-
-                                        <View style={styles.section}>
-                                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Solid Showing</Text>
-                                            <CustomSelect
-                                                options={solidShowingOptions}
-                                                value={specialEventOverrides["Solid Showing"]?.selectedOption || "Option 2: Energy -5/-20 and random stat gain"}
-                                                onValueChange={(value) => updateSpecialEventOverride("Solid Showing", "selectedOption", value)}
-                                                placeholder="Select Option"
-                                                width="100%"
-                                            />
-                                        </View>
-
-                                        <View style={styles.section}>
-                                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Defeat</Text>
-                                            <CustomSelect
-                                                options={defeatOptions}
-                                                value={specialEventOverrides["Defeat"]?.selectedOption || "Option 1: Energy -25 and random stat gain"}
-                                                onValueChange={(value) => updateSpecialEventOverride("Defeat", "selectedOption", value)}
-                                                placeholder="Select Option"
-                                                width="100%"
-                                            />
-                                        </View>
-                                    </View>
-                                ),
-                            },
-                            {
-                                value: "training-failures",
-                                title: "Training Failure Events",
-                                children: (
-                                    <View>
-                                        <View style={styles.section}>
-                                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Get Well Soon!</Text>
-                                            <CustomSelect
-                                                options={getWellSoonOptions}
-                                                value={specialEventOverrides["Get Well Soon!"]?.selectedOption || "Option 2: (Random) Mood -1 / Stat decrease / Get Practice Poor negative status"}
-                                                onValueChange={(value) => updateSpecialEventOverride("Get Well Soon!", "selectedOption", value)}
-                                                placeholder="Select Option"
-                                                width="100%"
-                                            />
-                                        </View>
-
-                                        <View style={styles.section}>
-                                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Don't Overdo It!</Text>
-                                            <CustomSelect
-                                                options={dontOverdoItOptions}
-                                                value={specialEventOverrides["Don't Overdo It!"]?.selectedOption || "Option 2: (Random) Mood -3 / Stat decrease / Get Practice Poor negative status"}
-                                                onValueChange={(value) => updateSpecialEventOverride("Don't Overdo It!", "selectedOption", value)}
-                                                placeholder="Select Option"
-                                                width="100%"
-                                            />
-                                        </View>
-                                    </View>
-                                ),
-                            },
-                            {
-                                value: "miscellaneous",
-                                title: "Miscellaneous Events",
-                                children: (
-                                    <View>
-                                        <View style={styles.section}>
-                                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Extra Training</Text>
-                                            <CustomSelect
-                                                options={extraTrainingOptions}
-                                                value={specialEventOverrides["Extra Training"]?.selectedOption || "Option 2: Energy +5"}
-                                                onValueChange={(value) => updateSpecialEventOverride("Extra Training", "selectedOption", value)}
-                                                placeholder="Select Option"
-                                                width="100%"
-                                            />
-                                        </View>
-
-                                        <View style={styles.section}>
-                                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>Acupuncture (Just an Acupuncturist, No Worries! ☆)</Text>
-                                            <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: 12 }}>
-                                                Select your preferred option for the Acupuncture event. Note: Options 1-4 have a 70%/55%/30%/15% chance to fail, while Option 5 will always succeed.
-                                            </Text>
-                                            <CustomSelect
-                                                options={acupunctureOptions}
-                                                value={specialEventOverrides["Acupuncture (Just an Acupuncturist, No Worries! ☆)"]?.selectedOption || "Option 5: Energy +10"}
-                                                onValueChange={(value) => updateSpecialEventOverride("Acupuncture (Just an Acupuncturist, No Worries! ☆)", "selectedOption", value)}
-                                                placeholder="Select Option"
-                                                width="100%"
-                                            />
-                                        </View>
-
-                                        <View style={styles.section}>
-                                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Etsuko's Exhaustive Coverage</Text>
-                                            <CustomSelect
-                                                options={etsukoOptions}
-                                                value={specialEventOverrides["Etsuko's Exhaustive Coverage"]?.selectedOption || "Option 2: Energy Down / Gain skill points"}
-                                                onValueChange={(value) => updateSpecialEventOverride("Etsuko's Exhaustive Coverage", "selectedOption", value)}
-                                                placeholder="Select Option"
-                                                width="100%"
-                                            />
-                                        </View>
-
-                                        <View style={styles.section}>
-                                            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>A Team at Last (Unity Cup)</Text>
-                                            <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: 12 }}>
-                                                Select your preferred team name for Unity Cup (must be available via your chosen trainee or supports). The available options depend on which characters
-                                                you have bonded with. "Default" will always select the first option.
-                                            </Text>
-                                            <CustomSelect
-                                                options={aTeamAtLastOptions}
-                                                value={specialEventOverrides["A Team at Last"]?.selectedOption || "Default"}
-                                                onValueChange={(value) => updateSpecialEventOverride("A Team at Last", "selectedOption", value)}
-                                                placeholder="Select Team Name for Unity Cup"
-                                                width="100%"
-                                            />
-                                        </View>
-                                    </View>
-                                ),
-                            },
-                        ]}
-                    />
-                </View>
-            </ScrollView>
+                </ScrollView>
+            </SearchPageProvider>
 
             {/* Event Override Selection Modal */}
             <Modal animationType="slide" transparent={true} visible={eventOverrideModalVisible} onRequestClose={() => setEventOverrideModalVisible(false)}>

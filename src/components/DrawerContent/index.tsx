@@ -1,19 +1,30 @@
-import React, { useMemo,  useState, useEffect, useContext, useRef } from "react"
+import React, { useMemo, useState, useEffect, useContext, useRef } from "react"
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
 import { DrawerContentScrollView, DrawerContentComponentProps, useDrawerStatus } from "@react-navigation/drawer"
 import { CommonActions } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
+import { markNavigationStart } from "../../lib/performanceLogger"
 import { useTheme } from "../../context/ThemeContext"
 import { BotStateContext } from "../../context/BotStateContext"
 import { skillPlanSettingsPages } from "../../pages/SkillPlanSettings"
 
 interface MenuItem {
+    /** The route name used for navigation. */
     name: string
+    /** The display label shown in the drawer. */
     label: string
+    /** Function returning the Ionicons icon name based on focused state. */
     icon: (focused: boolean) => string
+    /** Optional nested menu items for expandable sections. */
     nested?: MenuItem[]
 }
 
+/**
+ * Custom drawer content component that renders a styled navigation sidebar.
+ * Supports multi-level nested menu items with expand/collapse functionality,
+ * active route highlighting, and deferred navigation for smooth drawer animations.
+ * @param props The drawer content component props from React Navigation.
+ */
 const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
     const { colors } = useTheme()
     const { state, navigation } = props
@@ -23,6 +34,7 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["Settings"]))
     const previousDrawerStatus = useRef<string | undefined>(undefined)
 
+    // List of nested routes under Settings.
     const settingsNestedRoutes = [
         "TrainingSettings",
         "TrainingEventSettings",
@@ -32,126 +44,131 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         "SkillSettings",
         ...Object.values(skillPlanSettingsPages).flatMap((item) => item.name),
         "DailyTasksSettings",
+        "DiscordSettings",
         "DebugSettings",
     ]
 
-    const styles = useMemo(() => StyleSheet.create({
-        container: {
-            flex: 1,
-            backgroundColor: colors.card,
-        },
-        header: {
-            paddingTop: 40,
-            paddingBottom: 24,
-            paddingHorizontal: 20,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
-        },
-        headerTitle: {
-            fontSize: 24,
-            fontWeight: "bold",
-            color: colors.foreground,
-            marginBottom: 4,
-        },
-        headerSubtitle: {
-            fontSize: 14,
-            color: colors.mutedForeground,
-        },
-        menuContainer: {
-            paddingTop: 8,
-        },
-        menuItem: {
-            flexDirection: "row",
-            alignItems: "center",
-            paddingVertical: 16,
-            paddingHorizontal: 20,
-            marginHorizontal: 4,
-            marginVertical: 2,
-            borderRadius: 0,
-        },
-        menuItemActive: {
-            backgroundColor: colors.muted,
-        },
-        menuItemIcon: {
-            marginRight: 16,
-            width: 24,
-            alignItems: "center",
-        },
-        menuItemText: {
-            fontSize: 16,
-            fontWeight: "500",
-            color: colors.foreground,
-            flex: 1,
-        },
-        menuItemTextActive: {
-            color: colors.primary,
-            fontWeight: "600",
-        },
-        chevronButton: {
-            padding: 4,
-            marginLeft: 8,
-            borderRadius: 4,
-        },
-        nestedContainer: {
-            overflow: "hidden",
-        },
-        nestedItem: {
-            flexDirection: "row",
-            alignItems: "center",
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            paddingLeft: 40,
-            marginHorizontal: 4,
-            marginVertical: 2,
-            borderRadius: 0,
-        },
-        nestedItemActive: {
-            backgroundColor: colors.muted,
-        },
-        nestedItemIcon: {
-            marginRight: 16,
-            width: 24,
-            alignItems: "center",
-        },
-        nestedItemText: {
-            fontSize: 15,
-            fontWeight: "400",
-            color: colors.foreground,
-            flex: 1,
-        },
-        nestedItemTextActive: {
-            color: colors.primary,
-            fontWeight: "500",
-        },
-        doubleNestedItem: {
-            flexDirection: "row",
-            alignItems: "center",
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            paddingLeft: 64,
-            marginHorizontal: 4,
-            marginVertical: 2,
-            borderRadius: 0,
-        },
-        doubleNestedItemActive: {
-            backgroundColor: colors.muted,
-        },
-        doubleNestedItemIcon: {
-            marginRight: 16,
-            width: 24,
-            alignItems: "center",
-        },
-        doubleNestedItemText: {
-            fontSize: 14,
-            fontWeight: "400",
-            color: colors.foreground,
-            flex: 1,
-        },
-        doubleNestedItemTextActive: {
-            color: colors.primary,
-            fontWeight: "500",
-        },
-    }), [colors])
+    const styles = useMemo(
+        () =>
+            StyleSheet.create({
+                container: {
+                    flex: 1,
+                    backgroundColor: colors.card,
+                },
+                header: {
+                    paddingTop: 40,
+                    paddingBottom: 24,
+                    paddingHorizontal: 20,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                },
+                headerTitle: {
+                    fontSize: 24,
+                    fontWeight: "bold",
+                    color: colors.foreground,
+                    marginBottom: 4,
+                },
+                headerSubtitle: {
+                    fontSize: 14,
+                    color: colors.mutedForeground,
+                },
+                menuContainer: {
+                    paddingTop: 8,
+                },
+                menuItem: {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 16,
+                    paddingHorizontal: 20,
+                    marginHorizontal: 4,
+                    marginVertical: 2,
+                    borderRadius: 0,
+                },
+                menuItemActive: {
+                    backgroundColor: colors.muted,
+                },
+                menuItemIcon: {
+                    marginRight: 16,
+                    width: 24,
+                    alignItems: "center",
+                },
+                menuItemText: {
+                    fontSize: 16,
+                    fontWeight: "500",
+                    color: colors.foreground,
+                    flex: 1,
+                },
+                menuItemTextActive: {
+                    color: colors.primary,
+                    fontWeight: "600",
+                },
+                chevronButton: {
+                    padding: 4,
+                    marginLeft: 8,
+                    borderRadius: 4,
+                },
+                nestedContainer: {
+                    overflow: "hidden",
+                },
+                nestedItem: {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 12,
+                    paddingHorizontal: 20,
+                    paddingLeft: 40,
+                    marginHorizontal: 4,
+                    marginVertical: 2,
+                    borderRadius: 0,
+                },
+                nestedItemActive: {
+                    backgroundColor: colors.muted,
+                },
+                nestedItemIcon: {
+                    marginRight: 16,
+                    width: 24,
+                    alignItems: "center",
+                },
+                nestedItemText: {
+                    fontSize: 15,
+                    fontWeight: "400",
+                    color: colors.foreground,
+                    flex: 1,
+                },
+                nestedItemTextActive: {
+                    color: colors.primary,
+                    fontWeight: "500",
+                },
+                doubleNestedItem: {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 12,
+                    paddingHorizontal: 20,
+                    paddingLeft: 64,
+                    marginHorizontal: 4,
+                    marginVertical: 2,
+                    borderRadius: 0,
+                },
+                doubleNestedItemActive: {
+                    backgroundColor: colors.muted,
+                },
+                doubleNestedItemIcon: {
+                    marginRight: 16,
+                    width: 24,
+                    alignItems: "center",
+                },
+                doubleNestedItemText: {
+                    fontSize: 14,
+                    fontWeight: "400",
+                    color: colors.foreground,
+                    flex: 1,
+                },
+                doubleNestedItemTextActive: {
+                    color: colors.primary,
+                    fontWeight: "500",
+                },
+            }),
+        [colors]
+    )
 
     // Define the menu item configurations for the drawer.
     const menuItems: MenuItem[] = [
@@ -213,6 +230,11 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
                     icon: () => "eye-outline",
                 },
                 {
+                    name: "DiscordSettings",
+                    label: "Discord Settings",
+                    icon: () => "logo-discord",
+                },
+                {
                     name: "DebugSettings",
                     label: "Debug Settings",
                     icon: () => "bug-outline",
@@ -223,8 +245,9 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
 
     /**
      * Gets the current active screen name, handling nested navigators.
-     * If on Settings stack, returns the nested screen name (e.g., "TrainingSettings").
-     * Otherwise returns the drawer route name (e.g., "Home").
+     * If on Settings stack, returns the nested screen name (e.g., `TrainingSettings`).
+     * Otherwise returns the drawer route name (e.g., `Home`).
+     * @returns The current active screen name.
      */
     const getCurrentActiveScreen = (): string => {
         const drawerRoute = state.routes[state.index]
@@ -287,7 +310,10 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         }
     }, [state.index, state.routes, drawerStatus])
 
-    // Toggle the expanded state of a section in the drawer.
+    /**
+     * Toggles the expanded state of a section in the drawer.
+     * @param sectionName The name of the section to toggle.
+     */
     const toggleSection = (sectionName: string) => {
         setExpandedSections((prev) => {
             const newSet = new Set(prev)
@@ -300,49 +326,77 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         })
     }
 
-    // Navigate to a route and close the drawer.
-    // For nested routes, we navigate to the Settings drawer and then the specific screen.
+    /**
+     * Navigates to a route and closes the drawer.
+     * For nested routes, we navigate to the Settings drawer and then the specific screen.
+     * @param routeName The name of the route to navigate to.
+     */
     const handleNavigation = (routeName: string) => {
-        if (routeName === "Home") {
-            // Navigate to Home drawer screen.
-            navigation.dispatch(CommonActions.navigate({ name: "Home" }))
-        } else if (routeName === "Settings") {
-            // Navigate to Settings main page.
-            navigation.dispatch(
-                CommonActions.navigate({
-                    name: "Settings",
-                    params: { screen: "SettingsMain", initial: false },
-                }),
-            )
-        } else {
-            // Settings sub-pages: navigate to Settings drawer, then to the specific screen.
-            navigation.dispatch(
-                CommonActions.navigate({
-                    name: "Settings",
-                    params: { screen: routeName, initial: false },
-                }),
-            )
-        }
+        // Mark the start of the navigation for performance tracking.
+        markNavigationStart(routeName)
+
+        // Close the drawer immediately to start the transition.
+        // This achieves the effect of hiding the initial lag of mounting and rendering the target page while we are transitioning to it.
         navigation.closeDrawer()
+
+        // Defer the heavy navigation until the drawer closing animation has been scheduled.
+        // This prevents the target page's heavy mount/render from stuttering the drawer animation.
+        setTimeout(() => {
+            if (routeName === "Home") {
+                // Navigate to Home drawer screen.
+                navigation.dispatch(CommonActions.navigate({ name: "Home" }))
+            } else if (routeName === "Settings") {
+                // Navigate to Settings main page.
+                navigation.dispatch(
+                    CommonActions.navigate({
+                        name: "Settings",
+                        params: { screen: "SettingsMain", initial: false },
+                    })
+                )
+            } else {
+                // Settings sub-pages: navigate to Settings drawer, then to the specific screen.
+                navigation.dispatch(
+                    CommonActions.navigate({
+                        name: "Settings",
+                        params: { screen: routeName, initial: false },
+                    })
+                )
+            }
+        }, 0)
     }
 
-    // Navigate to a parent route and close the drawer.
+    /**
+     * Navigates to a parent route and closes the drawer.
+     * @param item The menu item to navigate to.
+     */
     const handleParentNavigation = (item: MenuItem) => {
         handleNavigation(item.name)
     }
 
-    // Stop event propagation to prevent the navigation from happening when the chevron is pressed.
+    /**
+     * Stops event propagation to prevent the navigation from happening when the chevron is pressed.
+     * @param e The event object.
+     * @param item The menu item.
+     */
     const handleChevronPress = (e: any, item: MenuItem) => {
         e.stopPropagation()
         toggleSection(item.name)
     }
 
-    // Check if a section is expanded.
+    /**
+     * Checks if a section is expanded.
+     * @param sectionName The name of the section to check.
+     * @returns True if the section is expanded, false otherwise.
+     */
     const isSectionExpanded = (sectionName: string) => {
         return expandedSections.has(sectionName)
     }
 
-    // Check if a route is active.
+    /**
+     * Checks if a route is active.
+     * @param routeName The name of the route to check.
+     * @returns True if the route is active, false otherwise.
+     */
     const isRouteActive = (routeName: string) => {
         const currentScreen = getCurrentActiveScreen()
         // Settings menu item is active when on SettingsMain.
@@ -352,7 +406,12 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         return currentScreen === routeName
     }
 
-    // Recursive component to render menu items at any nesting level.
+    /**
+     * Recursively renders menu items at any nesting level.
+     * @param item The menu item to render.
+     * @param level The nesting level.
+     * @returns The rendered menu item.
+     */
     const renderMenuItem = (item: MenuItem, level: number = 0) => {
         const isActive = isRouteActive(item.name)
         const isExpanded = item.nested ? isSectionExpanded(item.name) : false
@@ -431,4 +490,4 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
     )
 }
 
-export default DrawerContent
+export default React.memo(DrawerContent)
