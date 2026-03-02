@@ -12,7 +12,6 @@ import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.PluginFactory
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
-import com.steve1316.uma_android_automation.utils.ScrollList
 
 import com.steve1316.uma_android_automation.components.BaseComponentInterface
 import com.steve1316.uma_android_automation.components.ComponentInterface
@@ -68,6 +67,7 @@ class DailyRaces(
     }
 
     private fun selectRace(bitmap: Bitmap? = null): Boolean {
+        MessageLog.d(TAG, "[$name] Selecting race...")
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
 
         val pillBitmap: Bitmap = IconExtraRacePill.template.getBitmap(game.imageUtils)!!
@@ -82,11 +82,12 @@ class DailyRaces(
         // If there are no available races, then we've completed them all.
         if (locs.isEmpty()) {
             bIsComplete = true
-            MessageLog.w(TAG, "[DAILY_RACES] No more races available today. Finishing up.")
+            MessageLog.w(TAG, "[$name] No more races available today. Finishing up.")
             return true
         }
 
         val loc: Point = locs.first()
+        MessageLog.d(TAG, "[$name] Selecting race at $loc.")
         game.tap(loc.x, loc.y, IconExtraRacePill.template.path)
         game.waitForLoading()
 
@@ -103,8 +104,10 @@ class DailyRaces(
             "daily_sale" -> {
                 val dailySale: Plugin? = PluginFactory.create("DailySale", game, menuBar, commonDialogHandler)
                 if (dailySale == null) {
+                    MessageLog.d(TAG, "[$name] DailySale plugin returned NULL.")
                     result.dialog.close(game.imageUtils)
                 } else {
+                    MessageLog.d(TAG, "[$name] Handling Daily Sale...")
                     result.dialog.ok(game.imageUtils)
                     game.wait(0.5)
                     dailySale.start()
@@ -183,8 +186,10 @@ class DailyRaces(
             }
             PageExtraRacesRacePrep -> {
                 if (ButtonViewResults.checkDisabled(game.imageUtils) == true) {
+                    MessageLog.d(TAG, "[$name] PageExtraRacesRacePrep: ViewResults is disabled. Manually racing...")
                     ButtonRaceManual.click(game.imageUtils)
                 } else {
+                    MessageLog.d(TAG, "[$name] PageExtraRacesRacePrep: Skipping race...")
                     ButtonViewResults.click(game.imageUtils)
                 }
             }
@@ -206,6 +211,7 @@ class DailyRaces(
                     !ButtonNext.click(game.imageUtils, sourceBitmap = bitmap) &&
                     !ButtonRaceExclamation.click(game.imageUtils, sourceBitmap = bitmap)
                 ) {
+                    MessageLog.d(TAG, "[$name] Unknown page. Tapping...")
                     game.tap(350.0, 750.0, "ok", taps = 1)
                 }
             }
@@ -227,22 +233,22 @@ class DailyRaces(
         }
 
         if (!menuBar.goToRace()) {
-            MessageLog.w(TAG, "Failed to go to menu bar's Race tab.")
+            MessageLog.w(TAG, "[$name] Failed to go to menu bar's Race tab.")
             return false
         }
 
         if (waitForButton(ButtonDailyRaces, bShouldClickButton = false) == null) {
-            MessageLog.e(TAG, "Failed to find Daily Races button. Cannot proceed.")
+            MessageLog.e(TAG, "[$name] Failed to find Daily Races button. Cannot proceed.")
             return false
         }
 
         if (ButtonDailyRaces.checkDisabled(game.imageUtils) == true) {
-            MessageLog.i(TAG, "Daily Races are locked. Cannot proceed.")
+            MessageLog.i(TAG, "[$name] Daily Races are locked. Cannot proceed.")
             return false
         }
 
         if (!ButtonDailyRaces.click(game.imageUtils)) {
-            MessageLog.e(TAG, "Failed to click Daily Races button.")
+            MessageLog.e(TAG, "[$name] Failed to click Daily Races button.")
             return false
         }
 

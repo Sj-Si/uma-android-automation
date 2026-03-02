@@ -12,7 +12,6 @@ import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.PluginFactory
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
-import com.steve1316.uma_android_automation.utils.ScrollList
 
 import com.steve1316.uma_android_automation.components.BaseComponentInterface
 import com.steve1316.uma_android_automation.components.ComponentInterface
@@ -49,9 +48,11 @@ class TeamTrials(
     private var bIsExtraRewards: Boolean = false
 
     fun handleSelectOpponent(bitmap: Bitmap? = null): Boolean {
+        MessageLog.d(TAG, "[$name] Selecting opponent...")
         val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
         // Always select the extra rewards option if it is available.
         if (LabelTeamTrialsExtraRewardsOpponent.click(game.imageUtils, tries = 10)) {
+            MessageLog.d(TAG, "[$name] Selected opponent with extra rewards.")
             return true
         }
 
@@ -62,8 +63,11 @@ class TeamTrials(
         )
 
         if (locs.isEmpty()) {
+            MessageLog.w(TAG, "[$name] Failed to find any opponents.")
             return false
         }
+
+        MessageLog.d(TAG, "[$name] Selecting opponent at ${locs.first()}.")
 
         game.tap(
             locs.first().x,
@@ -143,7 +147,7 @@ class TeamTrials(
                 // to click an opponent.
                 game.wait(1.0, skipWaitingForLoading = true)
                 if (!handleSelectOpponent(bitmap)) {
-                    MessageLog.e(TAG, "progress: Failed to select opponent.")
+                    MessageLog.d(TAG, "[$name] PageTeamTrialsSelectOpponent: Failed to select opponent.")
                     return null
                 }
                 waitForPage(PageTeamTrialsPreRace)
@@ -161,6 +165,7 @@ class TeamTrials(
                 PageTeamTrialsRaceQuickModeOn.next(game.imageUtils, bitmap)
                 waitForButton(ButtonSkip, bShouldClickButton = true)
             }
+            // TODO: Maybe remove this handler and allow it to fall through to the ButtonNext.click case?
             PageTeamTrialsRaceFinished -> {
                 waitForButton(
                     ButtonNext,
@@ -177,9 +182,11 @@ class TeamTrials(
             }
             PageTeamTrialsRaceResults -> {
                 if (bIsComplete) {
+                    MessageLog.d(TAG, "[$name] PageTeamTrialsRaceResults: Out of RP. Returning to PageTeamTrialsHome.")
                     PageTeamTrialsRaceResults.next(game.imageUtils, bitmap)
                     waitForPage(PageTeamTrialsHome)
                 } else {
+                    MessageLog.d(TAG, "[$name] PageTeamTrialsRaceResults: Racing again...")
                     // Clicking RaceAgain can either pop up the Out of RP dialog,
                     // or bring us to the Select Opponent page.
                     // We don't want to wait for the Select Opponents page since
@@ -196,6 +203,7 @@ class TeamTrials(
                     !ButtonSkip.click(game.imageUtils) &&
                     !ButtonNext.click(game.imageUtils)
                 ) {
+                    MessageLog.d(TAG, "[$name] Unknown page. Tapping...")
                     game.tap(350.0, 750.0, "ok", taps = 1)
                 }
             }
@@ -225,7 +233,7 @@ class TeamTrials(
         }
 
         if (!menuBar.goToRace()) {
-            MessageLog.w(TAG, "Failed to go to menu bar's Race tab.")
+            MessageLog.w(TAG, "[$name] Failed to go to menu bar's Race tab.")
             return false
         }
 
@@ -236,18 +244,18 @@ class TeamTrials(
 
         when (button) {
             is ButtonTeamTrialsTallying -> {
-                MessageLog.i(TAG, "Team Trials are tallying. Cannot proceed.")
+                MessageLog.i(TAG, "[$name] Team Trials are tallying. Cannot proceed.")
                 return false
             }
             is ButtonTeamTrials -> {
                 if (button.checkDisabled(game.imageUtils) == true) {
-                    MessageLog.i(TAG, "Team Trials are locked. Cannot proceed.")
+                    MessageLog.i(TAG, "[$name] Team Trials are locked. Cannot proceed.")
                     return false
                 }
                 button.click(game.imageUtils)
             }
             else -> {
-                MessageLog.e(TAG, "Failed to find Team Trials button.")
+                MessageLog.e(TAG, "[$name] Failed to find Team Trials button.")
                 return false
             }
         }

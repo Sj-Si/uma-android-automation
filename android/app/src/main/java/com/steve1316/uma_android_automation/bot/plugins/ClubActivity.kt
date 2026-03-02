@@ -10,7 +10,6 @@ import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
-import com.steve1316.uma_android_automation.utils.ScrollList
 
 import com.steve1316.uma_android_automation.components.BaseComponentInterface
 import com.steve1316.uma_android_automation.components.ComponentInterface
@@ -202,13 +201,16 @@ class ClubActivity(
         when (currentPage) {
             PageClubHome -> {
                 if (!bHasRequestedItems) {
+                    MessageLog.d(TAG, "[$name] PageClubHome: Requesting items...")
                     waitForButton(ButtonClubItemRequest, bShouldClickButton = true)
                 } else if (!bHasDonatedItems) {
+                    MessageLog.d(TAG, "[$name] PageClubHome: Donating items...")
                     waitForButton(ButtonClubViewRequests, bShouldClickButton = true)
                     // After timing out, we can assume that this button just doesn't
                     // exist meaning there are no available requests.
                     bHasDonatedItems = true
                 } else if (bHasRequestedItems && bHasDonatedItems) {
+                    MessageLog.d(TAG, "[$name] PageClubHome: All tasks completed.")
                     bIsComplete = true
                 }
             }
@@ -231,17 +233,17 @@ class ClubActivity(
         }
 
         if (waitForButton(ButtonClub, bShouldClickButton = false) == null) {
-            MessageLog.e(TAG, "Failed to find Club button. Cannot proceed.")
+            MessageLog.e(TAG, "[$name] Failed to find Club button. Cannot proceed.")
             return false
         }
 
         if (ButtonClub.checkDisabled(game.imageUtils) == true) {
-            MessageLog.i(TAG, "Club is locked. Cannot proceed.")
+            MessageLog.i(TAG, "[$name] Club is locked. Cannot proceed.")
             return false
         }
 
         if (!ButtonClub.click(game.imageUtils)) {
-            MessageLog.w(TAG, "Failed to click Club button.")
+            MessageLog.w(TAG, "[$name] Failed to click Club button.")
             return false
         }
 

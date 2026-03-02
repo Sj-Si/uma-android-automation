@@ -115,10 +115,12 @@ class SpecialMissions(
     }
 
     private fun handleTab(tab: ComponentInterface) {
+        MessageLog.d(TAG, "[$name] Handling tab: ${tab::class.simpleName}")
         game.wait(0.25, skipWaitingForLoading = true)
         tab.click(game.imageUtils)
         game.wait(0.25, skipWaitingForLoading = true)
         if (ButtonCollectAll.checkDisabled(game.imageUtils) == true) {
+            MessageLog.d(TAG, "[$name] Tab has no rewards to collect. Moving on...")
             return
         }
         ButtonCollectAll.click(game.imageUtils)
@@ -127,16 +129,19 @@ class SpecialMissions(
     }
 
     private fun handleSpecialMissionsTabs() {
+        MessageLog.d(TAG, "[$name] Handling Special Missions tabs...")
         specialMissionsTabs.forEach { handleTab(it) }
         bHasHandledSpecialMissions = true
     }
 
     private fun handleEventMissionsTabs() {
+        MessageLog.d(TAG, "[$name] Handling Event Missions tabs...")
         eventMissionsTabs.forEach { handleTab(it) }
         bHasHandledEventMissions = true
     }
 
     private fun handleRacingCarnivalMissionsTabs() {
+        MessageLog.d(TAG, "[$name] Handling Carnival Missions tabs...")
         racingCarnivalMissionsTabs.forEach { handleTab(it) }
         bHasHandledRacingCarnivalMissions = true
     }
@@ -149,9 +154,12 @@ class SpecialMissions(
         when (currentPage) {
             PageSpecialMissions -> {
                 if (!bHasHandledSpecialMissions) {
+                    MessageLog.d(TAG, "[$name] PageSpecialMissions: Handling special missions...")
                     handleSpecialMissionsTabs()
                 } else {
+                    MessageLog.d(TAG, "[$name] PageSpecialMissions: Handling event missions...")
                     if (!ButtonEventMissions.click(game.imageUtils)) {
+                        MessageLog.d(TAG, "[$name] PageSpecialMissions: Event missions handled.")
                         bHasHandledEventMissions = true
                         bHasHandledRacingCarnivalMissions = true
                     }
@@ -160,6 +168,7 @@ class SpecialMissions(
             PageEventMissions -> {
                 handleEventMissionsTabs()
                 if (bHasHandledEventMissions) {
+                    MessageLog.d(TAG, "[$name] PageEventMissions: Event missions handled. Returning to PageSpecialMissions.")
                     ButtonBack.click(game.imageUtils)
                     game.wait(0.5)
                     handleDialogs()
@@ -173,6 +182,7 @@ class SpecialMissions(
             bHasHandledRacingCarnivalMissions
 
         if (bIsComplete) {
+            MessageLog.d(TAG, "[$name] SpecialMissions is complete. Returning...")
             ButtonBack.click(game.imageUtils)
         }
 
@@ -192,7 +202,7 @@ class SpecialMissions(
         }
 
         if (waitForButton(ButtonHomeSpecialMissions, bShouldClickButton = true) == null) {
-            MessageLog.w(TAG, "Failed to find Special Missions button.")
+            MessageLog.w(TAG, "[$name] Failed to find Special Missions button.")
             return false
         }
 

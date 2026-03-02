@@ -9,7 +9,6 @@ import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
-import com.steve1316.uma_android_automation.utils.ScrollList
 
 import com.steve1316.uma_android_automation.components.PageInterface
 import com.steve1316.uma_android_automation.components.DialogInterface
@@ -33,15 +32,15 @@ class Presents(
         when (result.dialog.name) {
             "presents" -> {
                 if (ButtonCollectAll.checkDisabled(game.imageUtils) == true) {
+                    MessageLog.d(TAG, "[$name] CollectAll button is disabled. No presents to collect.")
                     bIsComplete = true
                     result.dialog.close(game.imageUtils)
                 } else {
+                    MessageLog.d(TAG, "[$name] Collecting presents...")
                     result.dialog.ok(game.imageUtils)
                 }
             }
-            "rewards_collected" -> {
-                result.dialog.close(game.imageUtils)
-            }
+            "rewards_collected" -> result.dialog.close(game.imageUtils)
             else -> return DialogHandlerResult.Unhandled(result.dialog)
         }
         game.wait(0.5, skipWaitingForLoading = true)
@@ -56,7 +55,7 @@ class Presents(
         super.goToStart()
 
         if (waitForButton(ButtonHomePresents) == null) {
-            MessageLog.w(TAG, "Failed to find Presents button at home screen.")
+            MessageLog.w(TAG, "[$name] Failed to find Presents button at home screen.")
             return false
         }
 

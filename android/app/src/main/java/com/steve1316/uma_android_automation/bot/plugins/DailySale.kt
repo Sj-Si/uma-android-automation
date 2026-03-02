@@ -92,17 +92,17 @@ class DailySale(
         }
 
         if (waitForButton(ButtonHomeShop, bShouldClickButton = false) == null) {
-            MessageLog.e(TAG, "Failed to find Shop button. Cannot proceed.")
+            MessageLog.e(TAG, "[$name] Failed to find Shop button. Cannot proceed.")
             return false
         }
 
         if (waitForButton(ButtonHomeShopDailySale, bShouldClickButton = true) == null) {
-            MessageLog.i(TAG, "No daily sale available. Cannot proceed.")
+            MessageLog.i(TAG, "[$name] No daily sale available. Cannot proceed.")
             return false
         }
 
         if (waitForButton(ButtonShopDailySales, bShouldClickButton = true) == null) {
-            MessageLog.w(TAG, "No daily sale available in shop. Cannot proceed.")
+            MessageLog.w(TAG, "[$name] No daily sale available in shop. Cannot proceed.")
             return false
         }
 
@@ -130,7 +130,7 @@ class DailySale(
                 )
                 return detectedText
             } catch (e: Exception) {
-                MessageLog.e(TAG, "Exception during text extraction: ${e.message}")
+                MessageLog.e(TAG, "[$name] Exception during text extraction: ${e.message}")
                 return ""
             }
         }
@@ -143,7 +143,7 @@ class DailySale(
         )
 
         if (buttonLoc == null) {
-            MessageLog.e(TAG, "Failed to find any Exchange button in bitmap.")
+            MessageLog.e(TAG, "[$name] Failed to find any Exchange button in bitmap.")
             return false
         }
 
@@ -208,7 +208,7 @@ class DailySale(
 
         val scrollList: ScrollList? = ScrollList.create(game)
         if (scrollList == null) {
-            MessageLog.e(TAG, "[DAILY_SALE] Failed to detect sale list.")
+            MessageLog.e(TAG, "[$name] Failed to detect sale list.")
             return false
         }
 
@@ -216,7 +216,7 @@ class DailySale(
 
         if (!bSaleExpired) {
             if (waitForButton(ButtonShopEndSale, bShouldClickButton = true) == null) {
-                MessageLog.e(TAG, "[DAILY_SALE] Failed to find End Sale button.")
+                MessageLog.e(TAG, "[$name] Failed to find End Sale button.")
                 return false
             }
             handleDialogs()
