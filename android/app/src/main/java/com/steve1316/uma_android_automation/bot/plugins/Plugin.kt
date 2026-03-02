@@ -94,8 +94,7 @@ abstract class Plugin(
             is DialogHandlerResult.Error -> throw IllegalStateException("Dialog handler produced an error: ${dialogResult.message}")
         }
 
-        val bitmap: Bitmap = bitmap ?: game.imageUtils.getSourceBitmap()
-        return checkPage(bitmap)
+        return checkPage()
     }
 
     /** Wait for any toasts at the top of the page to disappear.
@@ -113,9 +112,12 @@ abstract class Plugin(
     private fun waitForToasts(timeoutMs: Int = 10000): Bitmap? {
         val startTime = System.currentTimeMillis()
         while (System.currentTimeMillis() - startTime < timeoutMs) {
-            if (!IconTaskClearToast.check(game.imageUtils)) {
+            if (!IconTaskClearToast.check(game.imageUtils, tries=5)) {
                 return game.imageUtils.getSourceBitmap()
             }
+            // Small delay when we detected a toast to allow it to go away.
+            // This way we aren't just burning CPU cycles.
+            game.wait(0.5, skipWaitingForLoading = true)
         }
 
         return null
