@@ -175,6 +175,8 @@ class DailyRaces(
             }
             PageExtraRacesRunnerSelection -> {
                 PageExtraRacesRunnerSelection.next(game.imageUtils)
+                // Add a delay for the dialog to pop up.
+                game.wait(0.5, skipWaitingForLoading = true)
             }
             PageExtraRacesPreRacePrep -> {
                 PageExtraRacesPreRacePrep.next(game.imageUtils)
