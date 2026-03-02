@@ -94,7 +94,11 @@ abstract class Plugin(
             is DialogHandlerResult.Error -> throw IllegalStateException("Dialog handler produced an error: ${dialogResult.message}")
         }
 
-        return checkPage()
+        val page: PageInterface? = checkPage()
+        if (page != null) {
+            MessageLog.d(TAG, "[$name] at ${page::class.simpleName}")
+        }
+        return page
     }
 
     /** Wait for any toasts at the top of the page to disappear.
@@ -139,7 +143,11 @@ abstract class Plugin(
      */
     protected open fun handleDialogs(dialog: DialogInterface? = null): DialogHandlerResult {
         if (commonDialogHandler != null) {
-            return commonDialogHandler(dialog)
+            val commonResult: DialogHandlerResult = commonDialogHandler(dialog)
+            if (commonResult is DialogHandlerResult.Handled) {
+                MessageLog.d(TAG, "[$name] Common dialog handler handled a dialog.")
+                return commonResult
+            }
         }
 
         var dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
@@ -157,6 +165,8 @@ abstract class Plugin(
                 return DialogHandlerResult.NoDialogDetected
             }
         }
+
+        MessageLog.d(TAG, "[$name][DIALOG] ${dialog.name}")
 
         // Return the dialog as unhandled so that subclasses can handle it.
         return DialogHandlerResult.Unhandled(dialog)
