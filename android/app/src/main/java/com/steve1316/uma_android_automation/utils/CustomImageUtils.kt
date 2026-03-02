@@ -3109,7 +3109,7 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
      *
      * @return On success, a pair where the first value is the full scrollbar's
      * BoundingBox and the second value is just the scrollbar's thumb's BoundingBox.
-     * If either of these could not be found, then we return NULL.
+     * Either of these values can be NULL if they were not detected.
      */
     fun detectScrollBar(
         bitmap: Bitmap? = null,
@@ -3117,7 +3117,7 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
         minArea: Int? = null,
         maxArea: Int? = null,
         morphCloseKernelSize: Int = 10,
-    ): Pair<BoundingBox, BoundingBox>? {
+    ): Pair<BoundingBox?, BoundingBox?> {
         val bitmap: Bitmap = if (region == null) {
             bitmap ?: getSourceBitmap()
         } else if (bitmap == null) {
@@ -3301,7 +3301,7 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
             maxArea = maxArea,
             debugString = "bar",
         )
-        if (bboxBar == null) {
+        if (bboxBar == null && debugMode) {
             MessageLog.i(TAG, "No scrollbar detected.")
             val resultBitmap = createBitmap(srcImage.cols(), srcImage.rows())
             Imgproc.cvtColor(srcImage, srcImage, Imgproc.COLOR_BGR2RGB)
@@ -3315,8 +3315,12 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
             maxArea = maxArea,
             debugString = "thumb",
         )
-        if (bboxThumb == null) {
+        if (bboxThumb == null && debugMode) {
             MessageLog.i(TAG, "No scrollbar thumb detected.")
+            val resultBitmap = createBitmap(srcImage.cols(), srcImage.rows())
+            Imgproc.cvtColor(srcImage, srcImage, Imgproc.COLOR_BGR2RGB)
+            Utils.matToBitmap(srcImage, resultBitmap)
+            saveBitmap(resultBitmap, "detectScrollBar_thumb_FAILED", fullRes = true)
         }
 
         // Free memory for each mat.
@@ -3326,11 +3330,9 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
         image.release()
         srcImage.release()
 
-        if (bboxThumb == null || bboxBar == null) {
-            return null
+        if (debugMode) {
+            MessageLog.d(TAG, "detectScrollBar results: bboxBar=$bboxBar, bboxThumb=$bboxThumb")
         }
-
-        MessageLog.d(TAG, "Detected ScrollBar: $bboxBar, ScrollBarThumb: $bboxThumb")
         return Pair(bboxBar, bboxThumb)
     }
 

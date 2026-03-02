@@ -132,18 +132,22 @@ class ScrollList private constructor(
     )
 
     // An estimate of the scrollbar's location within the list.
+    private val defaultScrollBarWidth: Int = (0.0325 * SharedData.displayWidth).toInt()
     private val bboxScrollBarRegionDefault = BoundingBox(
-        x = bboxList.x + (bboxList.w - 35),
+        x = bboxList.x + (bboxList.w - defaultScrollBarWidth),
         y = bboxList.y + 10,
-        w = 35,
+        w = defaultScrollBarWidth,
         h = bboxList.h - 20,
     )
 
     // No known scrollbars that are anywhere near this small.
     private val bboxScrollBarMinArea: Int = 100
     private val bboxScrollBarMaxArea: Int = bboxScrollBarRegionDefault.w * bboxScrollBarRegionDefault.h
-    // This can be updated if we successfully detect it later.
-    private var bboxScrollBar: BoundingBox = getListScrollBarBoundingRegion().first
+
+    // This flag tracks whether the list is scrollable. It is set in [getListScrollBarBoundingRegion].
+    // This flag latches to true if it is ever set since the list will never go from
+    // being scrollable to not being scrollable.
+    private var bIsScrollable: Boolean = false
 
     companion object {
         private val TAG: String = "[${MainActivity.loggerTag}]ScrollList"
@@ -258,6 +262,8 @@ class ScrollList private constructor(
      * @return A list of bounding boxes for each entry that we detected.
      */
     private fun detectEntries(bitmap: Bitmap? = null): List<BoundingBox> {
+        val bboxBar: BoundingBox? = getListScrollBarBoundingRegion().first
+
         // We want to cut the scroll bar region out of the search region. This way,
         // the scroll bar doesn't cause entries to merge together.
         // This is really only important for lists where entries can have overlay
@@ -266,7 +272,7 @@ class ScrollList private constructor(
         val bboxNoScrollbar = BoundingBox(
             x = bboxList.x,
             y = bboxList.y,
-            w = bboxScrollBar.x - bboxList.x,
+            w = if (bboxBar == null) bboxList.w else bboxBar.x - bboxList.x,
             h = bboxList.h,
         )
 
@@ -301,7 +307,6 @@ class ScrollList private constructor(
                 adaptiveThresholdConstant = entryDetectionConfig.adaptiveThresholdConstant,
             )
         }
-        
 
         // Need to adjust the coordinates of each BoundingBox to be in screen
         // coordinates instead of being relative to [bboxList].
@@ -327,14 +332,13 @@ class ScrollList private constructor(
      * The only benefit to this is reduced time spent due to not needing to take
      * a new screenshot.
      *
-     * @return If we detected a scrollbar on screen, we return the scrollbar
-     * and its detected Thumb component as a pair. Otherwise we return the class's
-     * [bboxScrollBar] and NULL as a pair.
+     * @return A pair of nullable bounding boxes where the first item is the scrollbar
+     * and the second item is the scrollbar's thumb component.
      */
     private fun getListScrollBarBoundingRegion(
         bitmap: Bitmap? = null,
-    ): Pair<BoundingBox, BoundingBox?> {
-        val result: Pair<BoundingBox, BoundingBox>? = game.imageUtils.detectScrollBar(
+    ): Pair<BoundingBox?, BoundingBox?> {
+        val result: Pair<BoundingBox?, BoundingBox?> = game.imageUtils.detectScrollBar(
             bitmap = bitmap,
             region = bboxScrollBarRegionDefault,
             minArea = bboxScrollBarMinArea,
@@ -342,29 +346,41 @@ class ScrollList private constructor(
             morphCloseKernelSize = 10,
         )
 
-        // If we detected a scrollbar, update our class state with the new bbox
-        // since the scrollbar will be in the same position for the lifetime of
-        // this class instance.
-        if (result != null) {
+        val tmpBar: BoundingBox? = result.first
+        val tmpThumb: BoundingBox? = result.second
+
+        val bboxScrollBar: BoundingBox? = if (tmpBar == null) {
+            null
+        } else {
             // Add the original region back to the x/y coords of the result.
-            bboxScrollBar = BoundingBox(
-                x = bboxScrollBarRegionDefault.x + result.first.x,
-                y = bboxScrollBarRegionDefault.y + result.first.y,
-                w = result.first.w,
-                h = result.first.h,
+            BoundingBox(
+                x = bboxScrollBarRegionDefault.x + tmpBar.x,
+                y = bboxScrollBarRegionDefault.y + tmpBar.y,
+                w = tmpBar.w,
+                h = tmpBar.h,
             )
-
-            val bboxThumb = BoundingBox(
-                x = bboxScrollBarRegionDefault.x + result.second.x,
-                y = bboxScrollBarRegionDefault.y + result.second.y,
-                w = result.second.w,
-                h = result.second.h,
-            )
-
-            return Pair(bboxScrollBar, bboxThumb)
         }
 
-        return Pair(bboxScrollBar, null)
+        val bboxThumb: BoundingBox? = if(tmpThumb == null) {
+            null
+        } else {
+            BoundingBox(
+                x = bboxScrollBarRegionDefault.x + tmpThumb.x,
+                y = bboxScrollBarRegionDefault.y + tmpThumb.y,
+                w = tmpThumb.w,
+                h = tmpThumb.h,
+            )
+        }
+
+        // Set a flag so we know if this list is scrollable.
+        // We only ever set this to true. If we detect a scrollbar once, then the
+        // list will always be scrollable, even if we fail to detect a scrollbar
+        // for some reason later on.
+        if (bboxScrollBar != null) {
+            bIsScrollable = true
+        }
+
+        return Pair(bboxScrollBar, bboxThumb)
     }
 
     /** Stops overscrolling of the list by clicking on screen.
@@ -409,14 +425,13 @@ class ScrollList private constructor(
     /** Scrolls to the top of the list.
      *
      * @param bitmap Optional source bitmap to use when detecting scrollbar.
-     * @param bboxThumb Optional BoundingBox for the scrollbar's thumb item.
-     * This saves us time having to try and detect it.
      */
-    private fun scrollToTop(
-        bitmap: Bitmap? = null,
-        bboxThumb: BoundingBox? = null,
-    ) {
-        val bboxThumb: BoundingBox? = bboxThumb ?: getListScrollBarBoundingRegion().second
+    private fun scrollToTop(bitmap: Bitmap? = null) {
+        val bboxThumb: BoundingBox? = getListScrollBarBoundingRegion().second
+        if (!bIsScrollable) {
+            MessageLog.d(TAG, "scrollToTop: List is not scrollable.")
+            return
+        }
 
         if (bboxThumb == null) {
             MessageLog.d(TAG, "scrollToTop: No scrollbar thumb detected. Falling back to lazy scrolling.")
@@ -447,14 +462,13 @@ class ScrollList private constructor(
     /** Scrolls to the bottom of the list.
      *
      * @param bitmap Optional source bitmap to use when detecting scrollbar.
-     * @param bboxThumb Optional BoundingBox for the scrollbar's thumb item.
-     * This saves us time having to try and detect it.
      */
-    private fun scrollToBottom(
-        bitmap: Bitmap? = null,
-        bboxThumb: BoundingBox? = null,
-    ) {
-        val bboxThumb: BoundingBox? = bboxThumb ?: getListScrollBarBoundingRegion().second
+    private fun scrollToBottom(bitmap: Bitmap? = null) {
+        val bboxThumb: BoundingBox? = getListScrollBarBoundingRegion().second
+        if (!bIsScrollable) {
+            MessageLog.d(TAG, "scrollToBottom: List is not scrollable.")
+            return
+        }
 
         if (bboxThumb == null) {
             MessageLog.d(TAG, "scrollToBottom: No scrollbar thumb detected. Falling back to lazy scrolling.")
@@ -491,12 +505,22 @@ class ScrollList private constructor(
     private fun scrollToPercent(percent: Int): Boolean {
         val percent: Int = percent.coerceIn(0, 100)
 
-        val bboxes: Pair<BoundingBox, BoundingBox?> = getListScrollBarBoundingRegion()
-        val bboxBar: BoundingBox = bboxes.first
+        val bboxes: Pair<BoundingBox?, BoundingBox?> = getListScrollBarBoundingRegion()
+        if (!bIsScrollable) {
+            MessageLog.d(TAG, "scrollToPercent: List is not scrollable.")
+            return false
+        }
+
+        val bboxBar: BoundingBox? = bboxes.first
         val bboxThumb: BoundingBox? = bboxes.second
 
-        if (bboxThumb == null) {
+        if (bboxBar == null) {
             MessageLog.w(TAG, "scrollToPercent: Failed to detect scrollbar.")
+            return false
+        }
+
+        if (bboxThumb == null) {
+            MessageLog.d(TAG, "scrollToPercent: Failed to detect scrollbar thumb.")
             return false
         }
 
@@ -532,6 +556,11 @@ class ScrollList private constructor(
         entryHeight: Int = 0,
         durationMs: Long = 1000L,
     ) {
+        if (!bIsScrollable) {
+            MessageLog.d(TAG, "scrollDown: List is not scrollable.")
+            return
+        }
+
         val durationMs: Long = durationMs.coerceAtLeast(250L)
         val x0: Int = ((startLoc?.x ?: (bboxList.x + (bboxList.w / 2)))).toInt()
         val y0: Int = ((startLoc?.y ?: (bboxList.y + (bboxList.h / 2)))).toInt()
@@ -563,6 +592,11 @@ class ScrollList private constructor(
         entryHeight: Int = 0,
         durationMs: Long = 1000L,
     ) {
+        if (!bIsScrollable) {
+            MessageLog.d(TAG, "scrollUp: List is not scrollable.")
+            return
+        }
+
         val durationMs: Long = durationMs.coerceAtLeast(250L)
         val x0: Int = ((startLoc?.x ?: (bboxList.x + (bboxList.w / 2)))).toInt()
         val y0: Int = ((startLoc?.y ?: (bboxList.y + (bboxList.h / 2)))).toInt()
@@ -604,7 +638,7 @@ class ScrollList private constructor(
         // Stores all bboxes. Used to calculate average entry height.
         val entryBboxes: MutableList<BoundingBox> = mutableListOf()
         // Used as break point.
-        var prevBboxScrollBarThumb: BoundingBox? = null
+        var prevThumbY: Int? = null
 
         var index = 0
         while (System.currentTimeMillis() - startTime < maxTimeMs) {
@@ -637,34 +671,38 @@ class ScrollList private constructor(
             entryBboxes.addAll(bboxes)
             val avgEntryHeight: Int = entryBboxes.map { it.h }.average().toInt()
             val scrollStartLoc: Point? = if (bboxes.isEmpty()) null else Point(bboxEntries.x.toDouble(), bboxes.last().y.toDouble())
-            if (bScrollBottomToTop) {
-                scrollUp(startLoc = scrollStartLoc, entryHeight = avgEntryHeight)
+            if (bIsScrollable) {
+                if (bScrollBottomToTop) {
+                    scrollUp(startLoc = scrollStartLoc, entryHeight = avgEntryHeight)
+                } else {
+                    scrollDown(startLoc = scrollStartLoc, entryHeight = avgEntryHeight)
+                }
+                // Slight delay to allow screen to settle before next iteration.
+                game.wait(0.5, skipWaitingForLoading = true)
             } else {
-                scrollDown(startLoc = scrollStartLoc, entryHeight = avgEntryHeight)
+                MessageLog.d(TAG, "ScrollList.process: List is not scrollable. Exiting loop.")
+                return false
             }
-
-            // Slight delay to allow screen to settle before next iteration.
-            game.wait(0.5, skipWaitingForLoading = true)
 
             // SCROLLBAR CHANGE DETECTION LOGIC
             // Breaks loop if no change to Y position.
-            val bboxScrollBarThumb: BoundingBox? = getListScrollBarBoundingRegion().second
-            if (bboxScrollBarThumb == null) {
-                MessageLog.d(TAG, "No scroll bar detected. Exiting loop.")
+            val bboxThumb: BoundingBox? = getListScrollBarBoundingRegion().second
+            if (bboxThumb == null) {
+                MessageLog.d(TAG, "ScrollList.process: No scrollbar thumb detected. Exiting loop.")
                 return false
             }
 
             // If the scrollbar hasn't changed after scrolling,
             // that means we've reached the end of the list.
-            if (prevBboxScrollBarThumb != null &&
-                bboxScrollBarThumb != null &&
-                bboxScrollBarThumb.y == prevBboxScrollBarThumb.y
+            if (prevThumbY != null &&
+                bboxThumb != null &&
+                bboxThumb.y == prevThumbY
             ) {
-                MessageLog.d(TAG, "Reached end of scroll list. Exiting loop.")
+                MessageLog.d(TAG, "ScrollList.process: Reached end of scroll list. Exiting loop.")
                 return true
             }
 
-            prevBboxScrollBarThumb = bboxScrollBarThumb
+            prevThumbY = bboxThumb.y
         }
 
         MessageLog.e(TAG, "ScrollList.process: Timed out.")
