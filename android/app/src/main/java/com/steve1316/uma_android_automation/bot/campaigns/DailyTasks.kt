@@ -25,15 +25,6 @@ class DailyTasks(game: Game) : Campaign(game) {
     val pluginsSetting: List<String> = SettingsHelper.getStringArraySetting("dailyTasks", "plugins")
         .map { it.replace("\\s+".toRegex(), "") }
 
-    private val bEnableChampionsMeeting: Boolean = true
-    private val bEnableClubActivity: Boolean = true
-    private val bEnableDailyRaces: Boolean = true
-    private val bEnableDailySale: Boolean = true
-    private val bEnableLegendRace: Boolean = true
-    private val bEnablePresents: Boolean = true
-    private val bEnableSpecialMissions: Boolean = true
-    private val bEnableTeamTrials: Boolean = true
-
     fun pluginDialogHandler(dialog: DialogInterface? = null): DialogHandlerResult {
         val dialog: DialogInterface = dialog ?:
             DialogUtils.getDialog(game.imageUtils) ?:
@@ -83,9 +74,9 @@ class DailyTasks(game: Game) : Campaign(game) {
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
             when {
                 pluginDialogHandler() is DialogHandlerResult.Handled -> {}
-                // If we see the Shop button, then we're at the home page.
+                // If we see the ButtonHomeSpecialMissions button, then we're at the home page.
                 // Since we're at home page, we're done.
-                ButtonShop.check(game.imageUtils, sourceBitmap = bitmap) -> return true
+                ButtonHomeSpecialMissions.check(game.imageUtils, sourceBitmap = bitmap) -> return true
                 ButtonTitleScreen.click(game.imageUtils, sourceBitmap = bitmap) -> {}
                 ButtonSkip.click(game.imageUtils, sourceBitmap = bitmap) -> {}
                 else -> game.tap(350.0, 750.0, "ok", taps = 1)
