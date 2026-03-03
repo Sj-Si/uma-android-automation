@@ -161,6 +161,7 @@ class SpecialMissions(
                 if (!bHasHandledSpecialMissions) {
                     MessageLog.d(TAG, "[$name] PageSpecialMissions: Handling special missions...")
                     handleMissionsTabs()
+                    bHasHandledSpecialMissions = true
                 } else {
                     MessageLog.d(TAG, "[$name] PageSpecialMissions: Handling event missions...")
                     if (!ButtonEventMissions.click(game.imageUtils)) {
