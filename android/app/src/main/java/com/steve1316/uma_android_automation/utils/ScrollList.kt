@@ -132,6 +132,7 @@ class ScrollList private constructor(
     )
 
     // An estimate of the scrollbar's location within the list.
+    // Roughly 35px wide on a 1080 screen, scaled to screen width.
     private val defaultScrollBarWidth: Int = (0.0325 * SharedData.displayWidth).toInt()
     private val bboxScrollBarRegionDefault = BoundingBox(
         x = bboxList.x + (bboxList.w - defaultScrollBarWidth),
