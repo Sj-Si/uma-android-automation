@@ -10,24 +10,24 @@ import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 import com.steve1316.uma_android_automation.utils.ScrollList
+import com.steve1316.uma_android_automation.utils.ScrollListEntry
 
-import com.steve1316.uma_android_automation.components.ComponentInterface
-import com.steve1316.uma_android_automation.components.DialogInterface
-import com.steve1316.uma_android_automation.components.PageInterface
-import com.steve1316.uma_android_automation.components.PageSpecialMissions
-import com.steve1316.uma_android_automation.components.PageEventMissions
-import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabDaily
-import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabMain
-import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabTitles
-import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabSpecial
-import com.steve1316.uma_android_automation.components.ButtonEventMissionsTabLimitedTime
-import com.steve1316.uma_android_automation.components.ButtonEventExclusiveMissionsStoryEvent
-import com.steve1316.uma_android_automation.components.ButtonEventExclusiveMissionsRacingCarnival
+import com.steve1316.uma_android_automation.components.ButtonBack
 import com.steve1316.uma_android_automation.components.ButtonCollectAll
 import com.steve1316.uma_android_automation.components.ButtonEventMissions
-import com.steve1316.uma_android_automation.components.ButtonBack
+import com.steve1316.uma_android_automation.components.ButtonEventMissionsTabLimitedTime
 import com.steve1316.uma_android_automation.components.ButtonHomeSpecialMissions
+import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabDaily
+import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabMain
+import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabSpecial
+import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabTitles
+import com.steve1316.uma_android_automation.components.ComponentInterface
+import com.steve1316.uma_android_automation.components.DialogInterface
+import com.steve1316.uma_android_automation.components.IconEventExclusiveMissionsListBottomRight
+import com.steve1316.uma_android_automation.components.IconEventExclusiveMissionsListTopLeft
 import com.steve1316.uma_android_automation.components.MenuBar
+import com.steve1316.uma_android_automation.components.PageInterface
+import com.steve1316.uma_android_automation.components.PageSpecialMissions
 
 class SpecialMissions(
     game: Game,
@@ -36,27 +36,16 @@ class SpecialMissions(
 ) : Plugin(game, menuBar, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]SpecialMissions"
 
-    private val specialMissionsTabs: List<ComponentInterface> = listOf(
+    private val missionsTabs: List<ComponentInterface> = listOf(
         ButtonSpecialMissionsTabDaily,
         ButtonSpecialMissionsTabMain,
         ButtonSpecialMissionsTabTitles,
         ButtonSpecialMissionsTabSpecial,
-    )
-
-    private val eventMissionsTabs: List<ComponentInterface> = listOf(
-        ButtonSpecialMissionsTabDaily,
-        ButtonSpecialMissionsTabTitles,
-        ButtonEventMissionsTabLimitedTime,
-    )
-
-    private val racingCarnivalMissionsTabs: List<ComponentInterface> = listOf(
-        ButtonSpecialMissionsTabDaily,
         ButtonEventMissionsTabLimitedTime,
     )
 
     private var bHasHandledSpecialMissions: Boolean = false
-    private var bHasHandledEventMissions: Boolean = false
-    private var bHasHandledRacingCarnivalMissions: Boolean = false
+    private var bHasHandledEventExclusiveMissions: Boolean = false
 
     override fun handleDialogs(dialog: DialogInterface?): DialogHandlerResult {
         val result: DialogHandlerResult = super.handleDialogs(dialog)
@@ -69,35 +58,17 @@ class SpecialMissions(
                 // TODO: Need to add logic for other entries in this dialog.
                 // Only event mission is currently in the dialog. Need to wait
                 // for legend races to become available again.
-                if (!bHasHandledEventMissions) {
-                    // Event missions may not exist for this mode. If not, then
-                    // just mark it as complete.
-                    if (!ButtonEventExclusiveMissionsStoryEvent.click(game.imageUtils)) {
-                        bHasHandledEventMissions = true
-                    }
-                } else if (!bHasHandledRacingCarnivalMissions) {
-                    if (!ButtonEventExclusiveMissionsRacingCarnival.click(game.imageUtils)) {
-                        bHasHandledRacingCarnivalMissions = true
-                    }
+                if (!bHasHandledEventExclusiveMissions) {
+                    handleEventExclusiveMisisons()
                 } else {
                     result.dialog.close(game.imageUtils)
                 }
             }
-            "event_missions" -> {
-                if (!bHasHandledRacingCarnivalMissions) {
-                    // Need to set this ahead of time since this is a dialog and it
-                    // spawns more dialogs. Otherwise we get stuck in an infinite loop.
-                    bHasHandledRacingCarnivalMissions = true
-                    handleRacingCarnivalMissionsTabs()
-                    result.dialog.close(game.imageUtils)
-                    // Need a delay otherwise we'll end up handling this same
-                    // dialog again since it is still on screen.
-                    game.wait(0.5)
-                    handleDialogs()
-                }
-            }
+            // Logic handled in [handleEventExclusiveMisisons]
+            "event_missions" -> result.dialog.close(game.imageUtils)
             "rewards_collected" -> result.dialog.close(game.imageUtils)
-            "special_missions" -> result.dialog.ok(game.imageUtils)
+            // Logic handled in [handleEventExclusiveMisisons]
+            "special_missions" -> result.dialog.close(game.imageUtils)
             "story_unlocked" -> result.dialog.close(game.imageUtils)
             else -> return DialogHandlerResult.Unhandled(result.dialog)
         }
@@ -110,8 +81,55 @@ class SpecialMissions(
 
         return listOf<PageInterface>(
             PageSpecialMissions,
-            PageEventMissions,
         ).find { it.check(game.imageUtils, bitmap) }
+    }
+
+    private fun handleEventExclusiveMisisons() {
+        val scrollList: ScrollList? = ScrollList.create(
+            this,
+            listTopLeftComponent = IconEventExclusiveMissionsListTopLeft,
+            listBottomRightComponent = IconEventExclusiveMissionsListBottomRight,
+        )
+        if (scrollList == null) {
+            MessageLog.e(TAG, "[$name] Failed to detect EventExclusiveMissions list.")
+            return
+        }
+        
+        /** Handle each entry in the list.
+         * 
+         * @return False to continue the list processing. True to end list processing early.
+         */
+        fun onListEntry(scrollList: ScrollList, entry: ScrollListEntry): Boolean {
+            MessageLog.d(TAG, "[$name] Handling EventExclusiveMissions entry #${entry.index}.")
+            val x: Double = (entry.bbox.x + (entry.bbox.w / 2).toInt()).toDouble()
+            val y: Double = (entry.bbox.y + (entry.bbox.h / 2).toInt()).toDouble()
+            game.tap(x, y)
+            game.wait(1.0)
+            if (waitForButton(missionsTabs) == null) {
+                MessageLog.w(TAG, "[$name] Timed out waiting for mission tabs to appear for event exclusive mission entry #${entry.index}.")
+                // Need to bail out since we're stuck in an unknown state.
+                return true
+            }
+            handleMissionsTabs()
+
+            // Let the dialog handler take care of any missions screens that are
+            // inside a dialog. It will close the dialog when complete.
+            val dialogResult: DialogHandlerResult = handleDialogs()
+            if (dialogResult is DialogHandlerResult.Handled) {
+                return false
+            }
+
+            // If missions screen isn't in a dialog, we need to return by clicking
+            // the back button which should exist in all non-dialog missions screens.
+            waitForButton(ButtonBack, bShouldClickButton = true)
+            // Now wait for game to load.
+            game.wait(1.0)
+            return false
+        }
+
+        scrollList.process(::onListEntry)
+
+        bHasHandledEventExclusiveMissions = true
     }
 
     private fun handleTab(tab: ComponentInterface) {
@@ -128,22 +146,9 @@ class SpecialMissions(
         handleDialogs()
     }
 
-    private fun handleSpecialMissionsTabs() {
-        MessageLog.d(TAG, "[$name] Handling Special Missions tabs...")
-        specialMissionsTabs.forEach { handleTab(it) }
-        bHasHandledSpecialMissions = true
-    }
-
-    private fun handleEventMissionsTabs() {
-        MessageLog.d(TAG, "[$name] Handling Event Missions tabs...")
-        eventMissionsTabs.forEach { handleTab(it) }
-        bHasHandledEventMissions = true
-    }
-
-    private fun handleRacingCarnivalMissionsTabs() {
-        MessageLog.d(TAG, "[$name] Handling Carnival Missions tabs...")
-        racingCarnivalMissionsTabs.forEach { handleTab(it) }
-        bHasHandledRacingCarnivalMissions = true
+    private fun handleMissionsTabs() {
+        MessageLog.d(TAG, "[$name] Handling Missions tabs...")
+        missionsTabs.forEach { handleTab(it) }
     }
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
@@ -155,31 +160,19 @@ class SpecialMissions(
             PageSpecialMissions -> {
                 if (!bHasHandledSpecialMissions) {
                     MessageLog.d(TAG, "[$name] PageSpecialMissions: Handling special missions...")
-                    handleSpecialMissionsTabs()
+                    handleMissionsTabs()
                 } else {
                     MessageLog.d(TAG, "[$name] PageSpecialMissions: Handling event missions...")
                     if (!ButtonEventMissions.click(game.imageUtils)) {
-                        MessageLog.d(TAG, "[$name] PageSpecialMissions: Event missions handled.")
-                        bHasHandledEventMissions = true
-                        bHasHandledRacingCarnivalMissions = true
+                        MessageLog.d(TAG, "[$name] PageSpecialMissions: No available event missions.")
+                        bHasHandledEventExclusiveMissions = true
                     }
-                }
-            }
-            PageEventMissions -> {
-                handleEventMissionsTabs()
-                if (bHasHandledEventMissions) {
-                    MessageLog.d(TAG, "[$name] PageEventMissions: Event missions handled. Returning to PageSpecialMissions.")
-                    ButtonBack.click(game.imageUtils)
-                    game.wait(0.5)
-                    handleDialogs()
                 }
             }
             else -> {}
         }
 
-        bIsComplete = bHasHandledSpecialMissions &&
-            bHasHandledEventMissions &&
-            bHasHandledRacingCarnivalMissions
+        bIsComplete = bHasHandledSpecialMissions && bHasHandledEventExclusiveMissions
 
         if (bIsComplete) {
             MessageLog.d(TAG, "[$name] SpecialMissions is complete. Returning...")
