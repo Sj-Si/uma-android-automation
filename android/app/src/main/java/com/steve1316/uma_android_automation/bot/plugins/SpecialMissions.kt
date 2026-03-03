@@ -86,7 +86,7 @@ class SpecialMissions(
 
     private fun handleEventExclusiveMisisons() {
         val scrollList: ScrollList? = ScrollList.create(
-            this,
+            game,
             listTopLeftComponent = IconEventExclusiveMissionsListTopLeft,
             listBottomRightComponent = IconEventExclusiveMissionsListBottomRight,
         )
@@ -127,7 +127,7 @@ class SpecialMissions(
             return false
         }
 
-        scrollList.process(::onListEntry)
+        scrollList.process(onEntry = ::onListEntry)
 
         bHasHandledEventExclusiveMissions = true
     }
