@@ -189,7 +189,7 @@ class DailySale(
                 purchasedItems.add(match)
                 // If we have purchased all requested items, then we return true
                 // to end the list processing immediately.
-                return purchasedItems.sorted() == saleItemsToBuy.sorted()
+                return purchasedItems.size == saleItemsToBuy.size
             }
         }
         return false
