@@ -153,6 +153,9 @@ class SpecialMissions(
 
     private fun handleMissionsTabs() {
         MessageLog.d(TAG, "[$name] Handling Missions tabs...")
+        // Click CollectAll on the current tab before proceeding.
+        // Otherwise we'll fail to detect the active tab and won't ever collect it.
+        ButtonCollectAll.click(game.imageUtils)
         missionsTabs.forEach { handleTab(it) }
     }
 

@@ -164,6 +164,7 @@ class LegendRace(
                     MessageLog.d(TAG, "[$name] PageLegendRaceHome: Handling special missions...")
                     game.wait(0.5)
                     handleDialogsUntilNoneRemain()
+                    game.wait(0.5)
                 }
 
                 selectRace()
