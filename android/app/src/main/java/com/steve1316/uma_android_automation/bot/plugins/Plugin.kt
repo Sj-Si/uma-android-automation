@@ -293,6 +293,9 @@ abstract class Plugin(
      * to no longer be detected on the screen. This allows us to verify that we
      * actually clicked the button since clicking most buttons in the game
      * causes them to disappear from the screen in some way.
+     * @param bShouldHandleDialogs Whether to handle any dialogs that pop up while
+     * waiting for the button. This helps to prevent false positive detections
+     * of buttons in dialogs that are the same as the button we're waiting for.
      *
      * @return If any of [buttons] is found, then that BaseComponentInterface object
      * is returned. Otherwise, NULL is returned.
@@ -307,12 +310,13 @@ abstract class Plugin(
         bShouldClickButton: Boolean = false,
         delayClickMs: Int = 250,
         bShouldWaitForButtonToGoAway: Boolean = true,
+        bShouldHandleDialogs: Boolean = true,
     ): BaseComponentInterface? {
         val startTime = System.currentTimeMillis()
         while (System.currentTimeMillis() - startTime < timeoutMs) {
-            // Handle dialogs first to prevent overlap of dialog buttons
-            // with the buttons we're waiting for.
-            handleDialogsUntilNoneRemain()
+            if (bShouldHandleDialogs) {
+                handleDialogsUntilNoneRemain()
+            }
 
             // Now check for the buttons in question.
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
@@ -372,6 +376,7 @@ abstract class Plugin(
      * @param bShouldClickButton See [waitForButton]
      * @param delayClickMs See [waitForButton]
      * @param bShouldWaitForButtonToGoAway See [waitForButton]
+     * @param bShouldHandleDialogs See [waitForButton]
      *
      * @return If the [button] is found, then that BaseComponentInterface object
      * is returned. Otherwise, NULL is returned.
@@ -383,6 +388,7 @@ abstract class Plugin(
         bShouldClickButton: Boolean = false,
         delayClickMs: Int = 250,
         bShouldWaitForButtonToGoAway: Boolean = true,
+        bShouldHandleDialogs: Boolean = true,
     ): BaseComponentInterface? {
         return waitForButton(
             buttons = listOf<BaseComponentInterface>(button),
@@ -391,6 +397,7 @@ abstract class Plugin(
             bShouldClickButton = bShouldClickButton,
             delayClickMs = delayClickMs,
             bShouldWaitForButtonToGoAway = bShouldWaitForButtonToGoAway,
+            bShouldHandleDialogs = bShouldHandleDialogs,
         )
     }
 
