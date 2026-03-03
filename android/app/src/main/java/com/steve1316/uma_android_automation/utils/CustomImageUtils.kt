@@ -2967,78 +2967,6 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
         return result.toList()
     }
 
-    /** Returns the luminance at a pixel in a bitmap.
-     *
-     * @param x The x-coordinate to test.
-     * @param y The y-coordinate to test.
-     * @param bitmap The bitmap that we want to check the luminance of.
-     *
-     * @return The luminance of the pixel as a Double between 0.0 and 1.0.
-     * Higher values indicate a brighter pixel.
-     */
-    fun getLuminanceAtCoordinates(x: Int, y: Int, bitmap: Bitmap? = null): Double {
-        val bitmap: Bitmap = bitmap ?: getSourceBitmap()
-        val pixel = bitmap.getPixel(x, y)
-        val r = Color.red(pixel)
-        val g = Color.green(pixel)
-        val b = Color.blue(pixel)
-        // https://en.wikipedia.org/wiki/Relative_luminance
-        val luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0
-        return luminance
-    }
-
-    /** Compares the luminance of two bitmaps.
-     *
-     * NOTE: Bitmaps [a] and [b] must be the same dimensions.
-     * Otherwise, 0 is returned.
-     *
-     * @param a The first bitmap for comparison.
-     * @param b The bitmap to compare against.
-     * @param samples The number of pixels to sample across both bitmaps.
-     * @param tolerance Margin of error for comparison. Should be very low value.
-     *
-     * @return
-     *      -1  If [a] is brighter than [b].
-     *      0   If [a] and [b] have the same luminance.
-     *      1   If [b] is brighter than [a].
-     */
-    fun compareBitmapLuminance(
-        a: Bitmap,
-        b: Bitmap,
-        samples: Int = 100,
-        tolerance: Double = 0.05,
-    ): Int {
-        if (a.width != b.width || a.height != b.height) {
-            return 0
-        }
-
-        var lumA: Double = 0.0
-        var lumB: Double = 0.0
-
-        // Clamp number of samples based on bitmap size.
-        val samples: Int = minOf(samples, a.width * a.height)
-
-        for (i in 0 until samples) {
-            // We want to sample at the same coordinates for each bitmap.
-            val x = Random.nextInt(0, a.width)
-            val y = Random.nextInt(0, a.height)
-
-            lumA += getLuminanceAtCoordinates(x, y, a)
-            lumB += getLuminanceAtCoordinates(x, y, b)
-        }
-
-        lumA /= samples
-        lumB /= samples
-
-        return if (lumA < lumB - tolerance) {
-            return 1
-        } else if (lumB < lumA - tolerance) {
-            return -1
-        } else {
-            return 0
-        }
-    }
-
     /** Converts an RGB hex string to an HSV
      *
      * The string should be a color hex string of the format:
@@ -3415,5 +3343,77 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
         val upper: Scalar = Scalar(upper.first, upper.second, upper.third)
 
         return checkColorRangeInBitmap(bitmap, lower, upper, debugString)
+    }
+
+    /** Returns the luminance at a pixel in a bitmap.
+     *
+     * @param x The x-coordinate to test.
+     * @param y The y-coordinate to test.
+     * @param bitmap The bitmap that we want to check the luminance of.
+     *
+     * @return The luminance of the pixel as a Double between 0.0 and 1.0.
+     * Higher values indicate a brighter pixel.
+     */
+    fun getLuminanceAtCoordinates(x: Int, y: Int, bitmap: Bitmap? = null): Double {
+        val bitmap: Bitmap = bitmap ?: getSourceBitmap()
+        val pixel = bitmap.getPixel(x, y)
+        val r = Color.red(pixel)
+        val g = Color.green(pixel)
+        val b = Color.blue(pixel)
+        // https://en.wikipedia.org/wiki/Relative_luminance
+        val luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255.0
+        return luminance
+    }
+
+    /** Compares the luminance of two bitmaps.
+     *
+     * NOTE: Bitmaps [a] and [b] must be the same dimensions.
+     * Otherwise, 0 is returned.
+     *
+     * @param a The first bitmap for comparison.
+     * @param b The bitmap to compare against.
+     * @param samples The number of pixels to sample across both bitmaps.
+     * @param tolerance Margin of error for comparison. Should be very low value.
+     *
+     * @return
+     *      -1  If [a] is brighter than [b].
+     *      0   If [a] and [b] have the same luminance.
+     *      1   If [b] is brighter than [a].
+     */
+    fun compareBitmapLuminance(
+        a: Bitmap,
+        b: Bitmap,
+        samples: Int = 100,
+        tolerance: Double = 0.05,
+    ): Int {
+        if (a.width != b.width || a.height != b.height) {
+            return 0
+        }
+
+        var lumA: Double = 0.0
+        var lumB: Double = 0.0
+
+        // Clamp number of samples based on bitmap size.
+        val samples: Int = minOf(samples, a.width * a.height)
+
+        for (i in 0 until samples) {
+            // We want to sample at the same coordinates for each bitmap.
+            val x = Random.nextInt(0, a.width)
+            val y = Random.nextInt(0, a.height)
+
+            lumA += getLuminanceAtCoordinates(x, y, a)
+            lumB += getLuminanceAtCoordinates(x, y, b)
+        }
+
+        lumA /= samples
+        lumB /= samples
+
+        return if (lumA < lumB - tolerance) {
+            return 1
+        } else if (lumB < lumA - tolerance) {
+            return -1
+        } else {
+            return 0
+        }
     }
 }

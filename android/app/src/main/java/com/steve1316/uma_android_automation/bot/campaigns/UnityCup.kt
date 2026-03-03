@@ -13,8 +13,8 @@ import com.steve1316.uma_android_automation.components.ButtonSkip
 import com.steve1316.uma_android_automation.components.ButtonRace
 import com.steve1316.uma_android_automation.components.ButtonNextRaceEnd
 import com.steve1316.uma_android_automation.components.ButtonSelectOpponent
-import com.steve1316.uma_android_automation.components.ButtonViewResultsLocked
 import com.steve1316.uma_android_automation.components.ButtonUnityCupSeeAllRaceResults
+import com.steve1316.uma_android_automation.components.ButtonUnityCupWatchMainRace
 import com.steve1316.uma_android_automation.components.DialogUtils
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.LabelUnityCupOpponentSelectionLaurel
@@ -183,14 +183,31 @@ class UnityCup(game: Game) : Campaign(game) {
                     game.wait(0.5)
                 }
                 // If the skip button is locked, need to manually run the race.
-                ButtonViewResultsLocked.check(game.imageUtils, sourceBitmap = sourceBitmap) -> {
-                    MessageLog.d(TAG, "[UNITY_CUP] Race skip is locked. Manually running race...")
-                    game.findAndTapImage("unitycup_race_manual", region = game.imageUtils.regionBottomHalf)
-                    game.racing.runRaceWithRetries()
-                }
-                // Skip the race if possible.
-                ButtonUnityCupSeeAllRaceResults.click(game.imageUtils, sourceBitmap = sourceBitmap) -> {
-                    MessageLog.d(TAG, "[UNITY_CUP] Skipping to race results.")
+                ButtonUnityCupSeeAllRaceResults.check(game.imageUtils, sourceBitmap = sourceBitmap) -> {
+                    when (ButtonUnityCupSeeAllRaceResults.checkDisabled(game.imageUtils, sourceBitmap)) {
+                        // Manually run the race.
+                        true -> {
+                            MessageLog.d(TAG, "[UNITY_CUP] See All Race Results button is locked. Manually running race...")
+                            if (ButtonUnityCupWatchMainRace.click(game.imageUtils, sourceBitmap = sourceBitmap)) {
+                                MessageLog.i(TAG, "[UNITY_CUP] Clicked Watch Main Race button.")
+                                game.racing.runRaceWithRetries()
+                            } else {
+                                MessageLog.w(TAG, "[UNITY_CUP] Failed to click the Watch Main Race button.")
+                            }
+                        }
+                        // Skip the race.
+                        false -> {
+                            if (ButtonUnityCupSeeAllRaceResults.click(game.imageUtils, sourceBitmap = sourceBitmap)) {
+                                MessageLog.i(TAG, "[UNITY_CUP] Clicked the See All Race Results button to skip the race.")
+                            } else {
+                                MessageLog.w(TAG, "[UNITY_CUP] Failed to click the See All Race Results button.")
+                            }
+                        }
+                        // Shouldn't ever fail this since we already detected it once.
+                        null -> {
+                            MessageLog.e(TAG, "[UNITY_CUP] Detected See All Race Results button, but then failed to check its disabled state.")
+                        }
+                    }
                 }
                 // This is our only natural exit point from this function.
                 IconUnityCupRaceEndLogo.check(imageUtils = game.imageUtils, sourceBitmap = sourceBitmap) && ButtonNext.click(imageUtils = game.imageUtils, sourceBitmap = sourceBitmap) -> {

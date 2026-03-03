@@ -304,15 +304,19 @@ open class Campaign(game: Game) : DialogHandler(game) {
 
         // More complex components to test that have multiple different states.
 
-        if (ButtonRaceSelectExtra.check(game.imageUtils)) {
-            MessageLog.i(TAG, "[PASS] ${ButtonRaceSelectExtra.template.path}")
-            numPass++
-        } else if (ButtonRaceSelectExtraLocked.check(game.imageUtils)) {
-            MessageLog.i(TAG, "[PASS] ${ButtonRaceSelectExtraLocked.template.path}")
-            numPass++
-        } else {
-            MessageLog.e(TAG, "[FAIL] ${ButtonRaceSelectExtra.template.path}, ${ButtonRaceSelectExtraLocked.template.path}")
-            numFail++
+        when (ButtonRaces.checkDisabled(game.imageUtils)) {
+            true -> {
+                MessageLog.i(TAG, "[PASS] ${ButtonRaces.template.path} (locked)")
+                numPass++
+            }
+            false -> {
+                MessageLog.i(TAG, "[PASS] ${ButtonRaces.template.path}")
+                numPass++
+            }
+            null -> {
+                MessageLog.e(TAG, "[FAIL] ${ButtonRaces.template.path}")
+                numFail++
+            }
         }
 
         MessageLog.i(TAG, "Testing mood components...")
