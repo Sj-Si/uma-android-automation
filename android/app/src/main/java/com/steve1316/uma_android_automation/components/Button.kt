@@ -194,7 +194,7 @@ object ButtonSpecialMissionsTabSpecial : ComponentInterface {
 
 object ButtonEventMissions : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonEventMissions"
-    override val template = Template("components/button/ribbon_event_missions")
+    override val template = Template("components/button/ribbon_event_missions", region = Region.bottomHalf)
 }
 
 object ButtonEventInfo : ComponentInterface {
