@@ -153,9 +153,16 @@ class SpecialMissions(
 
     private fun handleMissionsTabs() {
         MessageLog.d(TAG, "[$name] Handling Missions tabs...")
+
         // Click CollectAll on the current tab before proceeding.
         // Otherwise we'll fail to detect the active tab and won't ever collect it.
-        ButtonCollectAll.click(game.imageUtils)
+        if (ButtonCollectAll.checkDisabled(game.imageUtils) == false) {
+            ButtonCollectAll.click(game.imageUtils)
+            MessageLog.d(TAG, "[$name] Collected rewards for initial tab.")
+            game.wait(0.5)
+            handleDialogs()
+        }
+
         missionsTabs.forEach { handleTab(it) }
     }
 

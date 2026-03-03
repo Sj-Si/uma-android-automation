@@ -134,21 +134,36 @@ class LegendRace(
     }
 
     private fun handleTab(tab: ComponentInterface) {
+        game.wait(0.25, skipWaitingForLoading = true)
+        // Not an error since we check against all possible tabs to make this
+        // function as general as possible.
+        if (!tab.click(game.imageUtils)) {
+            return
+        }
         MessageLog.d(TAG, "[$name] Handling tab: ${tab::class.simpleName}")
         game.wait(0.25, skipWaitingForLoading = true)
-        tab.click(game.imageUtils)
-        game.wait(0.25, skipWaitingForLoading = true)
         if (ButtonCollectAll.checkDisabled(game.imageUtils) == true) {
-            MessageLog.d(TAG, "[$name] Tab has no rewards to collect. Moving on...")
+            MessageLog.d(TAG, "[$name] Tab has no rewards to collect.")
             return
         }
         ButtonCollectAll.click(game.imageUtils)
+        MessageLog.d(TAG, "[$name] Collected rewards for tab.")
         game.wait(0.5)
         handleDialogs()
     }
 
     private fun handleSpecialMissionsTabs() {
         MessageLog.d(TAG, "[$name] Handling Special Missions tabs...")
+
+        // Click CollectAll on the current tab before proceeding.
+        // Otherwise we'll fail to detect the active tab and won't ever collect it.
+        if (ButtonCollectAll.checkDisabled(game.imageUtils) == false) {
+            ButtonCollectAll.click(game.imageUtils)
+            MessageLog.d(TAG, "[$name] Collected rewards for initial tab.")
+            game.wait(0.5)
+            handleDialogs()
+        }
+
         specialMissionsTabs.forEach { handleTab(it) }
         bHasHandledSpecialMissions = true
     }
