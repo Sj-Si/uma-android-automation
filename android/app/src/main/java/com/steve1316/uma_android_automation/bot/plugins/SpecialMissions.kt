@@ -84,6 +84,38 @@ class SpecialMissions(
         ).find { it.check(game.imageUtils, bitmap) }
     }
 
+    /** Handle each entry in the list.
+     * 
+     * @return False to continue the list processing. True to end list processing early.
+     */
+    private fun onListEntry(scrollList: ScrollList, entry: ScrollListEntry): Boolean {
+        MessageLog.d(TAG, "[$name] Handling EventExclusiveMissions entry #${entry.index}.")
+        val x: Double = (entry.bbox.x + (entry.bbox.w / 2).toInt()).toDouble()
+        val y: Double = (entry.bbox.y + (entry.bbox.h / 2).toInt()).toDouble()
+        game.tap(x, y)
+        game.wait(1.0)
+        if (waitForButton(missionsTabs, bShouldHandleDialogs = false) == null) {
+            MessageLog.w(TAG, "[$name] Timed out waiting for mission tabs to appear for event exclusive mission entry #${entry.index}.")
+            // Need to bail out since we're stuck in an unknown state.
+            return true
+        }
+        handleMissionsTabs()
+
+        // Let the dialog handler take care of any missions screens that are
+        // inside a dialog. It will close the dialog when complete.
+        val dialogResult: DialogHandlerResult = handleDialogs()
+        if (dialogResult is DialogHandlerResult.Handled) {
+            return false
+        }
+
+        // If missions screen isn't in a dialog, we need to return by clicking
+        // the back button which should exist in all non-dialog missions screens.
+        waitForButton(ButtonBack, bShouldClickButton = true)
+        // Now wait for game to load.
+        game.wait(1.0)
+        return false
+    }
+
     private fun handleEventExclusiveMisisons() {
         val scrollList: ScrollList? = ScrollList.create(
             game,
@@ -94,38 +126,6 @@ class SpecialMissions(
             MessageLog.e(TAG, "[$name] Failed to detect EventExclusiveMissions list.")
             return
         }
-        
-        /** Handle each entry in the list.
-         * 
-         * @return False to continue the list processing. True to end list processing early.
-         */
-        fun onListEntry(scrollList: ScrollList, entry: ScrollListEntry): Boolean {
-            MessageLog.d(TAG, "[$name] Handling EventExclusiveMissions entry #${entry.index}.")
-            val x: Double = (entry.bbox.x + (entry.bbox.w / 2).toInt()).toDouble()
-            val y: Double = (entry.bbox.y + (entry.bbox.h / 2).toInt()).toDouble()
-            game.tap(x, y)
-            game.wait(1.0)
-            if (waitForButton(missionsTabs) == null) {
-                MessageLog.w(TAG, "[$name] Timed out waiting for mission tabs to appear for event exclusive mission entry #${entry.index}.")
-                // Need to bail out since we're stuck in an unknown state.
-                return true
-            }
-            handleMissionsTabs()
-
-            // Let the dialog handler take care of any missions screens that are
-            // inside a dialog. It will close the dialog when complete.
-            val dialogResult: DialogHandlerResult = handleDialogs()
-            if (dialogResult is DialogHandlerResult.Handled) {
-                return false
-            }
-
-            // If missions screen isn't in a dialog, we need to return by clicking
-            // the back button which should exist in all non-dialog missions screens.
-            waitForButton(ButtonBack, bShouldClickButton = true)
-            // Now wait for game to load.
-            game.wait(1.0)
-            return false
-        }
 
         scrollList.process(onEntry = ::onListEntry)
 
@@ -133,15 +133,20 @@ class SpecialMissions(
     }
 
     private fun handleTab(tab: ComponentInterface) {
+        game.wait(0.25, skipWaitingForLoading = true)
+        // Not an error since we check against all possible tabs to make this
+        // function as general as possible.
+        if (!tab.click(game.imageUtils)) {
+            return
+        }
         MessageLog.d(TAG, "[$name] Handling tab: ${tab::class.simpleName}")
         game.wait(0.25, skipWaitingForLoading = true)
-        tab.click(game.imageUtils)
-        game.wait(0.25, skipWaitingForLoading = true)
         if (ButtonCollectAll.checkDisabled(game.imageUtils) == true) {
-            MessageLog.d(TAG, "[$name] Tab has no rewards to collect. Moving on...")
+            MessageLog.d(TAG, "[$name] Tab has no rewards to collect.")
             return
         }
         ButtonCollectAll.click(game.imageUtils)
+        MessageLog.d(TAG, "[$name] Collected rewards for tab.")
         game.wait(0.5)
         handleDialogs()
     }
