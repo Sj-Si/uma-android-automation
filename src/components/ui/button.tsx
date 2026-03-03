@@ -22,6 +22,30 @@ const buttonVariants = cva(
                         web: "hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
                     })
                 ),
+                success: cn(
+                    "bg-success active:bg-success/90 dark:bg-success/60 shadow-sm shadow-black/5",
+                    Platform.select({
+                        web: "hover:bg-success/90 focus-visible:ring-success/20 dark:focus-visible:ring-success/40",
+                    })
+                ),
+                info: cn(
+                    "bg-info active:bg-info/90 dark:bg-info/60 shadow-sm shadow-black/5",
+                    Platform.select({
+                        web: "hover:bg-info/90 focus-visible:ring-info/20 dark:focus-visible:ring-info/40",
+                    })
+                ),
+                warning: cn(
+                    "bg-warning active:bg-warning/90 dark:bg-warning/60 shadow-sm shadow-black/5",
+                    Platform.select({
+                        web: "hover:bg-warning/90 focus-visible:ring-warning/20 dark:focus-visible:ring-warning/40",
+                    })
+                ),
+                error: cn(
+                    "bg-error active:bg-error/90 dark:bg-error/60 shadow-sm shadow-black/5",
+                    Platform.select({
+                        web: "hover:bg-error/90 focus-visible:ring-error/20 dark:focus-visible:ring-error/40",
+                    })
+                ),
                 outline: cn(
                     "border-border bg-background active:bg-accent dark:bg-input/30 dark:border-input dark:active:bg-input/50 border shadow-sm shadow-black/5",
                     Platform.select({
@@ -55,6 +79,10 @@ const buttonTextVariants = cva(cn("text-foreground text-sm font-medium", Platfor
             secondary: "text-secondary-foreground",
             ghost: "group-active:text-accent-foreground",
             link: cn("text-primary group-active:underline", Platform.select({ web: "underline-offset-4 hover:underline group-hover:underline" })),
+            success: "text-success-foreground",
+            info: "text-info-foreground",
+            warning: "text-warning-foreground",
+            error: "text-error-foreground",
         },
         size: {
             default: "",

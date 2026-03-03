@@ -6,7 +6,7 @@ import { useTheme } from "../../context/ThemeContext"
 
 interface CustomButtonProps extends PressableProps {
     /** The visual style variant of the button. */
-    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "success" | "info" | "warning" | "error"
     /** The size preset for the button. */
     size?: "default" | "sm" | "lg" | "icon"
     /** Optional custom style for the button. */
@@ -72,6 +72,14 @@ const CustomButton: React.FC<CustomButtonProps> = ({
                 return { backgroundColor: "transparent" }
             case "link":
                 return { backgroundColor: "transparent" }
+            case "success":
+                return { backgroundColor: colors.success }
+            case "info":
+                return { backgroundColor: colors.info }
+            case "warning":
+                return { backgroundColor: colors.warning }
+            case "error":
+                return { backgroundColor: colors.error }
             default:
                 return {}
         }
@@ -91,6 +99,14 @@ const CustomButton: React.FC<CustomButtonProps> = ({
                 return { color: isDark ? "white" : "black" }
             case "secondary":
                 return { color: isDark ? "black" : "white" }
+            case "success":
+                return { color: colors.successContent }
+            case "info":
+                return { color: colors.infoContent }
+            case "warning":
+                return { color: colors.warningContent }
+            case "error":
+                return { color: colors.errorContent }
             default:
                 return { color: "black" }
         }
