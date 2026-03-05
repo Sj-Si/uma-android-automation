@@ -51,7 +51,7 @@ import com.steve1316.automation_library.utils.ImageUtils
 import com.steve1316.automation_library.utils.TextUtils
 
 import com.steve1316.uma_android_automation.MainActivity
-import com.steve1316.uma_android_automation.components.ComponentInterface
+import com.steve1316.uma_android_automation.components.BaseComponentInterface
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
 import com.steve1316.uma_android_automation.types.BoundingBox
 
