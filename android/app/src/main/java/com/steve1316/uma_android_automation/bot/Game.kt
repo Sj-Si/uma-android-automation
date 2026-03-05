@@ -32,6 +32,8 @@ import com.steve1316.uma_android_automation.components.ButtonHomeFullStats
 import com.steve1316.uma_android_automation.components.ButtonHomeFansInfo
 import com.steve1316.uma_android_automation.components.ButtonCraneGame
 import com.steve1316.uma_android_automation.components.ButtonCraneGameOk
+import com.steve1316.uma_android_automation.components.ButtonInfirmary
+import com.steve1316.uma_android_automation.components.ButtonOk
 import com.steve1316.uma_android_automation.components.ButtonSkip
 import com.steve1316.uma_android_automation.components.IconTazuna
 import com.steve1316.uma_android_automation.components.IconRaceDayRibbon
@@ -474,33 +476,37 @@ class Game(val myContext: Context) {
 	fun checkInjury(sourceBitmap: Bitmap? = null): Boolean {
 		MessageLog.i(TAG, "\n[INJURY] Checking if there is an injury that needs healing on ${currentDate}.")
         val sourceBitmap = sourceBitmap ?: imageUtils.getSourceBitmap()
-		val recoverInjuryLocation = imageUtils.findImageWithBitmap("recover_injury", sourceBitmap, region = imageUtils.regionBottomHalf)
-		return if (recoverInjuryLocation != null && imageUtils.checkColorAtCoordinates(
-				recoverInjuryLocation.x.toInt(),
-				recoverInjuryLocation.y.toInt() + 15,
-				intArrayOf(151, 105, 243),
-				10
-			)) {
-			if (findAndTapImage("recover_injury", sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf)) {
-                // Tap OK for the possibility of a scheduled race warning popup.
-                wait(0.25)
-                findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle, suppressError = true)
 
-				wait(0.3)
-				if (imageUtils.findImage("recover_injury_header", tries = 1, region = imageUtils.regionMiddle).first != null) {
-					MessageLog.i(TAG, "[INJURY] Injury detected and attempted to heal.")
-					true
-				} else {
-					false
-				}
-			} else {
-				MessageLog.w(TAG, "Injury detected but attempt to rest failed.")
-				false
-			}
-		} else {
-			MessageLog.i(TAG, "[INJURY] No injury detected.")
-			false
-		}
+        return when (ButtonInfirmary.checkDisabled(imageUtils, sourceBitmap)) {
+            true -> {
+                MessageLog.i(TAG, "[INJURY] No injury detected.")
+                false
+            }
+            false -> {
+                MessageLog.i(TAG, "[INJURY] Injury detected. Attempting to heal...")
+                if (ButtonInfirmary.click(imageUtils, sourceBitmap = sourceBitmap)) {
+                    wait(0.25)
+                    ButtonOk.click(imageUtils, region = imageUtils.regionMiddle)
+
+                    wait(0.3)
+
+                    if (imageUtils.findImage("recover_injury_header", tries = 1, region = imageUtils.regionMiddle).first != null) {
+                        MessageLog.i(TAG, "[INJURY] Injury detected and attempted to heal.")
+                        true
+                    } else {
+                        MessageLog.w(TAG, "[INJURY] Injury detected but failed to detect infirmary event.")
+                        false
+                    }
+                } else {
+                    MessageLog.w(TAG, "[INJURY] Injury detected but failed to click Infirmary button.")
+                    false
+                }
+            }
+            null -> {
+                MessageLog.w(TAG, "[INJURY] Failed to detect the Infirmary button.")
+                false
+            }
+        }
 	}
 
 	/**

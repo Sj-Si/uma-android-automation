@@ -279,6 +279,15 @@ class Racing (private val game: Game) {
         MessageLog.i(TAG, "\n********************")
         MessageLog.i(TAG, "[RACE] Starting Racing process on ${game.currentDate}.")
 
+        // If the races button exists AND is disabled, we can exit early since we
+        // know that we're at the home screen and the bot cannot race.
+        if (ButtonRaces.checkDisabled(imageUtils = game.imageUtils) == true) {
+            MessageLog.i(TAG, "[RACE] Races are locked. Canceling the racing process and doing something else.")
+            clearRacingRequirementFlags()
+            MessageLog.i(TAG, "********************")
+            return false
+        }
+
         // If there are no races available, cancel the racing process.
         if (game.imageUtils.findImage("race_none_available", tries = 1, region = game.imageUtils.regionMiddle, suppressError = true).first != null) {
             MessageLog.i(TAG, "[RACE] There are no races to compete in. Canceling the racing process and doing something else.")
@@ -1230,9 +1239,25 @@ class Racing (private val game: Game) {
         }
 
         // Navigate to the race selection screen.
-        if (!ButtonRaces.click(game.imageUtils)) {
-            MessageLog.w(TAG, "[RACE] Could not find the Race Selection button. Skipping loading the user's race agenda.")
-            return
+        // We only proceed if the button is enabled AND we successfully click it.
+        // Everything else returns from this function.
+        when (ButtonRaces.checkDisabled(game.imageUtils)) {
+            true -> {
+                MessageLog.i(TAG, "[RACE] Races button is disabled. Skipping loading the race agenda.")
+                return
+            }
+            false -> {
+                if (ButtonRaces.click(game.imageUtils)) {
+                    MessageLog.i(TAG, "[RACE] Clicked the Races button. Proceeding to load the race agenda...")
+                } else {
+                    MessageLog.w(TAG, "[RACE] Detected the Races button but failed to click it. Skipping loading the race agenda.")
+                    return
+                }
+            }
+            null -> {
+                MessageLog.w(TAG, "[RACE] Failed to detect the Races button. Skipping loading the race agenda.")
+                return
+            }
         }
 
         game.waitForLoading()

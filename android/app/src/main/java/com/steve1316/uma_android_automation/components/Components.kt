@@ -333,7 +333,6 @@ interface ComponentInterface: BaseComponentInterface {
      */
     override fun checkDisabled(imageUtils: CustomImageUtils, sourceBitmap: Bitmap?): Boolean? {
         val sourceBitmap: Bitmap = sourceBitmap ?: imageUtils.getSourceBitmap()
-        // Check color toward the left of the button's bitmap region.
         val templateBitmap: Bitmap = template.getBitmap(imageUtils)!!
         val point: Point? = findImageWithBitmap(imageUtils, sourceBitmap = sourceBitmap)
         if (point == null) {
