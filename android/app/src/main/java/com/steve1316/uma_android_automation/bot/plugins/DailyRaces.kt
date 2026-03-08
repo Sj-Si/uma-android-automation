@@ -54,6 +54,7 @@ enum class DailyRaceName {
 class DailyRaces(
     game: Game,
     menuBar: MenuBar,
+    maxRuntimeMinutes: Int = 10,
     commonDialogHandler: DialogHandlerCallback? = null,
 ) : Plugin(game, menuBar, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]DailyRaces"

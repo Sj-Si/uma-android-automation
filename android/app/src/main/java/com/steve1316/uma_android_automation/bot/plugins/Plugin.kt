@@ -53,6 +53,7 @@ typealias DialogHandlerCallback = (DialogInterface?) -> DialogHandlerResult
 abstract class Plugin(
     protected val game: Game,
     protected val menuBar: MenuBar,
+    protected val maxRuntimeMinutes: Int = 30,
     protected val commonDialogHandler: DialogHandlerCallback? = null,
 ) {
     abstract val TAG: String
@@ -459,7 +460,7 @@ abstract class Plugin(
         return menuBar.goToHome()
     }
 
-    open fun start(timeoutMs: Int = 60000 * 10): Boolean {
+    open fun start(): Boolean {
         MessageLog.i(TAG, "[$name] Starting...")
 
         if (!goToStart()) {
@@ -471,6 +472,7 @@ abstract class Plugin(
         }
 
         // Now run the plugin until it is complete or times out.
+        val timeoutMs: Int = maxRuntimeMinutes * 60000
         val startTime = System.currentTimeMillis()
         while (!bIsComplete && System.currentTimeMillis() - startTime < timeoutMs) {
             progress()

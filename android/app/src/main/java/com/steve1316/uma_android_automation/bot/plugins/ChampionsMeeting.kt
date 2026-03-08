@@ -42,6 +42,7 @@ import com.steve1316.uma_android_automation.components.PageInterface
 class ChampionsMeeting(
     game: Game,
     menuBar: MenuBar,
+    maxRuntimeMinutes: Int = 30,
     commonDialogHandler: DialogHandlerCallback? = null,
 ) : Plugin(game, menuBar, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]ChampionsMeeting"
@@ -267,9 +268,5 @@ class ChampionsMeeting(
         // Tap while waiting for page since on every day it will show a splash
         // screen that needs to be tapped to dismiss.
         return waitForPage(PageChampionsMeetingHome, bShouldTapWhileWaiting = true) != null
-    }
-
-    override fun start(timeoutMs: Int): Boolean {
-        return super.start(60000 * 20)
     }
 }

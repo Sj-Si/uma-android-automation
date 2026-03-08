@@ -19,6 +19,7 @@ import com.steve1316.uma_android_automation.components.MenuBar
 class Presents(
     game: Game,
     menuBar: MenuBar,
+    maxRuntimeMinutes: Int = 2,
     commonDialogHandler: DialogHandlerCallback? = null,
 ) : Plugin(game, menuBar, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]Presents"
@@ -48,11 +49,18 @@ class Presents(
     }
 
     override fun progress(bitmap: Bitmap?): PageInterface? {
+        ButtonHomePresents.click(game.imageUtils)
+        handleDialogs()
         return null
     }
 
     override fun goToStart(): Boolean {
         super.goToStart()
+
+        if (!goToHome()) {
+            MessageLog.e(TAG, "[$name] Failed to go to MenuBar Home tab. Cannot continue.")
+            return false
+        }
 
         if (waitForButton(ButtonHomePresents) == null) {
             MessageLog.w(TAG, "[$name] Failed to find Presents button at home screen.")
@@ -60,32 +68,5 @@ class Presents(
         }
 
         return true
-    }
-
-    override fun start(timeoutMs: Int): Boolean {
-        MessageLog.i(TAG, "[$name] Starting...")
-
-        if (!goToHome()) {
-            MessageLog.e(TAG, "[$name] Failed to go to MenuBar Home tab. Cannot continue.")
-            return false
-        }
-
-        if (!goToStart()) {
-            MessageLog.e(TAG, "[$name] Failed to go to plugin's start screen.")
-            // Attempt to return to home. Whether this fails here doesn't matter
-            // since the plugin is already in a failure state.
-            goToHome()
-            return false
-        }
-
-        val startTime = System.currentTimeMillis()
-        while (!bIsComplete && System.currentTimeMillis() - startTime < timeoutMs) {
-            ButtonHomePresents.click(game.imageUtils)
-            handleDialogs()
-        }
-
-        // Don't need to go to home since Presents just opens a dialog at the home
-        // screen. Handling the dialog closes it which just leaves us at home screen.
-        return bIsComplete
     }
 }

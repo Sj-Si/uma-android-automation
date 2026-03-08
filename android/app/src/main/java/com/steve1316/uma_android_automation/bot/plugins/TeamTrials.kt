@@ -39,6 +39,7 @@ import com.steve1316.uma_android_automation.components.MenuBar
 class TeamTrials(
     game: Game,
     menuBar: MenuBar,
+    maxRuntimeMinutes: Int = 15,
     commonDialogHandler: DialogHandlerCallback? = null,
 ) : Plugin(game, menuBar, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]TeamTrials"

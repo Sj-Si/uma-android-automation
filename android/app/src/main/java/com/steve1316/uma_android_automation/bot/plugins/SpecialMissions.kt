@@ -34,6 +34,7 @@ import com.steve1316.uma_android_automation.components.PageSpecialMissions
 class SpecialMissions(
     game: Game,
     menuBar: MenuBar,
+    maxRuntimeMinutes: Int = 5,
     commonDialogHandler: DialogHandlerCallback? = null,
 ) : Plugin(game, menuBar, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]SpecialMissions"

@@ -56,6 +56,7 @@ enum class ShoeType {
 class ClubActivity(
     game: Game,
     menuBar: MenuBar,
+    maxRuntimeMinutes: Int = 5,
     commonDialogHandler: DialogHandlerCallback? = null,
 ) : Plugin(game, menuBar, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]ClubActivity"
