@@ -67,7 +67,8 @@ class Racing (private val game: Game) {
     internal val juniorYearRaceStrategy = SettingsHelper.getStringSetting("racing", "juniorYearRaceStrategy")
     internal val userSelectedOriginalStrategy = SettingsHelper.getStringSetting("racing", "originalRaceStrategy")
     private var detectedOriginalStrategy: String? = null
-    private var hasAppliedStrategyOverride = false
+    private var bHasSetStrategyJunior: Boolean = false
+    private var bHasSetStrategyOriginal: Boolean = false
 
     // Cached race plan data loaded once per class instance.
     private val raceData: Map<String, RaceData> = loadRaceData()
@@ -583,7 +584,7 @@ class Racing (private val game: Game) {
 
         // Confirm the selection and the resultant popup and then wait for the game to load.
         ButtonRace.click(imageUtils = game.imageUtils)
-        game.wait(0.5, skipWaitingForLoading = true)
+        game.wait(game.dialogWaitDelay)
         val (bWasDialogHandled, dialog) = game.campaign.handleDialogs()
         if (!bWasDialogHandled || (dialog != null && dialog.name != "race_details")) {
             Log.w(TAG, "[RACE] Failed to handle dialogs. Aborting racing...")
@@ -743,7 +744,7 @@ class Racing (private val game: Game) {
         } else if (isScheduledRace) {
             MessageLog.i(TAG, "[RACE] Confirming the scheduled race dialog...")
             ButtonRace.click(game.imageUtils, tries = 30)
-            game.waitForLoading()
+            game.wait(game.dialogWaitDelay)
         }
 
         // Confirm the selection and the resultant popup and then wait for the game to load.
@@ -1277,7 +1278,7 @@ class Racing (private val game: Game) {
             game.waitForLoading()
             return
         }
-        game.waitForLoading()
+        game.wait(game.dialogWaitDelay)
 
         // Now tap on the My Agenda button.
         if (!game.findAndTapImage("race_my_agenda", tries = 1, region = game.imageUtils.regionBottomHalf)) {
@@ -1288,7 +1289,7 @@ class Racing (private val game: Game) {
             game.waitForLoading()
             return
         }
-        game.waitForLoading()
+        game.wait(game.dialogWaitDelay)
         
         // Check if an agenda is already loaded. If so, then the user must have loaded this earlier in the career so no need to select it again.
         if (game.imageUtils.findImage("race_agenda_empty", tries = 1, region = game.imageUtils.regionTopHalf).first == null) {
@@ -1334,12 +1335,50 @@ class Racing (private val game: Game) {
             for ((buttonLocation, agendaText) in agendaMappings) {
                 if (agendaText == selectedUserAgenda) {
                     MessageLog.i(TAG, "[RACE] ✓ Found $selectedUserAgenda. Tapping the Load List button...")
+                    // Clicking this button triggers connection to server.
+                    // Or it could result in three other states:
+                    // 1)   The overwrite dialog appears.
+                    // 2)   The scheduled_race dialog appears.
+                    // 3)   The my_agendas dialog closes automatically and
+                    //      the scheduled_races dialog remains on screen.
                     game.gestureUtils.tap(buttonLocation.x, buttonLocation.y, "race_agenda_load_list")
-                    game.wait(0.5)
-                    
-                    // Tap the overwrite button.
-                    game.findAndTapImage("race_agenda_overwrite", tries = 1, region = game.imageUtils.regionMiddle)
-                    game.waitForLoading()
+
+                    // Timeout after 5 seconds. Shouldn't ever take near that long.
+                    val timeoutMs: Int = 5000
+                    val startTime: Long = System.currentTimeMillis()
+                    while (System.currentTimeMillis() - startTime < timeoutMs) {
+                        val dialog = game.campaign.handleDialogs(
+                            args = mapOf<String, Boolean>(
+                                "bShouldDefer" to true,
+                                "bShouldWait" to true,
+                                "bShouldWaitForLoading" to true,
+                            ),
+                        ).second
+
+                        when (dialog?.name) {
+                            "overwrite" -> dialog.ok(game.imageUtils)
+                            // Pops up when we try to load agenda with races that
+                            // are in the past.
+                            "scheduled_race" -> dialog.close(game.imageUtils)
+                            // We've closed all the extra dialogs after loading agenda.
+                            // Break from loop.
+                            "scheduled_races" -> break
+                            // We might detect the dialog too quick and find this
+                            // one as it is in the process of closing.
+                            // Ignore this and continue loop
+                            "my_agendas" -> {}
+                            // No dialog detected. This can happen if a dialog is closing.
+                            // Not a problem, just continue with loop and timeout when
+                            // the time comes.
+                            null -> {}
+                            // Fall back to the base dialog handler if we get a dialog
+                            // that we weren't expecting.
+                            else -> {
+                                MessageLog.e(TAG, "[RACE] Unknown dialog detected: ${dialog.name}. Falling back to base dialog handler.")
+                                game.campaign.handleDialogs()
+                            }
+                        }
+                    }
                     
                     foundAgenda = true
                     break
@@ -1810,46 +1849,72 @@ class Racing (private val game: Game) {
 	 *
 	 * During Junior Year: Applies the user-selected strategy and stores the original.
 	 * After Junior Year: Restores the original strategy and disables the feature.
+     *
+     * If the date is unknown and the running style hasn't ever been set,
+     * then we set the strategy using the Original strategy.
+     * The next time we race and have access to the date, we will attempt to set
+     * the running style no matter what in order to avoid weird edge cases.
+     *
+     * This is as opposed to setting a temporary flag and updating our flags the next
+     * time a date is detected. However if we did this, then there are edge cases such
+     * as racing in late december of junior year. This could cause us to incorrectly
+     * determine that we set the Original race strategy in the previous turn since
+     * we have no idea how many turns have passed since setting the initial strategy.
 	 */
 	fun selectRaceStrategy() {
 		val isJuniorYear = game.currentDate.year == DateYear.JUNIOR
 		val isPastJuniorYear = game.currentDate.year.ordinal > DateYear.JUNIOR.ordinal
 
 		// Determine if a strategy override or reversion is needed.
-		val needsOverride = isJuniorYear && !hasAppliedStrategyOverride && juniorYearRaceStrategy != userSelectedOriginalStrategy
-		val needsReversion = isPastJuniorYear && hasAppliedStrategyOverride
+		val bShouldSetStrategyJunior = isJuniorYear && !bHasSetStrategyJunior && juniorYearRaceStrategy != userSelectedOriginalStrategy
+		val bShouldSetStrategyOriginal = isPastJuniorYear && bHasSetStrategyJunior && !bHasSetStrategyOriginal
 
-		if (
-			!game.trainee.bHasUpdatedAptitudes &&
-			!game.trainee.bTemporaryRunningStyleAptitudesUpdated
-		) {
-			// If trainee aptitudes are unknown, this means we probably started the bot
-			// at the race screen. We need to open the race strategy dialog and
-			// read the aptitudes in from there.
-			MessageLog.i(TAG, "Setting running style and performing temporary initial aptitude check.")
-			ButtonChangeRunningStyle.click(imageUtils = game.imageUtils, tries = 10)
-			game.wait(0.5, skipWaitingForLoading = true)
-			var tries = 10
-			while (tries > 0 && !game.campaign.handleDialogs().first) {
-				tries--
-			}
-		} else if (!game.trainee.bHasSetRunningStyle || needsOverride || needsReversion) {
-			if (needsOverride) {
-				MessageLog.i(TAG, "[RACE] Junior Year detected. Applying Junior race strategy override: $juniorYearRaceStrategy")
-			} else if (needsReversion) {
-				MessageLog.i(TAG, "[RACE] Past Junior Year detected. Reverting to original race strategy: $userSelectedOriginalStrategy")
-			} else {
-				// If we haven't set the trainee's running style yet, open the dialog.
-				MessageLog.i(TAG, "Setting running style for the first time.")
-			}
+        when {
+            bShouldSetStrategyJunior -> MessageLog.i(TAG, "[RACE] Junior Year detected. Applying Junior race strategy override: $juniorYearRaceStrategy")
+            bShouldSetStrategyOriginal -> MessageLog.i(TAG, "[RACE] Past Junior Year detected. Reverting to original race strategy: $userSelectedOriginalStrategy")
+            !game.trainee.bHasSetRunningStyle -> MessageLog.i(TAG, "[RACE] Setting initial race strategy for unknown date.")
+            else -> return
+        }
 
-			ButtonChangeRunningStyle.click(imageUtils = game.imageUtils, tries = 10)
-			game.wait(0.5, skipWaitingForLoading = true)
-			var tries = 10
-			while (tries > 0 && !game.campaign.handleDialogs().first) {
-				tries--
-			}
-		}
+        // Unset this flag so that we can validate that the dialog handler completed
+        // the operation successfully. If this isn't set by the end of this function,
+        // then we know we failed to set the strategy.
+        game.trainee.bHasSetRunningStyle = false
+
+        var numTries: Int = 0
+        val timeoutMs: Int = 30000 // 30 sec
+        val startTime: Long = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            MessageLog.d(TAG, "[RACE] Changing race strategy. Attempt #${numTries + 1}")
+            if (ButtonChangeRunningStyle.click(game.imageUtils)) {
+                game.wait(game.dialogWaitDelay, skipWaitingForLoading = true)
+            }
+
+            game.campaign.handleDialogs()
+
+            if (game.trainee.bHasSetRunningStyle) {
+                break
+            }
+
+            numTries++
+        }
+
+        when {
+            !game.trainee.bHasSetRunningStyle -> {
+                MessageLog.w(TAG, "[RACE] Timed out setting the race strategy after ${numTries} tries.")
+            }
+            bShouldSetStrategyJunior -> {
+                MessageLog.i(TAG, "[RACE] Successfully set Junior Year race strategy.")
+                bHasSetStrategyJunior = true
+            }
+            bShouldSetStrategyOriginal -> {
+                MessageLog.i(TAG, "[RACE] Successfully set Original race strategy.")
+                bHasSetStrategyOriginal = true
+            }
+            else -> {
+                MessageLog.i(TAG, "[RACE] Successfully set race strategy for unknown date.")
+            }
+        }
 	}
 
     /**
@@ -1875,6 +1940,8 @@ class Racing (private val game: Game) {
                         true -> {
                             if (ButtonRaceManual.click(game.imageUtils, sourceBitmap = bitmap)) {
                                 MessageLog.i(TAG, "[RACE] Skip is locked. Running race manually.")
+                                // Clicking this button triggers connection to server.
+                                game.waitForLoading()
                             } else {
                                 MessageLog.w(TAG, "[RACE] Skip is locked. Failed to click manual race button.")
                             }
@@ -1882,6 +1949,8 @@ class Racing (private val game: Game) {
                         false -> {
                             if (ButtonViewResults.click(game.imageUtils, sourceBitmap = bitmap)) {
                                 MessageLog.i(TAG, "[RACE] Clicked ViewResults button to skip race.")
+                                // Clicking this button triggers connection to server.
+                                game.waitForLoading()
                             } else {
                                 MessageLog.w(TAG, "[RACE] Failed to click ViewResults button to skip race.")
                             }
@@ -1952,6 +2021,8 @@ class Racing (private val game: Game) {
                 // This is also the exit point for this function.
                 ButtonNextRaceEnd.click(game.imageUtils, sourceBitmap = bitmap, taps = 5) -> {
                     MessageLog.i(TAG, "[RACE] Clicked on Next (race end) button.")
+                    // Clicking this button triggers connection to server.
+                    game.waitForLoading()
                     return true
                 }
                 // Tap on the screen to progress through screens.

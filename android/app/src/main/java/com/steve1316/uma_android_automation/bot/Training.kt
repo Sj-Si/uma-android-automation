@@ -635,6 +635,7 @@ class Training(private val game: Game) {
 					MessageLog.i(TAG, "[TRAINING] There is not enough energy for training to be done but the setting to train Wit during the Finale is enabled. Forcing Wit training...")
 					// Directly attempt to tap Wit training.
 					if (ButtonTrainingWit.click(imageUtils = game.imageUtils, taps = 3)) {
+                        game.waitForLoading()
 						MessageLog.i(TAG, "[TRAINING] Successfully forced Wit training during the Finale instead of recovering energy.")
 						firstTrainingCheck = false
 					} else {
@@ -1211,10 +1212,11 @@ class Training(private val game: Game) {
 			}
 
 			game.findAndTapImage("training_${trainingSelected.name.lowercase()}", region = game.imageUtils.regionBottomHalf, taps = 3)
-            game.wait(1.0)
+            game.wait(game.dialogWaitDelay)
 
             // Dismiss any popup warning about a scheduled race.
             game.findAndTapImage("ok", tries = 1, region = game.imageUtils.regionMiddle, suppressError = true)
+            game.waitForLoading()
 
 			MessageLog.i(TAG, "[TRAINING] Process to execute training completed.")
 		} else {

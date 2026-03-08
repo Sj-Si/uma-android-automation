@@ -383,6 +383,61 @@ interface ComponentInterface: BaseComponentInterface {
     }
 }
 
+interface ButtonInterface : ComponentInterface {
+    /** Attempts to click on the component.
+     *
+     * @param imageUtils A reference to a CustomImageUtils instance.
+     * @param region The screen region to search in.
+     * @param tries The number of attempts when searching for this image.
+     * @param confidence The threshold (0.0, 1.0] to use when performing OCR.
+     * @param handleDialogs An optional reference to the [DialogHandler.handleDialogs]
+     * function. Defaults to NULL. If specified, then the handleDialogs function will
+     * be called after the click action takes place.
+     * @param bTriggersLoading Whether clicking this button triggers a connection to
+     * the game server. This argument is passed to the [handleDialogs] call.
+     * This argument is ignored if [handleDialogs] is NULL.
+     *
+     * @return True if the component was detected and clicked.
+     */
+    fun click(
+        imageUtils: CustomImageUtils,
+        region: IntArray? = null,
+        sourceBitmap: Bitmap? = null,
+        tries: Int = 1,
+        taps: Int = 1,
+        confidence: Double? = null,
+        handleDialogs: ((dialog: DialogInterface?, args: Map<String, Any>) -> Pair<Boolean, DialogInterface?>)? = null,
+        bTriggersLoading: Boolean = false,
+    ): Boolean {
+        val point = if (sourceBitmap == null) {
+            find(
+                imageUtils = imageUtils,
+                region = region ?: template.region,
+                tries = tries,
+                confidence = confidence ?: template.confidence,
+            ).first ?: return false
+        } else {
+            findImageWithBitmap(
+                imageUtils = imageUtils,
+                region = region ?: template.region,
+                sourceBitmap = sourceBitmap,
+                confidence = confidence ?: template.confidence,
+            ) ?: return false
+        }
+        tap(point.x, point.y, template.path, taps=taps)
+        if (handleDialogs != null) {
+            handleDialogs(
+                null,
+                mapOf<String, Any>(
+                    "bShouldWait" to true,
+                    "bShouldWaitForLoading" to bTriggersLoading,
+                ),
+            )
+        }
+        return true
+    }
+}
+
 /** Defines a component which has multiple templates.
  *
  * This defines components which can possibly have more than one design and

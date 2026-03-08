@@ -111,7 +111,18 @@ const YearSummaryCard: React.FC<Props> = ({ summary }) => {
     return (
         <View style={styles.container}>
             <View style={styles.headerRow}>
-                <Text style={styles.title}>{titleText}</Text>
+                <View style={{ flex: 1 }}>
+                    <Text style={styles.title}>{titleText}</Text>
+                    {summary.traineeNames && summary.traineeNames.length > 0 && (
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                            {summary.traineeNames.map((name, idx) => (
+                                <View key={idx} style={{ backgroundColor: colors.primary, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                                    <Text style={{ fontSize: 10, fontWeight: "bold", color: colors.primaryForeground }}>{name}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    )}
+                </View>
                 {summary.elapsedTimeFormatted && (
                     <View style={styles.timeContainer}>
                         <Text style={styles.timeFormatted}>{summary.elapsedTimeFormatted}</Text>

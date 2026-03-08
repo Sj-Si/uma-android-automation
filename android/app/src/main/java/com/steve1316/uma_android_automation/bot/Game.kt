@@ -80,6 +80,7 @@ class Game(val myContext: Context) {
     private val enableStopAtDate: Boolean = SettingsHelper.getBooleanSetting("general", "enableStopAtDate")
     private val stopAtDate: String = SettingsHelper.getStringSetting("general", "stopAtDate")
     private val waitDelay: Double = SettingsHelper.getDoubleSetting("general", "waitDelay")
+    val dialogWaitDelay: Double = SettingsHelper.getDoubleSetting("general", "dialogWaitDelay")
 
 	// Initialize Discord settings from SQLite.
 	init {
@@ -485,10 +486,10 @@ class Game(val myContext: Context) {
             false -> {
                 MessageLog.i(TAG, "[INJURY] Injury detected. Attempting to heal...")
                 if (ButtonInfirmary.click(imageUtils, sourceBitmap = sourceBitmap)) {
-                    wait(0.25)
+                    wait(dialogWaitDelay)
                     ButtonOk.click(imageUtils, region = imageUtils.regionMiddle)
 
-                    wait(0.3)
+                    wait(dialogWaitDelay)
 
                     if (imageUtils.findImage("recover_injury_header", tries = 1, region = imageUtils.regionMiddle).first != null) {
                         MessageLog.i(TAG, "[INJURY] Injury detected and attempted to heal.")
@@ -604,16 +605,18 @@ class Game(val myContext: Context) {
 			findAndTapImage("recover_energy", sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf) -> {
 				findAndTapImage("ok", region = imageUtils.regionMiddle, suppressError = true)
                 // Another OK tap for the possibility of a scheduled race warning popup.
-                wait(0.25)
+                wait(dialogWaitDelay)
                 findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle, suppressError = true)
+                waitForLoading()
 				MessageLog.i(TAG, "[ENERGY] Successfully recovered energy.")
 				true
 			}
 			findAndTapImage("recover_energy_summer", sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf) -> {
 				findAndTapImage("ok", region = imageUtils.regionMiddle, suppressError = true)
                 // Another OK tap for the possibility of a scheduled race warning popup.
-                wait(0.25)
+                wait(dialogWaitDelay)
                 findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle, suppressError = true)
+                waitForLoading()
 				MessageLog.i(TAG, "[ENERGY] Successfully recovered energy for the Summer.")
 				true
 			}
@@ -658,16 +661,20 @@ class Game(val myContext: Context) {
                 }
 
                 // Tap OK for the possibility of a scheduled race warning popup.
-                wait(0.25)
-                findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle, suppressError = true)
+                wait(dialogWaitDelay)
+                if (findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle, suppressError = true)) {
+                    waitForLoading()
+                }
 
                 if (imageUtils.findImage("recreation_umamusume", region = imageUtils.regionMiddle, suppressError = true).first != null) {
                     // The Recreation popup is now open so an additional step is required to recover mood.
                     MessageLog.i(TAG, "[MOOD] Recreation date is already completed. Recovering mood with the Umamusume now...")
                     findAndTapImage("recreation_umamusume", region = imageUtils.regionMiddle)
+                    waitForLoading()
                 } else {
                     // Otherwise, dismiss the popup that says to confirm recreation if the user has not set it to skip the confirmation in their in-game settings.
                     findAndTapImage("ok", region = imageUtils.regionMiddle, suppressError = true)
+                    waitForLoading()
                 }
             }
 			true
@@ -686,7 +693,7 @@ class Game(val myContext: Context) {
     fun handleRecreationDate(recoverMoodIfCompleted: Boolean = false): Boolean {
         return if (findAndTapImage("recover_mood", tries = 1, region = imageUtils.regionBottomHalf)) {
             // Tap OK for the possibility of a scheduled race warning popup.
-            wait(0.25)
+            wait(dialogWaitDelay)
             findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle, suppressError = true)
 
             MessageLog.i(TAG, "\n[RECREATION_DATE] Recreation has a possible date available.")
@@ -698,6 +705,7 @@ class Game(val myContext: Context) {
                 if (recoverMoodIfCompleted) {
                     MessageLog.i(TAG, "[RECREATION_DATE] Mood requires recovery. Recovering mood with the Umamusume now...")
                     findAndTapImage("recreation_umamusume", region = imageUtils.regionMiddle)
+                    waitForLoading()
                     true
                 } else {
                     MessageLog.i(TAG, "[RECREATION_DATE] Mood does not require recovery. Moving on...")
@@ -705,6 +713,7 @@ class Game(val myContext: Context) {
                     true
                 }
             } else if (findAndTapImage("recreation_dating_progress", region = imageUtils.regionMiddle)) {
+                waitForLoading()
                 MessageLog.i(TAG, "[RECREATION_DATE] Recreation date can be done.")
                 true
             } else {
@@ -817,9 +826,12 @@ class Game(val myContext: Context) {
             ButtonCraneGameOk.check(imageUtils = imageUtils, sourceBitmap = sourceBitmap)
         ) {
             ButtonCraneGameOk.click(imageUtils = imageUtils, sourceBitmap = sourceBitmap)
+            waitForLoading()
             MessageLog.i(TAG, "[CRANE GAME] Event exited.")
 		} else if (findAndTapImage("race_end", sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
 			MessageLog.i(TAG, "[MISC] Ended a leftover race.")
+            // Clicking this button triggers connection to server.
+            waitForLoading()
 		} else if (imageUtils.findImageWithBitmap("connection_error", sourceBitmap, region = imageUtils.regionMiddle, suppressError = true) != null) {
 			MessageLog.i(TAG, "\n[END] Bot will stop due to detecting a connection error.")
 			notificationMessage = "Bot will stop due to detecting a connection error."
@@ -896,6 +908,8 @@ class Game(val myContext: Context) {
 			racing.startRaceListDetectionTest()
 		} else if (SettingsHelper.getBooleanSetting("debug", "debugMode_startAptitudesDetectionTest")) {
 			campaign.startAptitudesDetectionTest()
+		} else if (SettingsHelper.getBooleanSetting("debug", "debugMode_startTraineeNameOCRTest")) {
+			campaign.startTraineeNameOCRTest()
 		} else if (SettingsHelper.getBooleanSetting("debug", "debugMode_startMainScreenOCRTest")) {
 			campaign.startMainScreenOCRTest()
 		} else if (SettingsHelper.getBooleanSetting("debug", "debugMode_startTrainingScreenOCRTest")) {
@@ -910,9 +924,9 @@ class Game(val myContext: Context) {
 					val port = SettingsHelper.getIntSetting("debug", "remoteLogViewerPort", 9000)
 					val ipAddress = com.steve1316.uma_android_automation.utils.LogStreamServer.getDeviceIpAddress(myContext)
 					val finalIpAddress = if (ipAddress == "10.0.2.15") "localhost" else ipAddress
-					logViewerString = "\n+ Remote Log Viewer is enabled at http://$finalIpAddress:$port"
+					logViewerString = "Remote Log Viewer is enabled at http://$finalIpAddress:$port"
 				}
-				DiscordUtils.queue.add("```diff\n+ ${MessageLog.getSystemTimeString()} Bot run started! Scenario: $scenario$logViewerString\n```")
+				DiscordUtils.queue.add("```diff\n+ ${MessageLog.getSystemTimeString()} Bot run started! Scenario: $scenario```$logViewerString")
 			}
 			wait(5.0)
             campaign.start()

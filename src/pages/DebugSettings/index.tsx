@@ -24,6 +24,50 @@ const DebugSettings = () => {
     const bsc = useContext(BotStateContext)
     const scrollViewRef = useRef<ScrollView>(null)
 
+    /** List of all diagnostic debug test property names in bsc.settings.debug. */
+    const debugTestKeys = [
+        "debugMode_startTemplateMatchingTest",
+        "debugMode_startSingleTrainingOCRTest",
+        "debugMode_startComprehensiveTrainingOCRTest",
+        "debugMode_startDateOCRTest",
+        "debugMode_startRaceListDetectionTest",
+        "debugMode_startAptitudesDetectionTest",
+        "debugMode_startTraineeNameOCRTest",
+        "debugMode_startMainScreenOCRTest",
+        "debugMode_startTrainingScreenOCRTest",
+    ] as const
+
+    /**
+     * Handles mutual exclusivity for diagnostic debug tests.
+     * When one test is enabled, all others are automatically disabled.
+     *
+     * @param key The settings key of the test being toggled.
+     * @param checked The new checked state.
+     */
+    const handleDebugTestToggle = (key: (typeof debugTestKeys)[number], checked: boolean) => {
+        if (checked) {
+            // Create updates for all debug test keys, setting only the target one to true.
+            const updates = debugTestKeys.reduce((acc, currentKey) => {
+                acc[currentKey] = currentKey === key
+                return acc
+            }, {} as any)
+
+            bsc.setSettings({
+                ...bsc.settings,
+                debug: {
+                    ...bsc.settings.debug,
+                    ...updates,
+                },
+            })
+        } else {
+            // Just disable the one test.
+            bsc.setSettings({
+                ...bsc.settings,
+                debug: { ...bsc.settings.debug, [key]: false },
+            })
+        }
+    }
+
     const [deviceIp, setDeviceIp] = useState<string>("<phone-ip>")
 
     useEffect(() => {
@@ -355,28 +399,7 @@ const DebugSettings = () => {
                             <CustomCheckbox
                                 searchId="debug-template-matching-test"
                                 checked={bsc.settings.debug.debugMode_startTemplateMatchingTest}
-                                onCheckedChange={(checked) => {
-                                    if (checked) {
-                                        // Disable other tests when enabling this one.
-                                        bsc.setSettings({
-                                            ...bsc.settings,
-                                            debug: {
-                                                ...bsc.settings.debug,
-                                                debugMode_startTemplateMatchingTest: true,
-                                                debugMode_startSingleTrainingOCRTest: false,
-                                                debugMode_startComprehensiveTrainingOCRTest: false,
-                                                debugMode_startDateOCRTest: false,
-                                                debugMode_startRaceListDetectionTest: false,
-                                                debugMode_startAptitudesDetectionTest: false,
-                                            },
-                                        })
-                                    } else {
-                                        bsc.setSettings({
-                                            ...bsc.settings,
-                                            debug: { ...bsc.settings.debug, debugMode_startTemplateMatchingTest: false },
-                                        })
-                                    }
-                                }}
+                                onCheckedChange={(checked) => handleDebugTestToggle("debugMode_startTemplateMatchingTest", checked)}
                                 label="Start Basic Template Matching Test"
                                 description="Disables normal bot operations and starts the template match test. Only on the Home screen and will check if it can find certain essential buttons on the screen. It will also output what scale it had the most success with."
                                 style={{ marginTop: 10 }}
@@ -385,28 +408,7 @@ const DebugSettings = () => {
                             <CustomCheckbox
                                 searchId="debug-single-training-ocr-test"
                                 checked={bsc.settings.debug.debugMode_startSingleTrainingOCRTest}
-                                onCheckedChange={(checked) => {
-                                    if (checked) {
-                                        // Disable other tests when enabling this one.
-                                        bsc.setSettings({
-                                            ...bsc.settings,
-                                            debug: {
-                                                ...bsc.settings.debug,
-                                                debugMode_startTemplateMatchingTest: false,
-                                                debugMode_startSingleTrainingOCRTest: true,
-                                                debugMode_startComprehensiveTrainingOCRTest: false,
-                                                debugMode_startDateOCRTest: false,
-                                                debugMode_startRaceListDetectionTest: false,
-                                                debugMode_startAptitudesDetectionTest: false,
-                                            },
-                                        })
-                                    } else {
-                                        bsc.setSettings({
-                                            ...bsc.settings,
-                                            debug: { ...bsc.settings.debug, debugMode_startSingleTrainingOCRTest: false },
-                                        })
-                                    }
-                                }}
+                                onCheckedChange={(checked) => handleDebugTestToggle("debugMode_startSingleTrainingOCRTest", checked)}
                                 label="Start Single Training OCR Test"
                                 description="Disables normal bot operations and starts the single training OCR test. Only on the Training screen and tests the current training on display for stat gains and failure chances."
                                 style={{ marginTop: 10 }}
@@ -415,28 +417,7 @@ const DebugSettings = () => {
                             <CustomCheckbox
                                 searchId="debug-comprehensive-training-ocr-test"
                                 checked={bsc.settings.debug.debugMode_startComprehensiveTrainingOCRTest}
-                                onCheckedChange={(checked) => {
-                                    if (checked) {
-                                        // Disable other tests when enabling this one.
-                                        bsc.setSettings({
-                                            ...bsc.settings,
-                                            debug: {
-                                                ...bsc.settings.debug,
-                                                debugMode_startTemplateMatchingTest: false,
-                                                debugMode_startSingleTrainingOCRTest: false,
-                                                debugMode_startComprehensiveTrainingOCRTest: true,
-                                                debugMode_startDateOCRTest: false,
-                                                debugMode_startRaceListDetectionTest: false,
-                                                debugMode_startAptitudesDetectionTest: false,
-                                            },
-                                        })
-                                    } else {
-                                        bsc.setSettings({
-                                            ...bsc.settings,
-                                            debug: { ...bsc.settings.debug, debugMode_startComprehensiveTrainingOCRTest: false },
-                                        })
-                                    }
-                                }}
+                                onCheckedChange={(checked) => handleDebugTestToggle("debugMode_startComprehensiveTrainingOCRTest", checked)}
                                 label="Start Comprehensive Training OCR Test"
                                 description="Disables normal bot operations and starts the comprehensive training OCR test. Only on the Training screen and tests all 5 trainings for their stat gains and failure chances."
                                 style={{ marginTop: 10 }}
@@ -445,28 +426,7 @@ const DebugSettings = () => {
                             <CustomCheckbox
                                 searchId="debug-date-ocr-test"
                                 checked={bsc.settings.debug.debugMode_startDateOCRTest}
-                                onCheckedChange={(checked) => {
-                                    if (checked) {
-                                        // Disable other tests when enabling this one.
-                                        bsc.setSettings({
-                                            ...bsc.settings,
-                                            debug: {
-                                                ...bsc.settings.debug,
-                                                debugMode_startTemplateMatchingTest: false,
-                                                debugMode_startSingleTrainingOCRTest: false,
-                                                debugMode_startComprehensiveTrainingOCRTest: false,
-                                                debugMode_startDateOCRTest: true,
-                                                debugMode_startRaceListDetectionTest: false,
-                                                debugMode_startAptitudesDetectionTest: false,
-                                            },
-                                        })
-                                    } else {
-                                        bsc.setSettings({
-                                            ...bsc.settings,
-                                            debug: { ...bsc.settings.debug, debugMode_startDateOCRTest: false },
-                                        })
-                                    }
-                                }}
+                                onCheckedChange={(checked) => handleDebugTestToggle("debugMode_startDateOCRTest", checked)}
                                 label="Start Date OCR Test"
                                 description="Disables normal bot operations and starts the date OCR test. Only on the Main screen and the Race List screen and tests detecting the current date."
                                 style={{ marginTop: 10 }}
@@ -475,28 +435,7 @@ const DebugSettings = () => {
                             <CustomCheckbox
                                 searchId="debug-race-list-detection-test"
                                 checked={bsc.settings.debug.debugMode_startRaceListDetectionTest}
-                                onCheckedChange={(checked) => {
-                                    if (checked) {
-                                        // Disable other tests when enabling this one.
-                                        bsc.setSettings({
-                                            ...bsc.settings,
-                                            debug: {
-                                                ...bsc.settings.debug,
-                                                debugMode_startTemplateMatchingTest: false,
-                                                debugMode_startSingleTrainingOCRTest: false,
-                                                debugMode_startComprehensiveTrainingOCRTest: false,
-                                                debugMode_startDateOCRTest: false,
-                                                debugMode_startRaceListDetectionTest: true,
-                                                debugMode_startAptitudesDetectionTest: false,
-                                            },
-                                        })
-                                    } else {
-                                        bsc.setSettings({
-                                            ...bsc.settings,
-                                            debug: { ...bsc.settings.debug, debugMode_startRaceListDetectionTest: false },
-                                        })
-                                    }
-                                }}
+                                onCheckedChange={(checked) => handleDebugTestToggle("debugMode_startRaceListDetectionTest", checked)}
                                 label="Start Race List Detection Test"
                                 description="Disables normal bot operations and starts the Race List detection test. Only on the Race List screen and tests detecting the races with double star predictions currently on display."
                                 style={{ marginTop: 10 }}
@@ -505,32 +444,39 @@ const DebugSettings = () => {
                             <CustomCheckbox
                                 searchId="debug-aptitudes-detection-test"
                                 checked={bsc.settings.debug.debugMode_startAptitudesDetectionTest}
-                                onCheckedChange={(checked) => {
-                                    if (checked) {
-                                        // Disable other tests when enabling this one.
-                                        bsc.setSettings({
-                                            ...bsc.settings,
-                                            debug: {
-                                                ...bsc.settings.debug,
-                                                debugMode_startTemplateMatchingTest: false,
-                                                debugMode_startSingleTrainingOCRTest: false,
-                                                debugMode_startComprehensiveTrainingOCRTest: false,
-                                                debugMode_startDateOCRTest: false,
-                                                debugMode_startRaceListDetectionTest: false,
-                                                debugMode_startAptitudesDetectionTest: true,
-                                            },
-                                        })
-                                    } else {
-                                        bsc.setSettings({
-                                            ...bsc.settings,
-                                            debug: { ...bsc.settings.debug, debugMode_startAptitudesDetectionTest: false },
-                                        })
-                                    }
-                                }}
+                                onCheckedChange={(checked) => handleDebugTestToggle("debugMode_startAptitudesDetectionTest", checked)}
                                 label="Start Aptitudes Detection Test"
                                 description="Disables normal bot operations and starts the Aptitudes detection test. Only on the Main screen and tests detecting the current aptitudes."
                                 style={{ marginTop: 10 }}
                             />
+
+                            <CustomCheckbox
+                                searchId="debug-trainee-name-ocr-test"
+                                checked={bsc.settings.debug.debugMode_startTraineeNameOCRTest}
+                                onCheckedChange={(checked) => handleDebugTestToggle("debugMode_startTraineeNameOCRTest", checked)}
+                                label="Start Trainee Name OCR Test"
+                                description="Disables normal bot operations and starts the Trainee Name OCR test. Only on the Aptitude dialog and tests detecting the trainee's name using color filtering."
+                                style={{ marginTop: 10 }}
+                            />
+
+                            <CustomCheckbox
+                                searchId="debug-main-screen-ocr-test"
+                                checked={bsc.settings.debug.debugMode_startMainScreenOCRTest}
+                                onCheckedChange={(checked) => handleDebugTestToggle("debugMode_startMainScreenOCRTest", checked)}
+                                label="Start Main Screen OCR Test"
+                                description="Disables normal bot operations and starts the Main screen OCR test. Only on the Main screen and tests detecting various components on the screen."
+                                style={{ marginTop: 10 }}
+                            />
+
+                            <CustomCheckbox
+                                searchId="debug-training-screen-ocr-test"
+                                checked={bsc.settings.debug.debugMode_startTrainingScreenOCRTest}
+                                onCheckedChange={(checked) => handleDebugTestToggle("debugMode_startTrainingScreenOCRTest", checked)}
+                                label="Start Training Screen OCR Test"
+                                description="Disables normal bot operations and starts the Training screen OCR test. Only on the Training screen and tests detecting various components on the screen."
+                                style={{ marginTop: 10 }}
+                            />
+
                         </View>
                     </View>
                 </ScrollView>

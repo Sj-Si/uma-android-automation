@@ -287,15 +287,15 @@ class GameDate {
 
             val finalsDay = when {
                 goalTextMatch(goalText, "qualifier") -> {
-                    MessageLog.d(TAG, "[DATE] Detected Finals Qualifier (Turn 73).")
+                    MessageLog.d(TAG, "[DATE] Finale Qualifier (Turn 73).")
                     73
                 }
                 goalTextMatch(goalText, "semifinal") -> {
-                    MessageLog.d(TAG, "[DATE] Detected Finals Semifinal (Turn 74).")
+                    MessageLog.d(TAG, "[DATE] Finale Semi-Final (Turn 74).")
                     74
                 }
                 goalTextMatch(goalText, "finals") -> {
-                    MessageLog.d(TAG, "[DATE] Detected Finals Finals (Turn 75).")
+                    MessageLog.d(TAG, "[DATE] Finale Finals (Turn 75).")
                     75
                 }
                 else -> {

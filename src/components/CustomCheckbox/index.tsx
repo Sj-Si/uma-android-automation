@@ -19,6 +19,8 @@ interface CustomCheckboxProps {
     className?: string
     /** Optional custom style for the container. */
     style?: ViewStyle
+    /** Whether the checkbox is disabled. */
+    disabled?: boolean
     /** Optional search ID for registering this item in the search index. */
     searchId?: string
     /** Optional override for the searchable title (defaults to label). */
@@ -42,6 +44,7 @@ interface CustomCheckboxProps {
  * @param description Optional description text displayed below the label.
  * @param className Optional NativeWind class name.
  * @param style Optional custom style for the container.
+ * @param disabled Whether the checkbox is disabled.
  * @param searchId Optional search ID for registering this item in the search index.
  * @param searchTitle Optional override for the searchable title (defaults to label).
  * @param searchDescription Optional override for the searchable description.
@@ -56,6 +59,7 @@ const CustomCheckbox: React.FC<CustomCheckboxProps> = ({
     description,
     className = "",
     style,
+    disabled = false,
     searchId,
     searchTitle,
     searchDescription,
@@ -67,11 +71,11 @@ const CustomCheckbox: React.FC<CustomCheckboxProps> = ({
 
     const content = (
         <View className={`flex-row items-start gap-3 ${className}`} style={style}>
-            <Checkbox checked={checked} onCheckedChange={onCheckedChange} className="dark:border-gray-400" />
+            <Checkbox checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} className="dark:border-gray-400" />
 
             {/* flexShrink is used to make sure the description wraps properly and not overflow past the right side of the screen. */}
             <View style={{ flexShrink: 1 }}>
-                <Label style={{ color: colors.foreground, fontWeight: "bold" }} onPress={() => onCheckedChange(!checked)}>
+                <Label style={{ color: colors.foreground, fontWeight: "bold" }} disabled={disabled} onPress={() => onCheckedChange(!checked)}>
                     {label}
                 </Label>
                 {description && (

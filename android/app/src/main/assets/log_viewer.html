@@ -172,12 +172,81 @@
             .toolbar {
                 background: var(--bg-secondary);
                 border-bottom: 1px solid var(--border-color);
-                padding: 8px 20px;
+                display: flex;
+                flex-direction: column;
+                flex-shrink: 0;
+                position: relative;
+            }
+
+            .toolbar-animator {
+                display: grid;
+                grid-template-rows: 1fr;
+                transition: grid-template-rows 0.33s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .toolbar.collapsed .toolbar-animator {
+                grid-template-rows: 0fr;
+            }
+
+            .toolbar-content {
+                min-height: 0; /* Required for grid track animation */
                 display: flex;
                 align-items: center;
                 gap: 10px;
-                flex-shrink: 0;
+                padding: 8px 20px;
                 flex-wrap: wrap;
+                overflow: hidden;
+                transition: padding 0.33s ease, opacity 0.2s ease;
+                opacity: 1;
+            }
+
+            .toolbar.collapsed .toolbar-content {
+                padding-top: 0;
+                padding-bottom: 0;
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            .toolbar-toggle-container {
+                display: flex;
+                justify-content: center;
+                width: 100%;
+                height: 0;
+                position: relative;
+                z-index: 5;
+            }
+
+            .toolbar-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 40px;
+                height: 16px;
+                background: var(--bg-tertiary);
+                border: 1px solid var(--border-color);
+                border-top: none;
+                border-bottom-left-radius: 8px;
+                border-bottom-right-radius: 8px;
+                color: var(--text-muted);
+                cursor: pointer;
+                transition: all var(--transition);
+                font-size: 8px;
+                line-height: 1;
+            }
+
+            .toolbar-toggle:hover {
+                background: var(--bg-hover);
+                color: var(--text-primary);
+                height: 18px;
+            }
+
+            .toolbar-toggle span {
+                transition: transform 0.3s ease;
+                display: inline-block;
+            }
+
+            .toolbar.collapsed .toolbar-toggle span {
+                transform: rotate(180deg);
             }
 
             .search-container {
@@ -199,7 +268,7 @@
 
             .search-input {
                 width: 100%;
-                padding: 6px 10px 6px 32px;
+                padding: 6px 32px 6px 32px;
                 background: var(--bg-tertiary);
                 border: 1px solid var(--border-color);
                 border-radius: var(--radius);
@@ -214,6 +283,25 @@
             }
             .search-input:focus {
                 border-color: var(--accent-blue);
+            }
+
+            .search-clear {
+                position: absolute;
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: var(--text-muted);
+                cursor: pointer;
+                font-size: 14px;
+                display: none;
+                transition: color var(--transition);
+                user-select: none;
+            }
+            .search-clear:hover {
+                color: var(--text-primary);
+            }
+            .search-clear.visible {
+                display: block;
             }
 
             .filter-group {
@@ -300,6 +388,72 @@
                 color: var(--accent-blue);
             }
 
+            .font-size-container {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                background: var(--bg-tertiary);
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius);
+                padding: 4px 10px;
+                height: 34px;
+            }
+            .font-size-container span {
+                font-size: 11px;
+                font-weight: 600;
+                color: var(--text-muted);
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                user-select: none;
+            }
+            .size-btn {
+                width: 26px;
+                height: 26px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-color);
+                border-radius: 4px;
+                color: var(--text-secondary);
+                font-size: 16px;
+                font-weight: 700;
+                cursor: pointer;
+                transition: all var(--transition);
+                line-height: 1;
+                padding-bottom: 2px;
+            }
+            .size-btn:hover {
+                background: var(--bg-hover);
+                color: var(--text-primary);
+                border-color: var(--border-accent);
+            }
+            .size-btn:active {
+                transform: scale(0.95);
+            }
+            .font-size-display {
+                display: none;
+            }
+            .font-size-input {
+                width: 40px;
+                background: transparent;
+                border: none;
+                color: var(--text-primary);
+                font-family: var(--font-mono);
+                font-size: 12px;
+                font-weight: 600;
+                outline: none;
+                text-align: center;
+                appearance: textfield;
+                padding: 0;
+                margin: 0;
+            }
+            .font-size-input::-webkit-inner-spin-button,
+            .font-size-input::-webkit-outer-spin-button {
+                appearance: none;
+                margin: 0;
+            }
+
             .message-count {
                 font-size: 12px;
                 color: var(--text-muted);
@@ -317,6 +471,7 @@
                 overflow-y: auto;
                 padding: 8px 20px;
                 scroll-behavior: auto;
+                --log-font-size: 12.5px;
             }
 
             .log-entry {
@@ -324,7 +479,7 @@
                 align-items: flex-start;
                 padding: 3px 0;
                 font-family: var(--font-mono);
-                font-size: 12.5px;
+                font-size: var(--log-font-size);
                 line-height: 1.6;
                 border-bottom: 1px solid rgba(42, 42, 58, 0.3);
                 animation: fadeIn 0.2s ease-out;
@@ -467,11 +622,239 @@
                 flex-shrink: 0;
             }
 
+            .footer-left {
+                flex: 1;
+                text-align: left;
+            }
+
+            .footer-right {
+                flex: 1;
+                text-align: right;
+            }
+
+            .dashboard {
+                background: var(--bg-secondary);
+                border-bottom: 1px solid var(--border-color);
+                padding: 10px 16px;
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+                flex-shrink: 0;
+            }
+
+            .dashboard-info {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                flex: 1;
+            }
+
+            .dashboard-row {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+
+            .dashboard-item {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+
+            .dashboard-label {
+                font-size: 11px;
+                font-weight: 700;
+                color: var(--text-muted);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .dashboard-value {
+                font-size: 15px;
+                font-weight: 600;
+                color: var(--text-primary);
+                font-family: var(--font-mono);
+            }
+
+            .stats-container {
+                display: flex;
+                gap: 8px;
+                background: var(--bg-tertiary);
+                padding: 6px 12px;
+                border-radius: var(--radius);
+                border: 1px solid var(--border-color);
+            }
+
+            .stat-box {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                min-width: 42px;
+            }
+
+            .stat-label {
+                font-size: 10px;
+                font-weight: 700;
+                color: var(--text-muted);
+                margin-bottom: 2px;
+            }
+
+            .stat-value {
+                font-size: 14px;
+                font-weight: 700;
+                color: var(--accent-blue);
+            }
+
+            .aptitude-table {
+                width: auto;
+                min-width: 300px;
+                border-collapse: collapse;
+                background: var(--bg-tertiary);
+                border-radius: var(--radius);
+                overflow: hidden;
+                border: 1px solid var(--border-color);
+                font-size: 11px;
+            }
+
+            .aptitude-table th,
+            .aptitude-table td {
+                padding: 4px 8px;
+                text-align: center;
+                border: 1px solid var(--border-color);
+            }
+
+            .aptitude-table th {
+                background: rgba(255, 255, 255, 0.03);
+                color: var(--text-secondary);
+                font-weight: 600;
+                font-size: 10px;
+                text-transform: uppercase;
+                width: 100px;
+            }
+
+            .aptitude-cell {
+                display: inline-flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                margin: 0 8px;
+            }
+
+            .aptitude-name {
+                font-size: 11px;
+                color: var(--text-muted);
+                font-weight: 500;
+            }
+
+            .grade-badge {
+                display: inline-block;
+                width: 20px;
+                height: 20px;
+                line-height: 20px;
+                text-align: center;
+                border-radius: 4px;
+                font-weight: 800;
+                font-size: 13px;
+                background: #333;
+                color: #fff;
+            }
+
+            .grade-S {
+                background: #ff4d4d;
+                box-shadow: 0 0 5px rgba(255, 77, 77, 0.5);
+            }
+            .grade-A {
+                background: #ff8533;
+            }
+            .grade-B {
+                background: #ffcc00;
+                color: #000;
+            }
+            .grade-C {
+                background: #33cc33;
+            }
+            .grade-D {
+                background: #3399ff;
+            }
+            .grade-E {
+                background: #9933ff;
+            }
+            .grade-F {
+                background: #666;
+            }
+            .grade-G {
+                background: #444;
+            }
+
             @media (max-width: 768px) {
                 .header {
                     padding: 10px 12px;
                 }
-                .toolbar {
+                .dashboard {
+                    padding: 6px 10px;
+                    flex-direction: row;
+                    gap: 8px;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+                .dashboard-info {
+                    width: auto;
+                    align-items: flex-end;
+                    gap: 4px;
+                }
+                .dashboard-row {
+                    gap: 8px;
+                    justify-content: flex-end;
+                    width: auto;
+                }
+                .stats-container {
+                    padding: 3px 6px;
+                    gap: 4px;
+                    width: auto;
+                }
+                .stat-box {
+                    min-width: 30px;
+                }
+                .stat-label {
+                    font-size: 8px;
+                }
+                .stat-value {
+                    font-size: 11px;
+                }
+                .dashboard-label {
+                    font-size: 8px;
+                }
+                .dashboard-value {
+                    font-size: 11px;
+                }
+                .aptitude-table {
+                    font-size: 8px;
+                    width: auto;
+                    min-width: 0;
+                }
+                .aptitude-table th,
+                .aptitude-table td {
+                    padding: 1px 3px;
+                }
+                .aptitude-table th {
+                    width: 45px;
+                }
+                .aptitude-cell {
+                    margin: 0 1px;
+                }
+                .aptitude-name {
+                    font-size: 8px;
+                }
+                .grade-badge {
+                    width: 14px;
+                    height: 14px;
+                    line-height: 14px;
+                    font-size: 9px;
+                }
+                .toolbar-content {
                     padding: 8px 12px;
                 }
                 .log-container {
@@ -505,35 +888,130 @@
             </div>
         </header>
 
+        <!-- Dashboard -->
+        <div class="dashboard">
+            <table class="aptitude-table">
+                <tr>
+                    <th>Terrain</th>
+                    <td id="rowTerrain">
+                        <div class="aptitude-cell"><span class="aptitude-name">Turf</span><span id="aptTurf" class="grade-badge grade-G">-</span></div>
+                        <div class="aptitude-cell"><span class="aptitude-name">Dirt</span><span id="aptDirt" class="grade-badge grade-G">-</span></div>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Distance</th>
+                    <td id="rowDistance">
+                        <div class="aptitude-cell"><span class="aptitude-name">Sprint</span><span id="aptSprint" class="grade-badge grade-G">-</span></div>
+                        <div class="aptitude-cell"><span class="aptitude-name">Mile</span><span id="aptMile" class="grade-badge grade-G">-</span></div>
+                        <div class="aptitude-cell"><span class="aptitude-name">Medium</span><span id="aptMedium" class="grade-badge grade-G">-</span></div>
+                        <div class="aptitude-cell"><span class="aptitude-name">Long</span><span id="aptLong" class="grade-badge grade-G">-</span></div>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Style</th>
+                    <td id="rowStyle">
+                        <div class="aptitude-cell"><span class="aptitude-name">Front</span><span id="aptFront" class="grade-badge grade-G">-</span></div>
+                        <div class="aptitude-cell"><span class="aptitude-name">Pace</span><span id="aptPace" class="grade-badge grade-G">-</span></div>
+                        <div class="aptitude-cell"><span class="aptitude-name">Late</span><span id="aptLate" class="grade-badge grade-G">-</span></div>
+                        <div class="aptitude-cell"><span class="aptitude-name">End</span><span id="aptEnd" class="grade-badge grade-G">-</span></div>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="dashboard-info">
+                <div class="dashboard-row">
+                    <div class="dashboard-item">
+                        <div class="dashboard-label">Trainee</div>
+                        <div id="dashboardName" class="dashboard-value" style="font-weight: 600; letter-spacing: 0.3px">-</div>
+                    </div>
+                </div>
+                <div class="dashboard-row">
+                    <div class="dashboard-item">
+                        <div class="dashboard-label">Current Date</div>
+                        <div id="dashboardDate" class="dashboard-value">-</div>
+                    </div>
+                    <div class="dashboard-item">
+                        <div class="dashboard-label">Turn</div>
+                        <div id="dashboardTurn" class="dashboard-value">-</div>
+                    </div>
+                </div>
+                <div class="dashboard-row">
+                    <div class="stats-container">
+                        <div class="stat-box">
+                            <div class="stat-label">SPD</div>
+                            <div id="statSpeed" class="stat-value">-</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">STA</div>
+                            <div id="statStamina" class="stat-value">-</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">POW</div>
+                            <div id="statPower" class="stat-value">-</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">GUT</div>
+                            <div id="statGuts" class="stat-value">-</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">WIT</div>
+                            <div id="statWit" class="stat-value">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Toolbar -->
-        <div class="toolbar">
-            <div class="search-container">
-                <span class="search-icon">🔍</span>
-                <input type="text" id="searchInput" class="search-input" placeholder="Filter logs..." />
+        <div id="toolbar" class="toolbar">
+            <div class="toolbar-animator">
+                <div id="toolbarContent" class="toolbar-content">
+                    <div class="search-container">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" class="search-input" placeholder="Filter logs..." />
+                        <span id="searchClear" class="search-clear">✕</span>
+                    </div>
+
+                    <div class="toolbar-separator"></div>
+
+                    <!-- Log level filtering buttons. -->
+                    <div class="filter-group">
+                        <button class="filter-btn active" data-level="VERBOSE" onclick="toggleFilter('VERBOSE', this)">V</button>
+                        <button class="filter-btn active" data-level="DEBUG" onclick="toggleFilter('DEBUG', this)">D</button>
+                        <button class="filter-btn active" data-level="INFO" onclick="toggleFilter('INFO', this)">I</button>
+                        <button class="filter-btn active" data-level="WARN" onclick="toggleFilter('WARN', this)">W</button>
+                        <button class="filter-btn active" data-level="ERROR" onclick="toggleFilter('ERROR', this)">E</button>
+                    </div>
+
+                    <div class="toolbar-separator"></div>
+
+                    <!-- Log action buttons. -->
+                    <button id="autoScrollBtn" class="toolbar-btn active" onclick="toggleAutoScroll()">⬇ Auto-scroll</button>
+
+                    <div class="font-size-container">
+                        <button class="size-btn" onclick="adjustFontSize(-0.5)" title="Decrease font size">-</button>
+                        <input type="number" id="fontSizeInput" class="font-size-input" min="8" max="24" step="0.5" value="12.5" />
+                        <span>px</span>
+                        <button class="size-btn" onclick="adjustFontSize(0.5)" title="Increase font size">+</button>
+                    </div>
+
+                    <button class="toolbar-btn" onclick="copyAllLogs()">📋 Copy</button>
+
+                    <button class="toolbar-btn" onclick="downloadLogs()">📥 Download</button>
+
+                    <button class="toolbar-btn" onclick="clearDisplay()">🗑 Clear</button>
+
+                    <!-- Message counter. -->
+                    <div class="message-count">Messages: <span id="messageCount">0</span></div>
+                </div>
             </div>
 
-            <div class="toolbar-separator"></div>
-
-            <!-- Log level filtering buttons. -->
-            <div class="filter-group">
-                <button class="filter-btn active" data-level="VERBOSE" onclick="toggleFilter('VERBOSE', this)">V</button>
-                <button class="filter-btn active" data-level="DEBUG" onclick="toggleFilter('DEBUG', this)">D</button>
-                <button class="filter-btn active" data-level="INFO" onclick="toggleFilter('INFO', this)">I</button>
-                <button class="filter-btn active" data-level="WARN" onclick="toggleFilter('WARN', this)">W</button>
-                <button class="filter-btn active" data-level="ERROR" onclick="toggleFilter('ERROR', this)">E</button>
+            <!-- Toolbar Toggle Button -->
+            <div class="toolbar-toggle-container">
+                <button id="toolbarToggle" class="toolbar-toggle" onclick="toggleToolbar()" title="Toggle Toolbar">
+                    <span id="toolbarToggleIcon">▲</span>
+                </button>
             </div>
-
-            <div class="toolbar-separator"></div>
-
-            <!-- Log action buttons. -->
-            <button id="autoScrollBtn" class="toolbar-btn active" onclick="toggleAutoScroll()">⬇ Auto-scroll</button>
-
-            <button class="toolbar-btn" onclick="copyAllLogs()">📋 Copy</button>
-
-            <button class="toolbar-btn" onclick="clearDisplay()">🗑 Clear</button>
-
-            <!-- Message counter. -->
-            <div class="message-count">Messages: <span id="messageCount">0</span></div>
         </div>
 
         <!-- Log container -->
@@ -550,8 +1028,8 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <span>Uma Android Automation — Remote Log Viewer</span>
-            <span id="footerInfo"></span>
+            <span class="footer-left">Uma Android Automation - Remote Log Viewer</span>
+            <span id="footerInfo" class="footer-right"></span>
         </footer>
 
         <script>
@@ -576,9 +1054,13 @@
             const statusBadge = document.getElementById("statusBadge")
             const statusText = document.getElementById("statusText")
             const searchInput = document.getElementById("searchInput")
+            const searchClear = document.getElementById("searchClear")
             const scrollBottomBtn = document.getElementById("scrollBottomBtn")
             const autoScrollBtn = document.getElementById("autoScrollBtn")
+            const fontSizeInput = document.getElementById("fontSizeInput")
             const footerInfo = document.getElementById("footerInfo")
+
+            let currentFontSize = 12.5 // Default font size in pixels.
 
             // ==============================================
             // WebSocket Connection
@@ -612,7 +1094,16 @@
                 }
 
                 ws.onmessage = function (event) {
-                    if (event.data.startsWith("BATCH:")) {
+                    if (event.data === "HISTORY_DONE") {
+                        setTimeout(function () {
+                            processAllHistoryForDashboard()
+                        }, 10)
+                    } else if (event.data.startsWith("HISTORY_BATCH:")) {
+                        var msgs = event.data.substring(14).split("---LOG_SEPARATOR---")
+                        setTimeout(function () {
+                            appendHistoryBatch(msgs)
+                        }, 10)
+                    } else if (event.data.startsWith("BATCH:")) {
                         var msgs = event.data.substring(6).split("---LOG_SEPARATOR---")
                         // Yield to the browser renderer using setTimeout so "Connected" paints instantly
                         // before processing the heavy DOM insertions of the log messages.
@@ -730,6 +1221,9 @@
                 var parsed = parseMessage(rawMessage)
                 allMessages.push({ raw: rawMessage, parsed: parsed })
 
+                // Handle special messages for dashboard updates immediately for individual messages.
+                processSpecialLogs(parsed)
+
                 var entry = createLogEntry(rawMessage, parsed)
                 logContainer.appendChild(entry)
 
@@ -740,7 +1234,7 @@
             }
 
             /**
-             * Efficiently append a batch of log messages using a DocumentFragment to avoid DOM thrashing.
+             * Efficiently append a batch of log messages using a DocumentFragment and atomic dashboard updates.
              * @param {Array<string>} rawMessages Array of raw log message strings.
              */
             function appendBatchMessages(rawMessages) {
@@ -759,16 +1253,120 @@
                 }
 
                 var fragment = document.createDocumentFragment()
+                
+                // Track dashboard state changes across the batch to apply them once at the end.
+                var batchState = {
+                    name: null,
+                    date: null,
+                    turn: null,
+                    stats: {},
+                    apts: {}
+                }
 
                 validMessages.forEach(function (rawMessage) {
-                    var parsed = parseMessage(rawMessage)
-                    allMessages.push({ raw: rawMessage, parsed: parsed })
-                    var entry = createLogEntry(rawMessage, parsed)
-                    fragment.appendChild(entry)
+                    try {
+                        var parsed = parseMessage(rawMessage)
+                        allMessages.push({ raw: rawMessage, parsed: parsed })
+                        
+                        // Collect updates into the batch state object.
+                        processSpecialLogs(parsed, batchState)
+                        
+                        var entry = createLogEntry(rawMessage, parsed)
+                        fragment.appendChild(entry)
+                    } catch (e) {
+                        console.error("Error processing log in batch:", e, rawMessage)
+                    }
                 })
 
                 logContainer.appendChild(fragment)
+                
+                // Apply the final accumulated state from this batch to the DOM.
+                applyBatchStateToDashboard(batchState)
 
+                if (autoScroll) {
+                    scrollToBottom()
+                }
+            }
+
+            /**
+             * Efficiently prepends a batch of history log messages using a DocumentFragment.
+             * @param {Array<string>} rawMessages Array of raw log message strings in reverse chronological order.
+             */
+            function appendHistoryBatch(rawMessages) {
+                if (!rawMessages || rawMessages.length === 0) return
+
+                var validMessages = rawMessages.filter(function (m) {
+                    return m
+                })
+                if (validMessages.length === 0) return
+
+                messageCount += validMessages.length
+                messageCountEl.textContent = messageCount
+
+                if (emptyState) {
+                    emptyState.style.display = "none"
+                }
+
+                // Reverse back to chronological order for this batch.
+                validMessages.reverse()
+
+                var fragment = document.createDocumentFragment()
+                var batchArray = []
+
+                validMessages.forEach(function (rawMessage) {
+                    try {
+                        var parsed = parseMessage(rawMessage)
+                        batchArray.push({ raw: rawMessage, parsed: parsed })
+                        
+                        var entry = createLogEntry(rawMessage, parsed)
+                        fragment.appendChild(entry)
+                    } catch (e) {
+                        console.error("Error processing log in history batch:", e, rawMessage)
+                    }
+                })
+
+                // Prepend this batch to allMessages to maintain overall chronological order.
+                allMessages = batchArray.concat(allMessages)
+
+                // Save current scroll state before prepending.
+                var previousScrollHeight = logContainer.scrollHeight;
+                var previousScrollTop = logContainer.scrollTop;
+
+                // Insert at the beginning of the container.
+                if (logContainer.firstChild) {
+                    logContainer.insertBefore(fragment, logContainer.firstChild)
+                } else {
+                    logContainer.appendChild(fragment)
+                }
+                
+                // Adjust scroll position to counteract the prepended elements
+                // so the current view doesn't jump around.
+                var newScrollHeight = logContainer.scrollHeight;
+                if (previousScrollHeight > 0) {
+                    logContainer.scrollTop = previousScrollTop + (newScrollHeight - previousScrollHeight);
+                }
+            }
+
+            /**
+             * Processes all historical messages chronologically to build the latest dashboard state,
+             * then applies it to the dashboard.
+             */
+            function processAllHistoryForDashboard() {
+                var batchState = {
+                    name: null,
+                    date: null,
+                    turn: null,
+                    stats: {},
+                    apts: {}
+                }
+                
+                // allMessages is guaranteed to be in chronological order at this point.
+                allMessages.forEach(function (msg) {
+                    processSpecialLogs(msg.parsed, batchState)
+                })
+                
+                applyBatchStateToDashboard(batchState)
+                
                 if (autoScroll) {
                     scrollToBottom()
                 }
@@ -921,10 +1519,58 @@
                 messageCount = 0
                 messageCountEl.textContent = "0"
 
+                // Reset the trainee name display.
+                document.getElementById("dashboardName").textContent = "-"
+
                 // Show empty state again.
                 if (emptyState) {
                     emptyState.style.display = "flex"
                 }
+            }
+
+            // ==============================================
+            // Font Size Adjustment
+            // ==============================================
+
+            /**
+             * Increments or decrements the font size.
+             * @param {number} delta - The amount to change the size by.
+             */
+            function adjustFontSize(delta) {
+                updateFontSize(currentFontSize + delta)
+            }
+
+            /**
+             * Updates the font size based on numeric input.
+             * @param {number} value - The new font size in pixels.
+             */
+            function updateFontSize(value) {
+                currentFontSize = parseFloat(value)
+                if (isNaN(currentFontSize)) return
+
+                // Constrain value.
+                if (currentFontSize < 8) currentFontSize = 8
+                if (currentFontSize > 24) currentFontSize = 24
+
+                logContainer.style.setProperty("--log-font-size", currentFontSize + "px")
+                fontSizeInput.value = currentFontSize
+
+                // Persist preference.
+                localStorage.setItem("uaa_log_font_size", currentFontSize)
+            }
+
+            /**
+             * Initializes the font size from stored preference or default.
+             */
+            function initFontSize() {
+                const storedSize = localStorage.getItem("uaa_log_font_size")
+                if (storedSize !== null) {
+                    const parsedSize = parseFloat(storedSize)
+                    if (!isNaN(parsedSize)) {
+                        currentFontSize = parsedSize
+                    }
+                }
+                updateFontSize(currentFontSize)
             }
 
             // ==============================================
@@ -934,12 +1580,27 @@
             // Listen for input changes in the search field to filter logs in real-time.
             searchInput.addEventListener("input", function () {
                 searchQuery = this.value.toLowerCase().trim()
+                searchClear.classList.toggle("visible", this.value.length > 0)
                 applyFilters()
+            })
+
+            // Listen for click on the clear button to reset search.
+            searchClear.addEventListener("click", function () {
+                searchInput.value = ""
+                searchQuery = ""
+                this.classList.remove("visible")
+                applyFilters()
+                searchInput.focus()
             })
 
             // ==============================================
             // Scroll Detection — Show/hide scroll-to-bottom
             // ==============================================
+
+            // Listen for font size change.
+            fontSizeInput.addEventListener("input", function () {
+                updateFontSize(this.value)
+            })
 
             // Monitor log container scrolling to toggle auto-scroll and show/hide the scroll-to-bottom button.
             logContainer.addEventListener("scroll", function () {
@@ -962,7 +1623,300 @@
                 }
             })
 
-            // Initiate the connection when the page loads.
+            // ==============================================
+            // Dashboard
+            // ==============================================
+
+            /**
+             * Converts a turn number to a descriptive date string.
+             */
+            function dateFromDay(day) {
+                const d = day - 1
+                const y = Math.floor(d / 24)
+                const m = Math.floor((d % 24) / 2)
+                const p = d % 2
+
+                const years = ["Junior Year", "Classic Year", "Senior Year"]
+                const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+                const phases = ["Early", "Late"]
+
+                return `${years[y]} ${phases[p]} ${months[m]}`
+            }
+
+            /**
+             * Processes logs for special dashboard updates.
+             * @param {object} parsed - The parsed log object.
+             * @param {object} stateTarget - Optional state object to update instead of the DOM.
+             */
+            function processSpecialLogs(parsed, stateTarget = null) {
+                const text = parsed.text
+
+                // Detect and extract Turn information.
+                const turnMatch = text.match(/(?:\(|Turn\s*)(\d+)\)?/i)
+                const turnsRemainingMatch = text.match(/Detected day for extra racing: (\d+)/i)
+
+                const dashboardDateEl = document.getElementById("dashboardDate")
+                const dashboardTurnEl = document.getElementById("dashboardTurn")
+
+                // Handle absolute turn numbers: "(Turn 48)" or "Turn 48".
+                if (turnMatch && (text.includes("[DATE]") || text.includes("fromDateString"))) {
+                    if (stateTarget) {
+                        stateTarget.turn = turnMatch[1]
+                    } else {
+                        dashboardTurnEl.textContent = turnMatch[1]
+                    }
+                }
+                // Handle "turns remaining" logs: ONLY during Pre-Debut.
+                // These logs represent turns left until the next goal.
+                else if (turnsRemainingMatch) {
+                    // Check if we are in Pre-Debut.
+                    let isPreDebut = false
+                    if (stateTarget && stateTarget.date) {
+                        isPreDebut = stateTarget.date.toLowerCase().includes("pre-debut")
+                    } else if (dashboardDateEl) {
+                        isPreDebut = dashboardDateEl.textContent.toLowerCase().includes("pre-debut")
+                    }
+
+                    if (isPreDebut) {
+                        const turnsRemaining = parseInt(turnsRemainingMatch[1])
+                        // Pre-Debut has 12 turns. Turn = 12 - turnsRemaining.
+                        const absoluteTurn = Math.max(1, 12 - turnsRemaining)
+                        
+                        if (stateTarget) {
+                            stateTarget.turn = absoluteTurn
+                            stateTarget.date = idToTitleCase(dateFromDay(absoluteTurn))
+                        } else {
+                            dashboardTurnEl.textContent = absoluteTurn
+                            dashboardDateEl.textContent = idToTitleCase(dateFromDay(absoluteTurn))
+                        }
+                    }
+                }
+
+                // Parse clean date.
+                if (text.includes("fromDateString:: Detected")) {
+                    const dateMatch = text.match(/fromDateString:: Detected (.*?) (?:\(Turn|\d)/)
+                    if (dateMatch) {
+                        const dateStr = dateMatch[1].trim().replace(/^FINALS\s+/i, "Finale ")
+                        if (stateTarget) {
+                            stateTarget.date = idToTitleCase(dateStr)
+                        } else {
+                            dashboardDateEl.textContent = idToTitleCase(dateStr)
+                        }
+                    }
+                }
+                // Handle "Detected date: ..." logs.
+                else if (text.includes("Detected date:")) {
+                    const dateMatch = text.match(/Detected date:\s*(.*?)(\s*\(Turn|$)/i)
+                    if (dateMatch) {
+                        let dateStr = dateMatch[1].trim().replace(/^FINALS\s+/i, "Finale ")
+
+                        // If in Pre-Debut, calculate a more descriptive date from the current turn.
+                        let currentTurn = "-"
+                        if (stateTarget && stateTarget.turn) {
+                            currentTurn = stateTarget.turn.toString()
+                        } else {
+                            currentTurn = dashboardTurnEl.textContent
+                        }
+
+                        if (dateStr.toLowerCase().includes("pre-debut") && currentTurn !== "-") {
+                            const day = parseInt(currentTurn)
+                            if (!isNaN(day) && day > 0) {
+                                dateStr = dateFromDay(day)
+                            }
+                        }
+
+                        if (stateTarget) {
+                            stateTarget.date = idToTitleCase(dateStr)
+                        } else {
+                            dashboardDateEl.textContent = idToTitleCase(dateStr)
+                        }
+                    }
+                }
+                // Fallback for generic [DATE] logs.
+                else if (text.includes("[DATE]") && !text.includes("getFinalsDay")) {
+                    // Match generic date skipping "New date:" and requiring "(Turn X)".
+                    const dateMatch = text.match(/\[DATE\]\s*(?:New date:\s*)?(.*?)(\s*\(Turn\s*\d+\))/i)
+                    if (dateMatch) {
+                        const dateStr = dateMatch[1].trim().replace(/^FINALS\s+/i, "Finale ")
+                        if (stateTarget) {
+                            stateTarget.date = idToTitleCase(dateStr)
+                        } else {
+                            dashboardDateEl.textContent = idToTitleCase(dateStr)
+                        }
+                    }
+                }
+
+                // Parse detailed trainee info: "[TRAINEE_DETAILED] Stats: Spd=764, Sta=910, Pow=679, Gut=355, Wit=280".
+                if (text.includes("[TRAINEE_DETAILED]")) {
+                    const typeMatch = text.match(/\[TRAINEE_DETAILED\]\s*([^:]+):\s*(.*)/)
+                    if (typeMatch) {
+                        updateDashboard(typeMatch[1], typeMatch[2], stateTarget)
+                    }
+                }
+            }
+
+            /**
+             * Helper to apply a collected batch state to the dashboard DOM.
+             * @param {object} state - The collected state from the batch.
+             */
+            function applyBatchStateToDashboard(state) {
+                if (state.name) {
+                    document.getElementById("dashboardName").textContent = state.name
+                }
+                if (state.date) {
+                    document.getElementById("dashboardDate").textContent = state.date
+                }
+                if (state.turn) {
+                    document.getElementById("dashboardTurn").textContent = state.turn
+                }
+                
+                // Batch update stats.
+                for (const [key, val] of Object.entries(state.stats)) {
+                    const elId = { Spd: "statSpeed", Sta: "statStamina", Pow: "statPower", Gut: "statGuts", Wit: "statWit" }[key]
+                    if (elId) {
+                        const el = document.getElementById(elId)
+                        if (el && el.textContent !== val) el.textContent = val
+                    }
+                }
+                
+                // Batch update aptitudes.
+                for (const [name, grade] of Object.entries(state.apts)) {
+                    const elId = "apt" + name
+                    const el = document.getElementById(elId)
+                    if (el && el.textContent !== grade) {
+                        el.textContent = grade
+                        el.className = "grade-badge grade-" + (grade || "G")
+                    }
+                }
+            }
+
+            /**
+             * Helper to convert uppercase strings to Title Case and shorten months.
+             */
+            function idToTitleCase(str) {
+                const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+
+                return str
+                    .toLowerCase()
+                    .split(" ")
+                    .map((word) => {
+                        let titleCase = word.split("-").map(part => part.charAt(0).toUpperCase() + part.slice(1)).join("-")
+                        // Shorten month if it's a full month name.
+                        const monthIndex = months.findIndex((m) => m === titleCase)
+                        if (monthIndex !== -1) {
+                            return months[monthIndex].slice(0, 3)
+                        }
+                        return titleCase
+                    })
+                    .join(" ")
+            }
+
+            /**
+             * Updates the dashboard with new trainee data.
+             * @param {string} category - The data category (Stats, Track, Distance, Style).
+             * @param {string} data - The raw data string.
+             * @param {object} stateTarget - Optional state object to update instead of the DOM.
+             */
+            function updateDashboard(category, data, stateTarget = null) {
+                if (category === "Name") {
+                    if (stateTarget) {
+                        stateTarget.name = data.trim()
+                    } else {
+                        document.getElementById("dashboardName").textContent = data.trim()
+                    }
+                } else if (category === "Stats") {
+                    const stats = data.split(", ")
+                    stats.forEach((s) => {
+                        const [key, val] = s.split("=")
+                        if (stateTarget) {
+                            stateTarget.stats[key] = val
+                        } else {
+                            const elId = { Spd: "statSpeed", Sta: "statStamina", Pow: "statPower", Gut: "statGuts", Wit: "statWit" }[key]
+                            if (elId) document.getElementById(elId).textContent = val
+                        }
+                    })
+                } else {
+                    const apts = data.split(", ")
+                    apts.forEach((a) => {
+                        const [name, grade] = a.split("=")
+                        if (stateTarget) {
+                            stateTarget.apts[name] = grade
+                        } else {
+                            const elId = "apt" + name
+                            const el = document.getElementById(elId)
+                            if (el) {
+                                el.textContent = grade
+                                el.className = "grade-badge grade-" + (grade || "G")
+                            }
+                        }
+                    })
+                }
+            }
+
+            /**
+             * Collapses or expands the toolbar section.
+             */
+            function toggleToolbar() {
+                const toolbar = document.getElementById("toolbar")
+                const isCollapsed = toolbar.classList.toggle("collapsed")
+                localStorage.setItem("toolbarCollapsed", isCollapsed)
+            }
+
+            /**
+             * Loads the toolbar collapse state from local storage.
+             */
+            function initToolbar() {
+                const isCollapsed = localStorage.getItem("toolbarCollapsed") === "true"
+                if (isCollapsed) {
+                    document.getElementById("toolbar").classList.add("collapsed")
+                }
+            }
+
+            /**
+             * Handles log downloading by fetching from the server endpoint.
+             */
+            function downloadLogs() {
+                const traineeName = document.getElementById("dashboardName").textContent.trim()
+                const datePart = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")
+
+                // Prefer the server-side download for full, non-truncated logs.
+                fetch("/logs/download")
+                    .then((response) => {
+                        if (!response.ok) throw new Error("Server download failed")
+                        return response.blob()
+                    })
+                    .then((blob) => {
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement("a")
+                        a.href = url
+                        // Use a descriptive filename.
+                        if (traineeName && traineeName !== "-") {
+                            a.download = `${traineeName}_${datePart}.txt`
+                        } else {
+                            a.download = `log @ ${datePart}.txt`
+                        }
+                        document.body.appendChild(a)
+                        a.click()
+                        document.body.removeChild(a)
+                        URL.revokeObjectURL(url)
+                    })
+                    .catch((err) => {
+                        console.error("Download error:", err)
+                        // Fallback to local buffer if the server endpoint fails.
+                        const content = allMessages.map((m) => m.raw).join("\n")
+                        const blob = new Blob([content], { type: "text/plain" })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement("a")
+                        a.href = url
+                        a.download = `log @ ${datePart}.txt`
+                        a.click()
+                        URL.revokeObjectURL(url)
+                    })
+            }
+
+            // Initiate the connection and settings when the page loads.
+            initFontSize()
+            initToolbar()
             connect()
         </script>
     </body>

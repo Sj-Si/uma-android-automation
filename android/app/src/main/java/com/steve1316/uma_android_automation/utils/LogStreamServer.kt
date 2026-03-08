@@ -6,8 +6,15 @@ import android.util.Log
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.events.JSEvent
 import com.steve1316.automation_library.utils.MessageLog
-import fi.iki.elonen.NanoHTTPD
-import fi.iki.elonen.NanoWSD
+import io.ktor.server.application.*
+import io.ktor.server.cio.*
+import io.ktor.server.engine.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
+import io.ktor.http.*
+import io.ktor.websocket.*
+import kotlinx.coroutines.*
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -16,20 +23,35 @@ import java.util.concurrent.CopyOnWriteArraySet
 
 /**
  * Embedded WebSocket server that streams MessageLog entries in real-time
- * to any browser on the local network. Built on NanoHTTPD/NanoWSD.
+ * to any browser on the local network. Built on Ktor Server CIO.
  *
  * When running, the server serves:
  * - HTTP GET "/" → the log viewer HTML page (from assets).
- * - WebSocket "/ws" → real-time log message streaming.
+ * - WebSocket "/" → real-time log message streaming.
  */
 object LogStreamServer {
 	private const val TAG: String = "${SharedData.loggerTag}LogStreamServer"
 
-	private var server: LogWebSocketServer? = null
+	private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
+
+	// Coroutine scope for the server and background tasks.
+	private var serverScope: CoroutineScope? = null
 
 	@Volatile
 	var isRunning = false
 		private set
+
+	// Thread-safe set of currently active WebSocket client sessions.
+	private val clients = CopyOnWriteArraySet<DefaultWebSocketServerSession>()
+
+	// Circular buffer for storing the most recent log messages.
+	private val messageBuffer = ArrayList<String>()
+
+	// Synchronization lock for thread-safe access to the message buffer.
+	private val bufferLock = Object()
+
+	// Maximum number of messages to retain in the history buffer.
+	private val maxBufferSize = 15000
 
 	/**
 	 * Starts the log streaming server on the specified port and registers with EventBus.
@@ -45,9 +67,62 @@ object LogStreamServer {
 		}
 
 		try {
-			server = LogWebSocketServer(context, port)
-			// Use 0 as the timeout for WebSockets to prevent "Read timed out" disconnects.
-			server?.start(0, false)
+			serverScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+			// Bind to all interfaces so devices on the local network can connect.
+			server = embeddedServer(CIO, host = "0.0.0.0", port = port) {
+				// Install the WebSockets plugin with default configuration.
+				install(WebSockets)
+
+				routing {
+					// Serve the main log viewer HTML application.
+					get("/") {
+						serveLogViewerHtml(call, context)
+					}
+					get("/index.html") {
+						serveLogViewerHtml(call, context)
+					}
+
+					// Provide a health check endpoint for monitoring the server status.
+					get("/health") {
+						call.respondText("""{"status":"ok"}""", ContentType.Application.Json)
+					}
+
+					// Serve the full message log for download.
+					get("/logs/download") {
+						try {
+							val fullLogs = MessageLog.getMessageLogCopy().joinToString("\n")
+
+							// Set headers to trigger a file download in the browser.
+							val datePart = java.text.SimpleDateFormat(
+								"yyyy-MM-dd-HH-mm-ss",
+								java.util.Locale.getDefault()
+							).format(java.util.Date())
+
+							call.response.header(
+								HttpHeaders.ContentDisposition,
+								"attachment; filename=\"uaa_logs_$datePart.txt\""
+							)
+							call.respondText(fullLogs, ContentType.Text.Plain)
+						} catch (e: Exception) {
+							Log.e(TAG, "Failed to generate log download: ${e.message}")
+							call.respondText(
+								"Failed to generate log download.",
+								ContentType.Text.Plain,
+								HttpStatusCode.InternalServerError
+							)
+						}
+					}
+
+					// Handle WebSocket connections on root path (matches the HTML client).
+					webSocket("/") {
+						handleWebSocketSession(this)
+					}
+				}
+			}
+
+			// Start the server without blocking the calling thread.
+			server?.start(wait = false)
 			isRunning = true
 
 			// Register with EventBus to receive real-time log messages.
@@ -58,17 +133,19 @@ object LogStreamServer {
 			// Determine and log the device IP address for easy access.
 			val ip = getDeviceIpAddress(context)
 			Log.i(TAG, "Log stream server started on http://$ip:$port")
-			
+
 			// Populate the initial buffer from existing logs so late-joining clients see the history.
-			server?.populateBuffer(MessageLog.getMessageLogCopy())
-			
+			populateBuffer(MessageLog.getMessageLogCopy())
+
 			Log.d(TAG, "LogStreamServer registered with EventBus: ${EventBus.getDefault().isRegistered(this)}")
 			MessageLog.i(TAG, "Remote Log Viewer started at http://$ip:$port")
-		} catch (e: IOException) {
-			// Handle cases where the server fails to bind to the port.
+		} catch (e: Exception) {
+			// Handle cases where the server fails to start.
 			Log.e(TAG, "Failed to start log stream server: ${e.message}")
 			MessageLog.e(TAG, "Failed to start Remote Log Viewer: ${e.message}")
 			isRunning = false
+			serverScope?.cancel()
+			serverScope = null
 		}
 	}
 
@@ -85,18 +162,27 @@ object LogStreamServer {
 			// Ignore exceptions if the server was not registered.
 		}
 
-		// Shutdown the underlying NanoWSD server instance.
-		server?.stop()
-		// Clear the message buffer to free up memory.
-		server?.clearBuffer()
+		// Shutdown the Ktor server instance with a brief grace period.
+		server?.stop(1000, 2000)
 		server = null
+
+		// Cancel the coroutine scope to clean up background tasks.
+		serverScope?.cancel()
+		serverScope = null
+
+		// Clear the message buffer to free up memory.
+		clearBuffer()
+
+		// Disconnect all tracked clients.
+		clients.clear()
+
 		isRunning = false
 		Log.i(TAG, "Log stream server stopped.")
 	}
 
 	/**
 	 * Subscriber for MessageLog events via EventBus.
-	 * 
+	 *
 	 * Broadcasts each received log message to all currently connected WebSocket clients.
 	 *
 	 * @param event The JSEvent object containing the log message metadata and content.
@@ -105,7 +191,7 @@ object LogStreamServer {
 	fun onMessageLogEvent(event: JSEvent) {
 		// Only process events that are identified as MessageLog entries.
 		if (event.eventName == "MessageLog") {
-			server?.broadcast(event.message)
+			broadcast(event.message)
 		}
 	}
 
@@ -142,13 +228,13 @@ object LogStreamServer {
 
 		if (foundIps.isNotEmpty()) {
 			Log.d(TAG, "Found local IPs: $foundIps")
-			
+
 			// Prioritize private network address ranges common in local networks.
 			val bestIp = foundIps.find { it.startsWith("192.168.") }
 				?: foundIps.find { it.startsWith("10.") && it != "10.0.2.15" }
 				?: foundIps.find { it.startsWith("172.16.") || it.startsWith("172.31.") }
 				?: foundIps[0]
-				
+
 			return bestIp
 		}
 
@@ -176,199 +262,119 @@ object LogStreamServer {
 	}
 
 	/**
-	 * Custom implementation of the NanoWSD WebSocket server.
+	 * Serves the log_viewer.html page from the Android assets directory.
 	 *
-	 * @param context The application context used for asset retrieval.
-	 * @param port The port to bind the server to.
+	 * @param call The Ktor application call to respond to.
+	 * @param context The application context used for accessing assets.
 	 */
-	private class LogWebSocketServer(private val context: Context, port: Int) : NanoWSD(port) {
+	private suspend fun serveLogViewerHtml(call: ApplicationCall, context: Context) {
+		try {
+			val htmlStream = context.assets.open("log_viewer.html")
+			val html = htmlStream.bufferedReader().use { it.readText() }
+			call.respondText(html, ContentType.Text.Html)
+		} catch (e: IOException) {
+			Log.e(TAG, "Failed to load log_viewer.html asset: ${e.message}")
+			call.respondText(
+				"Failed to load log viewer page.",
+				ContentType.Text.Plain,
+				HttpStatusCode.InternalServerError
+			)
+		}
+	}
 
-		// Thread-safe set of currently active WebSocket client connections.
-		private val clients = CopyOnWriteArraySet<LogWebSocket>()
+	/**
+	 * Handles an individual WebSocket session lifecycle.
+	 *
+	 * Sends buffered history on connect and keeps the session alive until the client disconnects.
+	 *
+	 * @param session The active WebSocket server session.
+	 */
+	private suspend fun handleWebSocketSession(session: DefaultWebSocketServerSession) {
+		Log.d(TAG, "WebSocket client connected. Total clients: ${clients.size + 1}")
+		clients.add(session)
 
-		// Circular buffer for storing the most recent log messages.
-		private val messageBuffer = ArrayList<String>()
+		try {
+			// Create a snapshot of the current history buffer and reverse it to send newest first.
+			val historyToSync = synchronized(bufferLock) {
+				messageBuffer.toList().asReversed()
+			}
 
-		// Synchronization lock for thread-safe access to the message buffer.
-		private val bufferLock = Object()
+			// Send historical logs in batches to optimize network throughput.
+			val batched = historyToSync.chunked(100)
+			for (batch in batched) {
+				val combined = "HISTORY_BATCH:" + batch.joinToString("---LOG_SEPARATOR---")
+				session.send(Frame.Text(combined))
+			}
+			session.send(Frame.Text("HISTORY_DONE"))
 
-		// Maximum number of messages to retain in the history buffer.
-		private val maxBufferSize = 5000
+			// Keep the session alive by consuming incoming frames until the client disconnects.
+			for (frame in session.incoming) {
+				// The server does not expect or handle incoming messages from clients.
+			}
+		} catch (e: Exception) {
+			Log.w(TAG, "WebSocket exception: ${e.message}")
+		} finally {
+			clients.remove(session)
+			Log.d(TAG, "WebSocket client disconnected. Remaining clients: ${clients.size}")
+		}
+	}
 
-		/**
-		 * Clears all messages from the history buffer.
-		 */
-		fun clearBuffer() {
-			synchronized(bufferLock) {
-				messageBuffer.clear()
+	/**
+	 * Clears all messages from the history buffer.
+	 */
+	private fun clearBuffer() {
+		synchronized(bufferLock) {
+			messageBuffer.clear()
+		}
+	}
+
+	/**
+	 * Pre-fills the history buffer with a given list of existing log messages.
+	 *
+	 * @param history A list of log message strings to initialize the buffer.
+	 */
+	private fun populateBuffer(history: List<String>) {
+		synchronized(bufferLock) {
+			messageBuffer.clear()
+			// Only retain the last maxBufferSize messages to avoid overflow.
+			val start = (history.size - maxBufferSize).coerceAtLeast(0)
+			for (i in start until history.size) {
+				messageBuffer.add(history[i])
+			}
+			Log.d(TAG, "Populated buffer with ${messageBuffer.size} historical logs.")
+		}
+	}
+
+	/**
+	 * Broadcasts a log message to all connected clients and adds it to the history buffer.
+	 *
+	 * @param message The log message string to be sent to clients.
+	 */
+	private fun broadcast(message: String) {
+		// Persist the message in the history buffer for late joiners.
+		synchronized(bufferLock) {
+			messageBuffer.add(message)
+			// Maintain the buffer size within the specified limit.
+			if (messageBuffer.size > maxBufferSize) {
+				messageBuffer.removeAt(0)
 			}
 		}
 
-		/**
-		 * Pre-fills the history buffer with a given list of existing log messages.
-		 * 
-		 * @param history A list of log message strings to initialize the buffer.
-		 */
-		fun populateBuffer(history: List<String>) {
-			synchronized(bufferLock) {
-				messageBuffer.clear()
-				// Only retain the last maxBufferSize messages to avoid overflow.
-				val start = (history.size - maxBufferSize).coerceAtLeast(0)
-				for (i in start until history.size) {
-					messageBuffer.add(history[i])
-				}
-				Log.d(TAG, "Populated buffer with ${messageBuffer.size} historical logs.")
-			}
+		// If no clients are connected, there is no need to proceed with broadcasting.
+		if (clients.isEmpty()) {
+			return
 		}
 
-		/**
-		 * Handles incoming WebSocket connection requests.
-		 * 
-		 * @param handshake The HTTP session representing the WebSocket handshake.
-		 * @returns An instance of LogWebSocket to handle the connection.
-		 */
-		override fun openWebSocket(handshake: IHTTPSession): WebSocket {
-			return LogWebSocket(handshake)
-		}
-
-		/**
-		 * Handles standard HTTP GET requests for the server.
-		 * 
-		 * @param session The HTTP session containing the request details (URI, method, etc).
-		 * @returns Redone response containing the requested resource or an error.
-		 */
-		override fun serveHttp(session: IHTTPSession): Response {
-			val uri = session.uri
-
-			// Serve the main log viewer HTML application.
-			if (uri == "/" || uri == "/index.html") {
-				return try {
-					val htmlStream = context.assets.open("log_viewer.html")
-					val html = htmlStream.bufferedReader().use { it.readText() }
-					newFixedLengthResponse(Response.Status.OK, "text/html", html)
-				} catch (e: IOException) {
-					Log.e(TAG, "Failed to load log_viewer.html asset: ${e.message}")
-					newFixedLengthResponse(
-						Response.Status.INTERNAL_ERROR,
-						NanoHTTPD.MIME_PLAINTEXT,
-						"Failed to load log viewer page."
-					)
-				}
-			}
-
-			// Provide a health check endpoint for monitoring the server status.
-			if (uri == "/health") {
-				return newFixedLengthResponse(Response.Status.OK, "application/json", """{"status":"ok"}""")
-			}
-
-			// Return a 404 response for any unrecognized endpoints.
-			return newFixedLengthResponse(Response.Status.NOT_FOUND, NanoHTTPD.MIME_PLAINTEXT, "Not Found")
-		}
-
-		/**
-		 * Broadcasts a log message to all connected clients and adds it to the history buffer.
-		 *
-		 * @param message The log message string to be sent to clients.
-		 */
-		fun broadcast(message: String) {
-			// Persist the message in the history buffer for late joiners.
-			synchronized(bufferLock) {
-				messageBuffer.add(message)
-				// Maintain the buffer size within the specified limit.
-				if (messageBuffer.size > maxBufferSize) {
-					messageBuffer.removeAt(0)
-				}
-			}
-
-			// If no clients are connected, there is no need to proceed with broadcasting.
-			if (clients.isEmpty()) {
-				return
-			}
-
-			// Iterate through all active clients and attempt to deliver the message.
+		// Launch a coroutine to send to all active clients without blocking the EventBus thread.
+		serverScope?.launch {
 			for (client in clients) {
 				try {
-					client.send(message)
+					client.send(Frame.Text(message))
 				} catch (e: Exception) {
 					// Remove the client if delivery fails (likely disconnected).
 					Log.w(TAG, "Failed to send message to client: ${e.message}")
 					clients.remove(client)
 				}
-			}
-		}
-
-		/**
-		 * Represents an active WebSocket connection with an individual browser client.
-         *
-         * @param handshake The HTTP session representing the WebSocket handshake.
-		 */
-		private inner class LogWebSocket(handshake: IHTTPSession) : WebSocket(handshake) {
-
-			/**
-			 * Invoked when a new WebSocket connection is established.
-			 */
-			override fun onOpen() {
-				Log.d(TAG, "WebSocket client connected. Total clients: ${clients.size + 1}")
-				clients.add(this)
-
-				// Create a snapshot of the current history buffer.
-				val historyToSync = synchronized(bufferLock) {
-					messageBuffer.toList()
-				}
-
-				// Synchronize the new client by sending the historical logs in a background thread.
-				Thread {
-					try {
-						// Group messages into batches of 100 to optimize network throughput.
-						val batched = historyToSync.chunked(100)
-						for (batch in batched) {
-							val combined = "BATCH:" + batch.joinToString("---LOG_SEPARATOR---")
-							send(combined)
-						}
-					} catch (e: Exception) {
-						Log.w(TAG, "Failed to send history to new client: ${e.message}")
-					}
-				}.start()
-			}
-
-			/**
-			 * Invoked when the WebSocket connection is closed.
-             * 
-             * @param code The close code indicating the reason for closing the connection.
-             * @param reason The reason for closing the connection.
-             * @param initiatedByRemote True if the connection was initiated by the remote client, false otherwise.
-			 */
-			override fun onClose(code: NanoWSD.WebSocketFrame.CloseCode?, reason: String?, initiatedByRemote: Boolean) {
-				clients.remove(this)
-				Log.d(TAG, "WebSocket client disconnected. Remaining clients: ${clients.size}")
-			}
-
-			/**
-			 * Invoked when a text message is received from the client.
-             *
-             * @param message The text message received from the client.
-			 */
-			override fun onMessage(message: NanoWSD.WebSocketFrame?) {
-				// The server does not expect or handle incoming messages from clients.
-			}
-
-			/**
-			 * Invoked when a pong frame is received.
-             * 
-             * @param pong The pong frame received from the client.
-			 */
-			override fun onPong(pong: NanoWSD.WebSocketFrame?) {
-				// No processing required for pong frames in this implementation.
-			}
-
-			/**
-			 * Invoked when an exception occurs on the WebSocket connection.
-             * 
-             * @param exception The exception that occurred on the WebSocket connection.
-			 */
-			override fun onException(exception: IOException?) {
-				clients.remove(this)
-				Log.w(TAG, "WebSocket exception: ${exception?.message}")
 			}
 		}
 	}

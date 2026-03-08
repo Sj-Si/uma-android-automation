@@ -41,6 +41,8 @@ export type DayRecord = {
     trainingStatGains?: number[]
     /** The timestamp of the day in milliseconds from file start (HH*3600000 + MM*60000 + SS*1000 + mmm). */
     timestamp?: number
+    /** The name of the trainee detected. */
+    traineeName?: string
 }
 
 export type GapRecord = {
@@ -57,6 +59,8 @@ export type FileDividerRecord = {
     kind: "fileDivider"
     /** The name of the file. */
     fileName: string
+    /** The name of the trainee detected in this file. */
+    traineeName?: string
 }
 
 export type ParseError = {
@@ -110,6 +114,8 @@ const REGEX = {
     trainingStatGains: /(?:\[INFO\]\s+)?(\w+)\s+Training(?:.*?stat\s+gains:\s+\[([\d,\s]+)\]|:\s+stats=\{SPEED=(-?\d+),\s*STAMINA=(-?\d+),\s*POWER=(-?\d+),\s*GUTS=(-?\d+),\s*WIT=(-?\d+)\})/i,
     // Extract timestamp: "00:12:22.190" or "00:00:14.810"
     timestamp: /^(\d{2}):(\d{2}):(\d{2})\.(\d{3})/,
+    // Extract trainee name from content: "[TRAINEE] Detected trainee name: Special Week"
+    traineeName: /\[TRAINEE\][^\n]*Detected trainee name:\s*(.+)$/i,
 }
 
 /** Generic matcher that supports substring contains checks only. */
@@ -229,6 +235,7 @@ export function parseLogs(files: LogFileInput[]): ParseResult {
             trainingStatGains?: number[]
             ended?: boolean // True if day ended with [END] or "Now saving Message Log".
             timestamp?: number // Timestamp in milliseconds from file start.
+            traineeName?: string // The name of the trainee.
         }
     >()
 
@@ -240,6 +247,24 @@ export function parseLogs(files: LogFileInput[]): ParseResult {
         let currentDay: number | undefined
         let foundAnyDay = false
         let pendingDateText: string | undefined
+        let fileTraineeName: string | undefined
+
+        // Try to extract trainee name from filename prefix.
+        // Format example: "Admire_Vega_2026-03-06 16_13_03.txt".
+        // Format example: "Vega_log @ 2026-03-06 16_13_03.txt".
+        // We look for anything before the first date-like pattern (YYYY-MM-DD).
+        const fileName = file.name
+        const dateMatch = fileName.match(/(\d{4}-\d{2}-\d{2})/)
+        if (dateMatch) {
+            const prefix = fileName.substring(0, dateMatch.index || 0).trim()
+            if (prefix) {
+                // Remove "log @" or trailing underscores/spaces.
+                let namePart = prefix.replace(/_log\s*@\s*$/, "").replace(/log\s*@\s*$/, "").replace(/[_\s]+$/, "")
+                if (namePart.toLowerCase() !== "log" && namePart.length > 0) {
+                    fileTraineeName = namePart.replace(/_/g, " ")
+                }
+            }
+        }
 
         // First pass: detect if this file starts at a day earlier than lastDaySeen.
         let firstDayInThisFile: number | undefined
@@ -319,9 +344,13 @@ export function parseLogs(files: LogFileInput[]): ParseResult {
                             trainingStatGains: undefined,
                             ended: false,
                             timestamp: lineTimestamp,
+                            traineeName: fileTraineeName,
                         })
                     } else {
                         const existingDay = dayMap.get(currentDay)!
+                        if (!existingDay.traineeName && fileTraineeName) {
+                            existingDay.traineeName = fileTraineeName
+                        }
                         if (!existingDay.dateText && pendingDateText) {
                             existingDay.dateText = pendingDateText
                             // Re-determine year in case dateText provides new information.
@@ -399,6 +428,12 @@ export function parseLogs(files: LogFileInput[]): ParseResult {
                 }
             }
 
+            // Extract trainee name from content if detected.
+            const traineeMatch = line.match(REGEX.traineeName)
+            if (traineeMatch) {
+                day.traineeName = traineeMatch[1].trim()
+            }
+
             for (const key of ACTION_KEYS) {
                 if (matchesLine(line, MATCHERS[key])) {
                     day.actions[key] = true
@@ -434,7 +469,7 @@ export function parseLogs(files: LogFileInput[]): ParseResult {
         // Insert file divider if fileName changes (for consecutive days or after gaps).
         // Also insert at the very beginning for the first file.
         if ((prevFileName && entry.fileName !== prevFileName) || prevFileName === undefined) {
-            records.push({ kind: "fileDivider", fileName: entry.fileName })
+            records.push({ kind: "fileDivider", fileName: entry.fileName, traineeName: entry.traineeName })
         }
 
         records.push({
@@ -449,6 +484,7 @@ export function parseLogs(files: LogFileInput[]): ParseResult {
             trainingType: entry.trainingType,
             trainingStatGains: entry.trainingStatGains,
             timestamp: entry.timestamp,
+            traineeName: entry.traineeName,
         })
         prevDay = d
         prevFileName = entry.fileName
@@ -511,6 +547,8 @@ export type YearSummary = {
     elapsedTimeHuman?: string
     /** True if this year summary includes Finals days (turns 73-75). */
     hasFinals?: boolean
+    /** The names of the trainees detected in this year. */
+    traineeNames: string[]
 }
 
 export type YearSummariesResult = {
@@ -591,8 +629,13 @@ export function aggregateYearSummaries(records: DayRecord[]): YearSummariesResul
         let yearFirstTimestamp: number | undefined
         let yearLastTimestamp: number | undefined
         let hasFinals = false
+        const traineeNamesSet = new Set<string>()
 
         for (const day of days) {
+            // Collect trainee name if available.
+            if (day.traineeName) {
+                traineeNamesSet.add(day.traineeName)
+            }
             // Check if this day is Finals (turns 73-75).
             if (day.dayNumber >= 73 && day.dayNumber <= 75) {
                 hasFinals = true
@@ -658,6 +701,7 @@ export function aggregateYearSummaries(records: DayRecord[]): YearSummariesResul
             elapsedTimeFormatted,
             elapsedTimeHuman,
             hasFinals: year === "Senior" ? hasFinals : undefined,
+            traineeNames: Array.from(traineeNamesSet),
         })
     }
 

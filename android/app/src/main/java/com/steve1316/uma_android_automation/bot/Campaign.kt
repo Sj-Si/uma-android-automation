@@ -77,7 +77,7 @@ open class Campaign(game: Game) : DialogHandler(game) {
     fun openAptitudesDialog() {
         MessageLog.d(TAG, "Opening aptitudes dialog...")
         ButtonHomeFullStats.click(imageUtils = game.imageUtils)
-        game.wait(0.25, skipWaitingForLoading = true)
+        game.wait(game.dialogWaitDelay, skipWaitingForLoading = true)
     }
 
     /**
@@ -95,7 +95,7 @@ open class Campaign(game: Game) : DialogHandler(game) {
         }
 
         bHasTriedCheckingFansToday = true
-        game.wait(0.25, skipWaitingForLoading = true)
+        game.wait(game.dialogWaitDelay, skipWaitingForLoading = true)
     }
 
     /**
@@ -203,6 +203,18 @@ open class Campaign(game: Game) : DialogHandler(game) {
 		MessageLog.i(TAG, "[TEST] Note that this test is dependent on having the correct scale.")
         openAptitudesDialog()
         handleDialogs()
+	}
+
+	/**
+	 * Test function to verify trainee name OCR on the Aptitude dialog.
+	 *
+	 * Opens the aptitudes dialog and processes it to test name OCR accuracy.
+	 */
+	fun startTraineeNameOCRTest() {
+		MessageLog.i(TAG, "\n[TEST] Now beginning the Trainee Name OCR test on the Main screen.")
+		MessageLog.i(TAG, "[TEST] Note that this test is dependent on having the correct scale.")
+		openAptitudesDialog()
+		handleDialogs()
 	}
 
     /**
@@ -448,7 +460,10 @@ open class Campaign(game: Game) : DialogHandler(game) {
                 }
                 MessageLog.i(TAG, "[TRAINEE] Skills Updated: ${game.trainee.getStatsString()}")
                 MessageLog.i(TAG, "[TRAINEE] Mood Updated: ${game.trainee.mood}")
-                if (game.trainee.bHasUpdatedAptitudes) game.trainee.logInfo()
+                if (game.trainee.bHasUpdatedAptitudes) {
+                    game.trainee.logInfo()
+                    game.trainee.logDetailedPlayerInfo()
+                }
 
                 // Now check if we need to handle skills before finals.
                 if (game.currentDate.day == 72 && game.skillPlan.skillPlans["preFinals"]?.bIsEnabled ?: false) {

@@ -136,6 +136,8 @@ class Trainee {
     var skillPoints: Int = 120 // From what I can tell, all trainees start at 120.
     var fans: Int = 1
     var mood: Mood = Mood.NORMAL
+    var name: String = ""
+    var statTrackLocation: Point? = null
 
     var bHasUpdatedAptitudes: Boolean = false
     var bHasUpdatedStats: Boolean = false
@@ -376,6 +378,11 @@ class Trainee {
             label = LabelStatTrackSurface,
         )
 
+        // Cache the location of the label for use with readName().
+        if (statTrackLocation == null) {
+            statTrackLocation = LabelStatTrackSurface.find(imageUtils = imageUtils).first
+        }
+
         if (aptitudes == null) {
             return
         }
@@ -435,6 +442,65 @@ class Trainee {
         updateRunningStyleAptitudes(imageUtils = imageUtils)
 
         bHasUpdatedAptitudes = true
+    }
+
+    /** Reads the trainee's name from the Umamusume Details dialog using color-filtered OCR.
+     *
+     * The name text uses a uniform color of #794016 (R=121, G=64, B=22).
+     * This method should only be called while the aptitude dialog is open as it uses the
+     * [LabelStatTrackSurface] as a reference point to calculate the name's position.
+     *
+     * This will also update the [MessageLog]'s log file name prefix to the trainee's name
+     * with spaces replaced by underscores.
+     *
+     * @param imageUtils A reference to a CustomImageUtils instance.
+     */
+    fun readName(imageUtils: CustomImageUtils) {
+        val sourceBitmap = imageUtils.getSourceBitmap()
+
+        // Extract reference point coordinates from cached location or find it if not available.
+        val refPoint = statTrackLocation ?: LabelStatTrackSurface.find(imageUtils = imageUtils).first
+        if (refPoint == null) {
+            name = "null"
+            return
+        }
+
+        // Extract the coordinates from the reference point and cache the location.
+        val refX = refPoint.x.toDouble()
+        val refY = refPoint.y.toDouble()
+        if (statTrackLocation == null && refPoint != null) {
+            statTrackLocation = refPoint
+        }
+
+        // Calculate name position relative to the reference point.
+        val nameX = refX + imageUtils.relWidth(385)
+        val nameY = refY - imageUtils.relHeight(370)
+        val nameWidth = imageUtils.relWidth(335)
+        val nameHeight = imageUtils.relHeight(50)
+
+        // Use color-filtered OCR with the target text color #794016.
+        val detectedName = imageUtils.findTextByColor(
+            sourceBitmap = sourceBitmap,
+            x = nameX.toInt(),
+            y = nameY.toInt(),
+            width = nameWidth,
+            height = nameHeight,
+            targetR = 121,
+            targetG = 64,
+            targetB = 22,
+            debugName = "trainee_name"
+        )
+
+        if (detectedName.isNotEmpty()) {
+            name = detectedName
+            MessageLog.i(TAG, "[TRAINEE] Detected trainee name: $name")
+
+            // Set the log file name prefix to the trainee name with spaces replaced by underscores.
+            // This is done to differentiate which logs belong to which trainee.
+            MessageLog.logFileNamePrefix = name.replace(" ", "_")
+        } else {
+            MessageLog.w(TAG, "[TRAINEE] Could not detect trainee name from the aptitude dialog.")
+        }
     }
 
     /** Updates the trainee's skill points from the current screen.
@@ -593,6 +659,23 @@ class Trainee {
     /** Logs the trainee's current state to the message log. */
     fun logInfo() {
         MessageLog.i(TAG, "[TRAINEE] Current State:\n${this}")
+    }
+
+    /** Logs the trainee's current state in a structured format for the Remote Log Viewer dashboard. */
+    fun logDetailedPlayerInfo() {
+        val statsString = "Spd=${stats.speed}, Sta=${stats.stamina}, Pow=${stats.power}, Gut=${stats.guts}, Wit=${stats.wit}"
+        val trackString = "Turf=${trackSurfaceAptitudes[TrackSurface.TURF]}, Dirt=${trackSurfaceAptitudes[TrackSurface.DIRT]}"
+        val distanceString = "Sprint=${trackDistanceAptitudes[TrackDistance.SPRINT]}, Mile=${trackDistanceAptitudes[TrackDistance.MILE]}, Medium=${trackDistanceAptitudes[TrackDistance.MEDIUM]}, Long=${trackDistanceAptitudes[TrackDistance.LONG]}"
+        val styleString = "Front=${runningStyleAptitudes[RunningStyle.FRONT_RUNNER]}, Pace=${runningStyleAptitudes[RunningStyle.PACE_CHASER]}, Late=${runningStyleAptitudes[RunningStyle.LATE_SURGER]}, End=${runningStyleAptitudes[RunningStyle.END_CLOSER]}"
+
+        // Log the trainee name if it has been detected.
+        if (name.isNotEmpty()) {
+            MessageLog.i(TAG, "[TRAINEE_DETAILED] Name: $name")
+        }
+        MessageLog.i(TAG, "[TRAINEE_DETAILED] Stats: $statsString")
+        MessageLog.i(TAG, "[TRAINEE_DETAILED] Track: $trackString")
+        MessageLog.i(TAG, "[TRAINEE_DETAILED] Distance: $distanceString")
+        MessageLog.i(TAG, "[TRAINEE_DETAILED] Style: $styleString")
     }
 
     /** Returns a formatted string of the trainee's preferred aptitudes.

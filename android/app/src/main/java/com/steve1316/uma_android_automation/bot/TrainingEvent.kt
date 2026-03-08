@@ -189,6 +189,12 @@ class TrainingEvent(private val game: Game) {
             return 0
         }
 
+        // If user selected "Team Carrot (Last Option)", always select the last option.
+        if (selectedPreference == "Team Carrot (Last Option)") {
+            MessageLog.i(TAG, "[TRAINING_EVENT] Using Team Carrot preference, selecting last option.")
+            return numOptions - 1
+        }
+
         // Define the possible team name options (excluding "Team Carrot" which is always last).
         val teamNameOptions = listOf(
             "Happy Hoppers, like Taiki suggested",

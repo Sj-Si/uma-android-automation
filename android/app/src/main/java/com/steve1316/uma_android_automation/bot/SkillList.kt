@@ -223,7 +223,7 @@ class SkillList (private val game: Game) {
     /** Confirms skill purchases and backs out of the Skill List screen. */
     fun confirmAndExit() {
         ButtonConfirm.click(game.imageUtils)
-        game.wait(0.5, skipWaitingForLoading = true)
+        game.wait(game.dialogWaitDelay, skipWaitingForLoading = true)
         // Two dialogs will appear if we purchase any skills.
         // First is the purchase confirmation.
         game.campaign.handleDialogs()
@@ -238,7 +238,7 @@ class SkillList (private val game: Game) {
         // Reset skills to prevent popup.
         ButtonReset.click(game.imageUtils)
         ButtonBack.click(game.imageUtils)
-        game.wait(0.5, skipWaitingForLoading = true)
+        game.wait(game.dialogWaitDelay, skipWaitingForLoading = true)
         // As a failsafe, handle dialogs to catch the dialog for
         // aborting spending skill points.
         game.campaign.handleDialogs()
@@ -255,7 +255,7 @@ class SkillList (private val game: Game) {
      */
     fun checkStats() {
         ButtonSkillListFullStats.click(game.imageUtils)
-        game.wait(0.5, skipWaitingForLoading = true)
+        game.wait(game.dialogWaitDelay, skipWaitingForLoading = true)
         game.campaign.handleDialogs()
     }
 

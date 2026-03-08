@@ -113,6 +113,7 @@ const TrainingEventSettings = () => {
         { value: "Sunny Runners, like Fukukitaru suggested", label: "Sunny Runners (Fukukitaru)" },
         { value: "Carrot Pudding, like Urara suggested", label: "Carrot Pudding (Urara)" },
         { value: "Blue Bloom, like Rice Shower suggested", label: "Blue Bloom (Rice Shower)" },
+        { value: "Team Carrot (Last Option)", label: "Team Carrot" },
     ]
 
     /**

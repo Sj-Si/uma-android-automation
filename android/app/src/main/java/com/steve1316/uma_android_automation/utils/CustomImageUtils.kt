@@ -1789,6 +1789,152 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 	// Helper functions for OCR operations.
 
 	/**
+	 * Performs OCR on a cropped region by filtering pixels matching a specific RGB color.
+	 *
+	 * Instead of standard grayscale+threshold preprocessing, this method isolates text
+	 * by selecting only pixels within a tolerance of the target color. Matching pixels
+	 * become black (text) and all other pixels become white (background). This is useful
+	 * for reading text that has a uniform character color but may be surrounded by borders
+	 * or backgrounds of different colors.
+	 *
+	 * @param sourceBitmap The source image to crop from.
+	 * @param x The x-coordinate of the crop region.
+	 * @param y The y-coordinate of the crop region.
+	 * @param width The width of the crop region.
+	 * @param height The height of the crop region.
+	 * @param targetR The red component (0-255) of the target text color.
+	 * @param targetG The green component (0-255) of the target text color.
+	 * @param targetB The blue component (0-255) of the target text color.
+	 * @param tolerance The per-channel tolerance for color matching. Defaults to 15.
+	 * @param scale Scale factor to apply before OCR. Defaults to 2.0.
+	 * @param debugName Optional name for debug image saving. Defaults to "colorOCR".
+	 *
+	 * @return The detected text string or empty string if OCR fails.
+	 */
+	fun findTextByColor(
+		sourceBitmap: Bitmap,
+		x: Int,
+		y: Int,
+		width: Int,
+		height: Int,
+		targetR: Int,
+		targetG: Int,
+		targetB: Int,
+		tolerance: Int = 15,
+		scale: Double = 2.0,
+		debugName: String = "colorOCR"
+	): String {
+		var result = ""
+
+		// Crop the source bitmap.
+		val croppedBitmap = createSafeBitmap(sourceBitmap, x, y, width, height, "findTextByColor crop")
+		if (croppedBitmap == null) {
+			MessageLog.e(TAG, "findTextByColor:: Failed to create cropped bitmap.")
+			return ""
+		}
+
+		// Convert to Mat.
+		val cvImage = Mat()
+		Utils.bitmapToMat(croppedBitmap, cvImage)
+
+		// Save the cropped image for debugging.
+		if (debugMode) {
+			Imgcodecs.imwrite("$matchFilePath/debug_${debugName}_cropped.png", cvImage)
+		}
+
+		// Convert from RGBA to RGB for consistent color processing.
+		val rgbImage = Mat()
+		Imgproc.cvtColor(cvImage, rgbImage, Imgproc.COLOR_RGBA2RGB)
+
+		// Define the lower and upper bounds for the target color with tolerance.
+		val lowerBound = Scalar(
+			maxOf(0, targetR - tolerance).toDouble(),
+			maxOf(0, targetG - tolerance).toDouble(),
+			maxOf(0, targetB - tolerance).toDouble()
+		)
+		val upperBound = Scalar(
+			minOf(255, targetR + tolerance).toDouble(),
+			minOf(255, targetG + tolerance).toDouble(),
+			minOf(255, targetB + tolerance).toDouble()
+		)
+
+		// Create a mask where pixels matching the target color are white (255) and everything else is black (0).
+		val colorMask = Mat()
+		Core.inRange(rgbImage, lowerBound, upperBound, colorMask)
+
+		// Invert the mask so text pixels become black and background becomes white.
+		// This matches the expected input format for OCR engines.
+		val invertedMask = Mat()
+		Core.bitwise_not(colorMask, invertedMask)
+
+		// Save the filtered image for debugging.
+		if (debugMode) {
+			Imgcodecs.imwrite("$matchFilePath/debug_${debugName}_colorFiltered.png", invertedMask)
+		}
+
+		// Convert the processed Mat to Bitmap and apply scaling.
+		val clampedScale = max(0, scale.toInt()).toDouble().coerceAtLeast(1.0)
+		val baseBitmap = createBitmap(invertedMask.cols(), invertedMask.rows())
+		Utils.matToBitmap(invertedMask, baseBitmap)
+		val finalBitmap = if (clampedScale != 1.0) {
+			baseBitmap.scale((baseBitmap.width * clampedScale).toInt(), (baseBitmap.height * clampedScale).toInt())
+		} else {
+			baseBitmap
+		}
+
+		// Run ML Kit text recognition.
+		val inputImage: InputImage = InputImage.fromBitmap(finalBitmap, 0)
+		val latch = CountDownLatch(1)
+		var mlKitFailed = false
+
+		googleTextRecognizer.process(inputImage)
+			.addOnSuccessListener { text ->
+				if (text.textBlocks.isNotEmpty()) {
+					// Concatenate all detected text blocks.
+					result = text.textBlocks.joinToString(" ") { it.text }
+				}
+				latch.countDown()
+			}
+			.addOnFailureListener { exception ->
+				MessageLog.e(TAG, "findTextByColor:: ML Kit failed: ${exception.message}")
+				mlKitFailed = true
+				latch.countDown()
+			}
+
+		// Wait for the async operation to complete.
+		try {
+			latch.await(5, TimeUnit.SECONDS)
+		} catch (_: InterruptedException) {
+			MessageLog.e(TAG, "findTextByColor:: ML Kit operation timed out.")
+		}
+
+		// Fallback to Tesseract if ML Kit failed.
+		if (mlKitFailed || result.isEmpty()) {
+			Log.d(TAG, "[TEXT_DETECTION] findTextByColor:: Falling back to Tesseract.")
+			tessBaseAPI.setImage(finalBitmap)
+			try {
+				result = tessBaseAPI.utF8Text
+			} catch (e: Exception) {
+				MessageLog.e(TAG, "findTextByColor:: Tesseract OCR failed: ${e.message}")
+			}
+			tessBaseAPI.stop()
+			tessBaseAPI.clear()
+		}
+
+		if (debugMode) {
+			Log.d(TAG, "[TEXT_DETECTION] findTextByColor:: Detected text: \"$result\".")
+		}
+
+		// Clean up Mats.
+		cvImage.release()
+		rgbImage.release()
+		colorMask.release()
+		invertedMask.release()
+
+		return result.trim()
+	}
+
+	/**
 	 * Performs OCR on a cropped region of a source bitmap with optional preprocessing.
 	 * 
 	 * @param sourceBitmap The source image to crop from.

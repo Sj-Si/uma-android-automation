@@ -373,7 +373,27 @@ const Settings = () => {
                     labelUnit="s"
                     showValue={true}
                     showLabels={true}
-                    description="Sets the delay between actions and imaging operations. Lowering this will make the bot run much faster."
+                    description="Sets the delay between actions and imaging operations. Lowering this will make the bot run much faster at the risk of the bot losing track of its location after loading/connecting screens."
+                />
+
+                <CustomSlider
+                    searchId="settings-dialog-wait-delay"
+                    value={bsc.settings.general.dialogWaitDelay}
+                    placeholder={bsc.defaultSettings.general.dialogWaitDelay}
+                    onValueChange={(value) => {
+                        bsc.setSettings({ ...bsc.settings, general: { ...bsc.settings.general, dialogWaitDelay: value } })
+                    }}
+                    onSlidingComplete={(value) => {
+                        bsc.setSettings({ ...bsc.settings, general: { ...bsc.settings.general, dialogWaitDelay: value } })
+                    }}
+                    min={0.0}
+                    max={1.0}
+                    step={0.1}
+                    label="Dialog Wait Delay"
+                    labelUnit="s"
+                    showValue={true}
+                    showLabels={true}
+                    description="Sets the delay between clicking a button that opens dialog and actually handling the dialog. Lowering this will make the bot run faster at an increased risk of the bot incorrectly handling dialogs that pop up."
                 />
 
                 <CustomSlider

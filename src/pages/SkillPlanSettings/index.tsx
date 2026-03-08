@@ -99,6 +99,9 @@ export const skillPlanSettingsPages: DynamicSkillPlanSettingsProps = {
     },
 }
 
+// Convert skills.json to array.
+const skillData: Skill[] = Object.values(skillsData)
+
 /**
  * The Skill Plan Settings page.
  * Configures a specific skill plan's purchasing strategy, inherited/negative skill options,
@@ -121,6 +124,7 @@ const SkillPlanSettings: FC<SkillPlanSettingsProps> = ({ planKey, name, title, d
     const { enabled, strategy, enableBuyInheritedUniqueSkills, enableBuyNegativeSkills, plan } = combinedConfig[planKey]
 
     const [searchQuery, setSearchQuery] = useState("")
+    const [showSelected, setShowSelected] = useState(false)
     const scrollViewRef = useRef<ScrollView>(null)
 
     // Parse skill plan from CSV string.
@@ -128,15 +132,18 @@ const SkillPlanSettings: FC<SkillPlanSettingsProps> = ({ planKey, name, title, d
         return plan && plan !== "" && typeof plan === "string" ? plan.split(",").map((s) => Number(s)) : []
     }, [plan])
 
-    // Convert skills.json to array.
-    const skillData: Skill[] = useMemo(() => {
-        return Object.values(skillsData)
-    }, [])
+    // Set showSelected to False whenever we have no selected skills.
+    React.useEffect(() => {
+        if (planIds.length === 0) {
+            setShowSelected(false)
+        }
+    }, [planIds, setShowSelected])
 
     // Filter skills based on search and preferences.
     const filteredSkills = useMemo(() => {
-        return skillData.filter((skill) => skill.name_en.toLowerCase().includes(searchQuery.toLowerCase()))
-    }, [skillData, searchQuery])
+        const skills: Skill[] = showSelected ? skillData.filter((skill: Skill) => planIds.includes(skill.id)) : skillData
+        return skills.filter((skill: Skill) => skill.name_en.toLowerCase().includes(searchQuery.toLowerCase()))
+    }, [searchQuery, planIds, showSelected])
 
     /**
      * Update a skill plan setting.
@@ -340,6 +347,16 @@ const SkillPlanSettings: FC<SkillPlanSettingsProps> = ({ planKey, name, title, d
                     </View>
                 </View>
 
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+                    <CustomCheckbox
+                        searchId={`show-selected-skills-${name}`}
+                        checked={planIds.length === 0 ? false : showSelected}
+                        disabled={planIds.length === 0}
+                        onCheckedChange={(checked) => setShowSelected(checked && planIds.length !== 0)}
+                        label="Show Only Selected Skills"
+                    />
+                </View>
+
                 <View style={{ flexDirection: "row", marginBottom: 12 }}>
                     <View style={{ flex: 1 }}>
                         <Text style={[styles.inputDescription, { marginTop: 0 }]}>Select skills that the bot will always attempt to buy.</Text>
@@ -394,7 +411,7 @@ const SkillPlanSettings: FC<SkillPlanSettingsProps> = ({ planKey, name, title, d
                         <Text style={styles.description}>{description}</Text>
                         <Divider style={{ marginBottom: 16 }} />
                         <CustomCheckbox
-                            searchId={`enable-career-complete-skill-plan-${planKey}`}
+                            searchId={`enable-skill-plan-${planKey}`}
                             checked={enabled}
                             onCheckedChange={(checked) => updateSkillsSetting("enabled", checked)}
                             label={`Enable ${title} Plan (Beta)`}
