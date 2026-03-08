@@ -614,11 +614,6 @@ object ButtonRunnerHistory : ButtonInterface {
     override val template = Template("components/button/ribbon_runner_history")
 }
 
-object ButtonLegendRace : ButtonInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]ButtonLegendRace"
-    override val template = Template("components/button/legend_race")
-}
-
 object ButtonExchange : ButtonInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonExchange"
     override val template = Template("components/button/exchange")

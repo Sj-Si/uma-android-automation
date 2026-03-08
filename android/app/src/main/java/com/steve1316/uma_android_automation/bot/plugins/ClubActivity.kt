@@ -76,7 +76,7 @@ class ClubActivity(
         ShoeType.DIRT to ButtonShoesDirt,
     )
 
-    override fun handleDialogs(dialog: DialogInterface?, args: Map<String, Any> = mapOf()): DialogHandlerResult {
+    override fun handleDialogs(dialog: DialogInterface?, args: Map<String, Any>): DialogHandlerResult {
         val result: DialogHandlerResult = super.handleDialogs(dialog, args)
         if (result !is DialogHandlerResult.Unhandled) {
             return result

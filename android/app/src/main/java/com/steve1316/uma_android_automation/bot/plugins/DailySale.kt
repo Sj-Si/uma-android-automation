@@ -55,7 +55,7 @@ class DailySale(
 
     private val purchasedItems: MutableList<SaleItem> = mutableListOf()
 
-    override fun handleDialogs(dialog: DialogInterface?, args: Map<String, Any> = mapOf()): DialogHandlerResult {
+    override fun handleDialogs(dialog: DialogInterface?, args: Map<String, Any>): DialogHandlerResult {
         val result: DialogHandlerResult = super.handleDialogs(dialog, args)
         if (result !is DialogHandlerResult.Unhandled) {
             return result
@@ -172,7 +172,7 @@ class DailySale(
         }
 
         // If star piece is selected, we buy two of them. Add one to total.
-        val numItemsToBuy: Int = saleItemsToBuy.size + saleItemsToBuy.includes(SaleItem.STAR_PIECE) ? 1 : 0
+        val numItemsToBuy: Int = saleItemsToBuy.size + if (saleItemsToBuy.contains(SaleItem.STAR_PIECE)) 1 else 0
 
         // Finally, handle any dialogs.
         val startTime = System.currentTimeMillis()

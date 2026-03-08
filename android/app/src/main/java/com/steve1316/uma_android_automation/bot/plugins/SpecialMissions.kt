@@ -49,7 +49,7 @@ class SpecialMissions(
     private var bHasHandledSpecialMissions: Boolean = false
     private var bHasHandledEventExclusiveMissions: Boolean = false
 
-    override fun handleDialogs(dialog: DialogInterface?, args: Map<String, Any> = mapOf()): DialogHandlerResult {
+    override fun handleDialogs(dialog: DialogInterface?, args: Map<String, Any>): DialogHandlerResult {
         val result: DialogHandlerResult = super.handleDialogs(dialog, args)
         if (result !is DialogHandlerResult.Unhandled) {
             return result
@@ -108,7 +108,7 @@ class SpecialMissions(
             if (ButtonSpecialMissions.click(game.imageUtils)) {
                 MessageLog.i(TAG, "[$name] Handling event missions page with Special Missions button.")
                 val dialogResult = game.campaign.handleDialogs(
-                    args = mapOf<String, Boolean>(
+                    args = mapOf<String, Any>(
                         "dialogNameToDefer" to "special_missions",
                         "bShouldWait" to true,
                         "bShouldWaitForLoading" to true,

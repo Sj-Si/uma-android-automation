@@ -86,6 +86,8 @@ abstract class Plugin(
             // If unhandled, then we can't progress any further.
             // If we did, we'd get stuck in an infinite loop looking for a dialog.
             is DialogHandlerResult.Unhandled -> throw IllegalStateException("Unhandled dialog: ${dialogResult.dialog.name}")
+            // If the dialog handling was deferred, then just continue with function.
+            is DialogHandlerResult.Deferred -> {}
             // If no dialog detected, we can just continue with this function.
             is DialogHandlerResult.NoDialogDetected -> {}
             // If a toast blocked the dialog and we are here, then we timed out while waiting
@@ -178,12 +180,9 @@ abstract class Plugin(
         MessageLog.d(TAG, "[$name][DIALOG] ${dialog.name}")
 
         val dialogNameToDefer: String? = args["dialogNameToDefer"] as? String ?: null
-        val dialogNamesToDefer: List<String> = args["dialogNamesToDefer"] as? List<String> ?: []
-        if (dialogNamesToDefer.isEmpty() && dialogNameToDefer != null) {
-            dialogNamesToDefer.add(dialogNameToDefer)
-        }
+        var dialogNamesToDefer: List<String> = args["dialogNamesToDefer"] as? List<String> ?: listOf<String>()
         var bShouldDefer = args["bShouldDefer"] as? Boolean ?: false
-        if (dialogNamesToDefer.includes(dialog.name)) {
+        if (dialogNamesToDefer.contains(dialog.name) || dialogNameToDefer == dialog.name) {
             bShouldDefer = true
         }
 
