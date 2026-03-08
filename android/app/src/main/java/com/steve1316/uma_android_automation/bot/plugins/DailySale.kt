@@ -34,7 +34,7 @@ class DailySale(
     menuBar: MenuBar,
     maxRuntimeMinutes: Int = 5,
     commonDialogHandler: DialogHandlerCallback? = null,
-) : Plugin(game, menuBar, commonDialogHandler) {
+) : Plugin(game, menuBar, maxRuntimeMinutes, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]DailySale"
 
     enum class SaleItem {
@@ -49,7 +49,7 @@ class DailySale(
         }
     }
 
-    private val saleItemsToBuy: List<SaleItem> = SettingsHelper.getStringArraySetting("dailyTasks", "saleItems")
+    private val saleItemsToBuy: List<SaleItem> = SettingsHelper.getStringArraySetting("plugins", "saleItems")
         .mapNotNull { it -> SaleItem.fromName(it) }
 
     private var bSaleExpired: Boolean = false

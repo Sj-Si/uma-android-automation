@@ -21,7 +21,7 @@ class Presents(
     menuBar: MenuBar,
     maxRuntimeMinutes: Int = 2,
     commonDialogHandler: DialogHandlerCallback? = null,
-) : Plugin(game, menuBar, commonDialogHandler) {
+) : Plugin(game, menuBar, maxRuntimeMinutes, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]Presents"
 
     override fun handleDialogs(dialog: DialogInterface?, args: Map<String, Any>): DialogHandlerResult {

@@ -56,10 +56,10 @@ class DailyRaces(
     menuBar: MenuBar,
     maxRuntimeMinutes: Int = 10,
     commonDialogHandler: DialogHandlerCallback? = null,
-) : Plugin(game, menuBar, commonDialogHandler) {
+) : Plugin(game, menuBar, maxRuntimeMinutes, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]DailyRaces"
 
-    private val dailyRaceNameString: String = SettingsHelper.getStringSetting("dailyTasks", "dailyRaceName")
+    private val dailyRaceNameString: String = SettingsHelper.getStringSetting("plugins", "dailyRaceName")
     private val dailyRaceName: DailyRaceName = DailyRaceName.fromName(dailyRaceNameString)!!
 
     private val dailyRaceButton: ComponentInterface = when (dailyRaceName) {

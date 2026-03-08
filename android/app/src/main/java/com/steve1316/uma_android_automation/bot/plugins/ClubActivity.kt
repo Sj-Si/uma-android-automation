@@ -58,12 +58,12 @@ class ClubActivity(
     menuBar: MenuBar,
     maxRuntimeMinutes: Int = 5,
     commonDialogHandler: DialogHandlerCallback? = null,
-) : Plugin(game, menuBar, commonDialogHandler) {
+) : Plugin(game, menuBar, maxRuntimeMinutes, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]ClubActivity"
 
-    private val clubRequestShoeTypeString: String = SettingsHelper.getStringSetting("dailyTasks", "clubRequestShoeType")
+    private val clubRequestShoeTypeString: String = SettingsHelper.getStringSetting("plugins", "clubRequestShoeType")
     private val clubRequestShoeType: ShoeType = ShoeType.fromName(clubRequestShoeTypeString)!!
-    private val bShouldDonateItems: Boolean = SettingsHelper.getBooleanSetting("dailyTasks", "enableClubDonation")
+    private val bShouldDonateItems: Boolean = SettingsHelper.getBooleanSetting("plugins", "enableClubDonation")
 
     private var bHasRequestedItems: Boolean = false
     // If we arent supposed to donate, then we just say that it is already completed.

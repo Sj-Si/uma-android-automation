@@ -223,25 +223,25 @@ const PriorityList: React.FC<PriorityListProps> = ({
     }
 }
 
-const DailyTasksSettings = () => {
+const PluginsSettings = () => {
     const { height } = useWindowDimensions()
     const { colors } = useTheme()
     const bsc = useContext(BotStateContext)
 
     const { settings, setSettings } = bsc
 
-    const [plugins, setPlugins] = useState<string[]>(() =>
-        settings.dailyTasks?.plugins !== undefined ? settings.dailyTasks.plugins : defaultSettings.dailyTasks.plugins,
+    const [enabledPlugins, setPlugins] = useState<string[]>(() =>
+        settings.plugins?.enabledPlugins !== undefined ? settings.plugins.enabledPlugins : defaultSettings.plugins.enabledPlugins,
     )
 
     const [saleItems, setSaleItems] = useState<string[]>(() =>
-        settings.dailyTasks?.saleItems !== undefined ? settings.dailyTasks.saleItems : defaultSettings.dailyTasks.saleItems,
+        settings.plugins?.saleItems !== undefined ? settings.plugins.saleItems : defaultSettings.plugins.saleItems,
     )
 
-    const dailyTasksSettings = {
-        ...defaultSettings.dailyTasks,
-        ...settings.dailyTasks,
-        plugins: plugins,
+    const pluginsSettings = {
+        ...defaultSettings.plugins,
+        ...settings.plugins,
+        enabledPlugins: enabledPlugins,
         saleItems: saleItems,
     }
 
@@ -251,11 +251,11 @@ const DailyTasksSettings = () => {
         enableLegendRaceUseParfait,
         clubRequestShoeType,
         enableClubDonation,
-    } = dailyTasksSettings
+    } = pluginsSettings
     
     useEffect(() => {
-        updateSetting("plugins", plugins)
-    }, [plugins])
+        updateSetting("enabledPlugins", enabledPlugins)
+    }, [enabledPlugins])
 
     useEffect(() => {
         updateSetting("saleItems", saleItems)
@@ -263,22 +263,22 @@ const DailyTasksSettings = () => {
 
     // Sync local state when settings change (e.g., when switching profiles).
     useEffect(() => {
-        if (settings.dailyTasks?.plugins !== undefined) {
-            setPlugins(settings.dailyTasks.plugins)
+        if (settings.plugins?.enabledPlugins !== undefined) {
+            setPlugins(settings.plugins.enabledPlugins)
         }
-    }, [settings.dailyTasks?.plugins])
+    }, [settings.plugins?.enabledPlugins])
 
     useEffect(() => {
-        if (settings.dailyTasks?.saleItems !== undefined) {
-            setSaleItems(settings.dailyTasks.saleItems)
+        if (settings.plugins?.saleItems !== undefined) {
+            setSaleItems(settings.plugins.saleItems)
         }
-    }, [settings.dailyTasks?.saleItems])
+    }, [settings.plugins?.saleItems])
 
-    const updateSetting = (key: keyof typeof settings.dailyTasks, value: any) => {
+    const updateSetting = (key: keyof typeof settings.plugins, value: any) => {
         setSettings({
             ...bsc.settings,
-            dailyTasks: {
-                ...bsc.settings.dailyTasks,
+            plugins: {
+                ...bsc.settings.plugins,
                 [key]: value,
             },
         })
@@ -374,9 +374,9 @@ const DailyTasksSettings = () => {
 
     return (
         <View style={styles.root}>
-            <PageHeader title="Daily Tasks Settings" />
+            <PageHeader title="Plugins Settings" />
             <Text style={styles.description}>
-                Configure settings for the Daily Tasks routine.
+                Configure settings for plugins.
             </Text>
             <Divider style={{ marginBottom: 16 }} />
             <ScrollView
@@ -393,17 +393,17 @@ const DailyTasksSettings = () => {
                             description: item.description,
                             defaultEnabled: item.enabled,
                         }))}
-                        selectedItems={plugins}
+                        selectedItems={enabledPlugins}
                         setSelectedItems={(value) => setPlugins(value)}
                         mode={"priority"}
                         useModal={false}
                         style={{ height: height / 3 }}
-                        title={"Daily Task Plugins"}
-                        description={"Enable and re-order plugins to run during daily tasks handling."}
+                        title={"Plugins"}
+                        description={"Enable and re-order plugins to run."}
                     />
                 </View>
                 <Divider style={{ marginBottom: 16 }} />
-                {plugins.includes("Team Trials") && (
+                {enabledPlugins.includes("Team Trials") && (
                     <View style={styles.inputContainer}>
                         <CustomTitle title="Team Trials Settings" />
                         <CustomCheckbox
@@ -416,7 +416,7 @@ const DailyTasksSettings = () => {
                         />
                     </View>
                 )}
-                {plugins.includes("Daily Races") && (
+                {enabledPlugins.includes("Daily Races") && (
                     <View style={styles.inputContainer}>
                         <CustomTitle title="Daily Race Settings" />
                         <View style={styles.inputContainer}>
@@ -434,7 +434,7 @@ const DailyTasksSettings = () => {
                         </View>
                     </View>
                 )}
-                {plugins.includes("Legend Race") && (
+                {enabledPlugins.includes("Legend Race") && (
                     <View style={styles.inputContainer}>
                         <CustomTitle title="Legend Race Settings" />
                         <CustomCheckbox
@@ -447,7 +447,7 @@ const DailyTasksSettings = () => {
                         />
                     </View>
                 )}
-                {plugins.includes("Club Activity") && (
+                {enabledPlugins.includes("Club Activity") && (
                     <View style={styles.inputContainer}>
                         <CustomTitle title="Club Activity Settings" />
                         <View style={styles.inputContainer}>
@@ -478,11 +478,11 @@ const DailyTasksSettings = () => {
                         </View>
                     </View>
                 )}
-                {plugins.includes("Daily Sale") && (
+                {enabledPlugins.includes("Daily Sale") && (
                     <View style={styles.section}>
                         <View className="m-1">
                             <PriorityList
-                                items={defaultSettings.dailyTasks.saleItems.map((item) => ({
+                                items={defaultSettings.plugins.saleItems.map((item) => ({
                                     name: item,
                                     description: "",
                                     defaultEnabled: true,
@@ -502,4 +502,4 @@ const DailyTasksSettings = () => {
     )
 }
 
-export default DailyTasksSettings
+export default PluginsSettings

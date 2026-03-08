@@ -44,7 +44,7 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         "RacingPlanSettings",
         "SkillSettings",
         ...Object.values(skillPlanSettingsPages).flatMap((item) => item.name),
-        "DailyTasksSettings",
+        "PluginsSettings",
         "DiscordSettings",
         "DebugSettings",
     ]
@@ -242,9 +242,9 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
                     })),
                 },
                 {
-                    name: "DailyTasksSettings",
-                    label: "Daily Tasks Settings",
-                    icon: () => "calendar-outline",
+                    name: "PluginsSettings",
+                    label: "Plugins Settings",
+                    icon: () => "extension-puzzle-outline",
                 },
                 {
                     name: "EventLogVisualizer",

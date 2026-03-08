@@ -44,7 +44,7 @@ class ChampionsMeeting(
     menuBar: MenuBar,
     maxRuntimeMinutes: Int = 30,
     commonDialogHandler: DialogHandlerCallback? = null,
-) : Plugin(game, menuBar, commonDialogHandler) {
+) : Plugin(game, menuBar, maxRuntimeMinutes, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]ChampionsMeeting"
 
     override fun handleDialogs(dialog: DialogInterface?, args: Map<String, Any>): DialogHandlerResult {

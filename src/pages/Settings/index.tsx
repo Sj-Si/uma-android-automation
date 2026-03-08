@@ -190,12 +190,12 @@ const Settings = () => {
         return <NavigationLink title="Go to Skills Settings" description="Configure skill purchasing behavior." onPress={() => navigation.navigate("SkillSettings" as never)} />
     }
 
-    const renderDailyTasksLink = () => {
+    const renderPluginsLink = () => {
         return (
             <NavigationLink
-                title="Go to Daily Tasks Settings"
-                description="Configure daily tasks."
-                onPress={() => navigation.navigate("DailyTasksSettings" as never)}
+                title="Go to Plugins Settings"
+                description="Configure plugins."
+                onPress={() => navigation.navigate("PluginsSettings" as never)}
             />
         )
     }
@@ -469,7 +469,7 @@ const Settings = () => {
                         {renderRacingLink()}
                         {renderSkillsLink()}
                         {renderEventLogVisualizerLink()}
-                        {renderDailyTasksLink()}
+                        {renderPluginsLink()}
                         {renderDiscordLink()}
                         {renderDebugLink()}
                         {renderMiscSettings()}

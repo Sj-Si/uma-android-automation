@@ -14,7 +14,7 @@ package com.steve1316.uma_android_automation.types
 enum class Scenario {
     URA_FINALE,
     UNITY_CUP,
-    DAILY_TASKS;
+    PLUGINS;
 
     companion object {
         private val nameMap = entries.associateBy { it.name }

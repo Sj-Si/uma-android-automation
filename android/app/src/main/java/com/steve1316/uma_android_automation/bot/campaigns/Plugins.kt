@@ -18,11 +18,11 @@ import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 
 import com.steve1316.uma_android_automation.components.*
 
-class DailyTasks(game: Game) : Campaign(game) {
-    override val TAG: String = "[${MainActivity.loggerTag}]DailyTasks"
+class Plugins(game: Game) : Campaign(game) {
+    override val TAG: String = "[${MainActivity.loggerTag}]Plugins"
 
     // The ordered list of plugins from the settings.
-    val pluginsSetting: List<String> = SettingsHelper.getStringArraySetting("dailyTasks", "plugins")
+    val pluginsSetting: List<String> = SettingsHelper.getStringArraySetting("plugins", "enabledPlugins")
         .map { it.replace("\\s+".toRegex(), "") }
 
     fun pluginDialogHandler(dialog: DialogInterface? = null, args: Map<String, Any> = mapOf()): DialogHandlerResult {
@@ -89,12 +89,12 @@ class DailyTasks(game: Game) : Campaign(game) {
             }
         }
 
-        MessageLog.e(TAG, "[DAILY_TASKS] Timed out going to home screen from title.")
+        MessageLog.e(TAG, "[PLUGINS] Timed out going to home screen from title.")
         return false
     }
 
 	override fun start() {
-		MessageLog.i(TAG, "[DAILY_TASKS] Starting process for handling the Daily Tasks.")
+		MessageLog.i(TAG, "[PLUGINS] Starting process for handling plugins.")
 
         for (pluginName in pluginsSetting) {
             val plugin: Plugin? = PluginFactory.create(pluginName, game, dialogHandler = ::pluginDialogHandler)
@@ -104,9 +104,9 @@ class DailyTasks(game: Game) : Campaign(game) {
 
             val result: Boolean = plugin.start()
             if (result) {
-                MessageLog.i(TAG, "[DAILY_TASKS] [${plugin.name}] Completed successfully.")
+                MessageLog.i(TAG, "[PLUGINS] [${plugin.name}] Completed successfully.")
             } else {
-                MessageLog.w(TAG, "[DAILY_TASKS] [${plugin.name}] Failed.")
+                MessageLog.w(TAG, "[PLUGINS] [${plugin.name}] Failed.")
             }
         }
 	}

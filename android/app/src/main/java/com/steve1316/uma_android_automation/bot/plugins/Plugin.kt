@@ -504,7 +504,7 @@ class PluginFactory {
             menuBar: MenuBar? = null,
             dialogHandler: DialogHandlerCallback?,
         ): Plugin? {
-            val pluginsSetting: List<String> = SettingsHelper.getStringArraySetting("dailyTasks", "plugins")
+            val pluginsSetting: List<String> = SettingsHelper.getStringArraySetting("plugins", "enabledPlugins")
                 .map { it.replace("\\s+".toRegex(), "") }
             if (!pluginsSetting.contains(pluginName)) {
                 MessageLog.d(TAG, "[$pluginName] Plugin is not enabled.")
@@ -521,25 +521,25 @@ class PluginFactory {
             }
 
             return when (pluginName) {
-                "ChampionsMeeting" -> ChampionsMeeting(game, menuBar, dialogHandler)
-                "ClubActivity" -> ClubActivity(game, menuBar, dialogHandler)
-                "DailyRaces" -> DailyRaces(game, menuBar, dialogHandler)
+                "ChampionsMeeting" -> ChampionsMeeting(game, menuBar, commonDialogHandler = dialogHandler)
+                "ClubActivity" -> ClubActivity(game, menuBar, commonDialogHandler = dialogHandler)
+                "DailyRaces" -> DailyRaces(game, menuBar, commonDialogHandler = dialogHandler)
                 "DailySale" -> {
                     // If no items are marked for purchase, then we return NULL
                     // since the plugin is effectively disabled.
                     val bShouldHandleDailySale: Boolean = SettingsHelper
-                        .getStringArraySetting("dailyTasks", "saleItems")
+                        .getStringArraySetting("plugins", "saleItems")
                         .isNotEmpty()
                     if (bShouldHandleDailySale) {
-                        DailySale(game, menuBar, dialogHandler)
+                        DailySale(game, menuBar, commonDialogHandler = dialogHandler)
                     } else {
                         null
                     }
                 }
-                "LegendRace" -> LegendRace(game, menuBar, dialogHandler)
-                "Presents" -> Presents(game, menuBar, dialogHandler)
-                "SpecialMissions" -> SpecialMissions(game, menuBar, dialogHandler)
-                "TeamTrials" -> TeamTrials(game, menuBar, dialogHandler)
+                "LegendRace" -> LegendRace(game, menuBar, commonDialogHandler = dialogHandler)
+                "Presents" -> Presents(game, menuBar, commonDialogHandler = dialogHandler)
+                "SpecialMissions" -> SpecialMissions(game, menuBar, commonDialogHandler = dialogHandler)
+                "TeamTrials" -> TeamTrials(game, menuBar, commonDialogHandler = dialogHandler)
                 else -> throw IllegalArgumentException("Unknown plugin name: $pluginName")
             }
         }

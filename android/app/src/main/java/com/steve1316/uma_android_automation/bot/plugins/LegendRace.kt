@@ -41,10 +41,10 @@ class LegendRace(
     menuBar: MenuBar,
     maxRuntimeMinutes: Int = 10,
     commonDialogHandler: DialogHandlerCallback? = null,
-) : Plugin(game, menuBar, commonDialogHandler) {
+) : Plugin(game, menuBar, maxRuntimeMinutes, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]LegendRace"
 
-    private val bShouldUseParfait: Boolean = SettingsHelper.getBooleanSetting("dailyTasks", "enableLegendRaceUseParfait")
+    private val bShouldUseParfait: Boolean = SettingsHelper.getBooleanSetting("plugins", "enableLegendRaceUseParfait")
 
     private val specialMissionsTabs: List<ComponentInterface> = listOf(
         ButtonSpecialMissionsTabDaily,

@@ -2,7 +2,7 @@ import { createContext, useState, useMemo, useCallback } from "react"
 import { startTiming } from "../lib/performanceLogger"
 import racesData from "../data/races.json"
 import { skillPlanSettingsPages } from "../pages/SkillPlanSettings"
-import { pluginConfigs } from "../pages/DailyTasksSettings"
+import { pluginConfigs } from "../pages/PluginsSettings"
 
 /**
  * Configuration for an individual skill plan (e.g. preFinals, careerComplete).
@@ -77,9 +77,9 @@ export interface Settings {
         plans: Record<string, SkillPlanSettingsConfig>
     }
 
-    // Daily Tasks Settings
-    dailyTasks: {
-        plugins: string[]
+    // Plugins Settings
+    plugins: {
+        enabledPlugins: string[]
         saleItems: string[]
         enableTeamTrialsUseParfaitOnExtraRewards: boolean
         dailyRaceName: string
@@ -255,9 +255,9 @@ export const defaultSettings: Settings = {
             return acc
         }, {} as Record<string, SkillPlanSettingsConfig>),
     },
-    dailyTasks: {
+    plugins: {
         // All enabled plugin names as a list.
-        plugins: pluginConfigs
+        enabledPlugins: pluginConfigs
             .filter((item) => item.enabled === true)
             .map((item) => item.name),
         // Individual plugin settings.

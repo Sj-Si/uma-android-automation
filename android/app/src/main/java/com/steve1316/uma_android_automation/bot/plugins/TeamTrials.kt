@@ -41,10 +41,10 @@ class TeamTrials(
     menuBar: MenuBar,
     maxRuntimeMinutes: Int = 15,
     commonDialogHandler: DialogHandlerCallback? = null,
-) : Plugin(game, menuBar, commonDialogHandler) {
+) : Plugin(game, menuBar, maxRuntimeMinutes, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]TeamTrials"
 
-    private val bShouldUseParfaitOnExtraRewards: Boolean = SettingsHelper.getBooleanSetting("dailyTasks", "enableTeamTrialsUseParfaitOnExtraRewards")
+    private val bShouldUseParfaitOnExtraRewards: Boolean = SettingsHelper.getBooleanSetting("plugins", "enableTeamTrialsUseParfaitOnExtraRewards")
 
     private var bIsExtraRewards: Boolean = false
 

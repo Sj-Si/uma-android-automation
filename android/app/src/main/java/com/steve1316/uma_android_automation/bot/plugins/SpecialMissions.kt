@@ -36,7 +36,7 @@ class SpecialMissions(
     menuBar: MenuBar,
     maxRuntimeMinutes: Int = 5,
     commonDialogHandler: DialogHandlerCallback? = null,
-) : Plugin(game, menuBar, commonDialogHandler) {
+) : Plugin(game, menuBar, maxRuntimeMinutes, commonDialogHandler) {
     override val TAG: String = "[${MainActivity.loggerTag}]SpecialMissions"
 
     private val missionsTabs: List<ComponentInterface> = listOf(
