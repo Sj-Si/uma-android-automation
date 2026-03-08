@@ -171,6 +171,9 @@ class DailySale(
             return false
         }
 
+        // If star piece is selected, we buy two of them. Add one to total.
+        val numItemsToBuy: Int = saleItemsToBuy.size + saleItemsToBuy.includes(SaleItem.STAR_PIECE) ? 1 : 0
+
         // Finally, handle any dialogs.
         val startTime = System.currentTimeMillis()
         while (System.currentTimeMillis() - startTime < 5000) {
@@ -189,7 +192,7 @@ class DailySale(
                 purchasedItems.add(match)
                 // If we have purchased all requested items, then we return true
                 // to end the list processing immediately.
-                return purchasedItems.size == saleItemsToBuy.size
+                return purchasedItems.size == numItemsToBuy
             }
         }
         return false
