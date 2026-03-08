@@ -17,6 +17,7 @@ import com.steve1316.uma_android_automation.components.ButtonCollectAll
 import com.steve1316.uma_android_automation.components.ButtonEventMissions
 import com.steve1316.uma_android_automation.components.ButtonEventMissionsTabLimitedTime
 import com.steve1316.uma_android_automation.components.ButtonHomeSpecialMissions
+import com.steve1316.uma_android_automation.components.ButtonSpecialMissions
 import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabDaily
 import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabMain
 import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabSpecial
@@ -25,6 +26,7 @@ import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.IconEventExclusiveMissionsListBottomRight
 import com.steve1316.uma_android_automation.components.IconEventExclusiveMissionsListTopLeft
+import com.steve1316.uma_android_automation.components.IconNotificationExclamationHalfHeight
 import com.steve1316.uma_android_automation.components.MenuBar
 import com.steve1316.uma_android_automation.components.PageInterface
 import com.steve1316.uma_android_automation.components.PageSpecialMissions
@@ -90,11 +92,42 @@ class SpecialMissions(
      */
     private fun onListEntry(scrollList: ScrollList, entry: ScrollListEntry): Boolean {
         MessageLog.d(TAG, "[$name] Handling EventExclusiveMissions entry #${entry.index}.")
+
+        if (!IconNotificationExclamationHalfHeight.check(game.imageUtils, sourceBitmap = entry.bitmap, tries = 10)) {
+            MessageLog.d(TAG, "[$name] Skipping event exclusive missions entry #${entry.index} due to missing notification exclamation icon.")
+            return false
+        }
+
         val x: Double = (entry.bbox.x + (entry.bbox.w / 2).toInt()).toDouble()
         val y: Double = (entry.bbox.y + (entry.bbox.h / 2).toInt()).toDouble()
         game.tap(x, y)
         game.wait(1.0)
         if (waitForButton(missionsTabs, bShouldHandleDialogs = false) == null) {
+            // Special case for Champions meeting. Clicking the event mission entry
+            // brings us to the champions meeting home page and not a mission tabs screen.
+            if (ButtonSpecialMissions.click(game.imageUtils)) {
+                MessageLog.i(TAG, "[$name] Handling event missions page with Special Missions button.")
+                val dialogResult = game.campaign.handleDialogs(
+                    args = mapOf<String, Boolean>(
+                        "dialogNameToDefer" to "special_missions",
+                        "bShouldWait" to true,
+                        "bShouldWaitForLoading" to true,
+                    ),
+                )
+                if (dialogResult is DialogHandlerResult.Deferred) {
+                    // Collect rewards. Causes connecting to server.
+                    dialogResult.dialog.ok(game.imageUtils)
+                    game.waitForLoading()
+                    // Handle all dialogs. This confirms rewards and also closes this dialog.
+                    // Can also catch connection errors.
+                    handleDialogsUntilNoneRemain()
+                }
+
+                // If we fail to click the back button, then we need to stop the loop
+                // immediately since we won't be back at the Event Missions dialog.
+                return waitForButton(ButtonBack, bShouldClickButton = true) == null
+            }
+
             MessageLog.w(TAG, "[$name] Timed out waiting for mission tabs to appear for event exclusive mission entry #${entry.index}.")
             // Need to bail out since we're stuck in an unknown state.
             return true

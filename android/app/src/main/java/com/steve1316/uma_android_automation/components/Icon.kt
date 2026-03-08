@@ -186,3 +186,8 @@ object IconEventExclusiveMissionsListBottomRight : ComponentInterface {
     override val TAG: String = "IconEventExclusiveMissionsListBottomRight"
     override val template = Template("components/icon/event_exclusive_missions_list_bottom_right", region = Region.rightHalf)
 }
+
+object IconNotificationExclamationHalfHeight : ComponentInterface {
+    override val TAG: String = "IconNotificationExclamationHalfHeight"
+    override val template = Template("components/icon/notification_exclamation_half_height")
+}
