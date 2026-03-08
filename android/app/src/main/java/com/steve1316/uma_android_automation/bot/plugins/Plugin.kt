@@ -38,6 +38,7 @@ import com.steve1316.uma_android_automation.bot.plugins.TeamTrials
 sealed class DialogHandlerResult {
     data class Handled(val dialog: DialogInterface) : DialogHandlerResult()
     data class Unhandled(val dialog: DialogInterface) : DialogHandlerResult()
+    data class Deferred(val dialog: DialogInterface) : DialogHandlerResult()
     data object NoDialogDetected : DialogHandlerResult()
     data object TaskClearToastDetected: DialogHandlerResult()
     data class Error(val message: String) : DialogHandlerResult()
@@ -132,6 +133,7 @@ abstract class Plugin(
      * @param dialog An optional dialog to evaluate. This allows chaining
      * dialog handler calls for improved performance so that we don't need to
      * perform dialog detection and OCR multiple times.
+     * @param args Optional arguments mapping for dialog handling.
      *
      * @return A DialogHandlerResult object based on the result of this function.
      *  - Handled: If the dialog was fully handled.
@@ -141,12 +143,19 @@ abstract class Plugin(
      *      which could blocked the dialog's title bar.
      *  - Error: If an error occurred during dialog detection/handling.
      */
-    protected open fun handleDialogs(dialog: DialogInterface? = null): DialogHandlerResult {
+    protected open fun handleDialogs(dialog: DialogInterface? = null, args: Map<String, Any> = mapOf()): DialogHandlerResult {
         if (commonDialogHandler != null) {
             val commonResult: DialogHandlerResult = commonDialogHandler(dialog)
             if (commonResult is DialogHandlerResult.Handled) {
-                MessageLog.d(TAG, "[$name] Common dialog handler handled a dialog.")
+                MessageLog.d(TAG, "[$name][DIALOG] Common dialog handler handled a dialog.")
                 return commonResult
+            }
+        } else {
+            val bShouldWait = args["bShouldWait"] as? Boolean ?: false
+            val bShouldWaitForLoading = args["bShouldWaitForLoading"] as? Boolean ?: false
+            if (bShouldWait || bShouldWaitForLoading) {
+                MessageLog.d(TAG, "[$name][DIALOG] Waiting before handling dialog due to passed args: dialogWaitDelay=${game.dialogWaitDelay}, bShouldWait=$bShouldWait, bShouldWaitForLoading=$bShouldWaitForLoading")
+                game.wait(game.dialogWaitDelay, skipWaitingForLoading = !bShouldWaitForLoading)
             }
         }
 
@@ -167,6 +176,21 @@ abstract class Plugin(
         }
 
         MessageLog.d(TAG, "[$name][DIALOG] ${dialog.name}")
+
+        val dialogNameToDefer: String? = args["dialogNameToDefer"] as? String ?: null
+        val dialogNamesToDefer: List<String> = args["dialogNamesToDefer"] as? List<String> ?: []
+        if (dialogNamesToDefer.isEmpty() && dialogNameToDefer != null) {
+            dialogNamesToDefer.add(dialogNameToDefer)
+        }
+        var bShouldDefer = args["bShouldDefer"] as? Boolean ?: false
+        if (dialogNamesToDefer.includes(dialog.name)) {
+            bShouldDefer = true
+        }
+
+        if (bShouldDefer) {
+            MessageLog.d(TAG, "[$name][DIALOG] Dialog handling deferred to calling function.")
+            return DialogHandlerResult.Deferred(dialog)
+        }
 
         // Return the dialog as unhandled so that subclasses can handle it.
         return DialogHandlerResult.Unhandled(dialog)

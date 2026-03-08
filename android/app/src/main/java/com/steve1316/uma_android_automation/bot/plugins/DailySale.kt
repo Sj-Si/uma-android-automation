@@ -55,8 +55,8 @@ class DailySale(
 
     private val purchasedItems: MutableList<SaleItem> = mutableListOf()
 
-    override fun handleDialogs(dialog: DialogInterface?): DialogHandlerResult {
-        val result: DialogHandlerResult = super.handleDialogs(dialog)
+    override fun handleDialogs(dialog: DialogInterface?, args: Map<String, Any> = mapOf()): DialogHandlerResult {
+        val result: DialogHandlerResult = super.handleDialogs(dialog, args)
         if (result !is DialogHandlerResult.Unhandled) {
             return result
         }
