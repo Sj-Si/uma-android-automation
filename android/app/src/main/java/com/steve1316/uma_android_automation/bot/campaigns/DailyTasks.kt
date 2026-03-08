@@ -9,8 +9,8 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 
 import com.steve1316.uma_android_automation.MainActivity
-import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.bot.Game
+import com.steve1316.uma_android_automation.bot.Campaign
 
 import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.PluginFactory
@@ -25,10 +25,16 @@ class DailyTasks(game: Game) : Campaign(game) {
     val pluginsSetting: List<String> = SettingsHelper.getStringArraySetting("dailyTasks", "plugins")
         .map { it.replace("\\s+".toRegex(), "") }
 
-    fun pluginDialogHandler(dialog: DialogInterface? = null): DialogHandlerResult {
-        val dialog: DialogInterface = dialog ?:
-            DialogUtils.getDialog(game.imageUtils) ?:
+    fun pluginDialogHandler(dialog: DialogInterface? = null, args: Map<String, Any> = mapOf()): DialogHandlerResult {
+        val (bWasDialogHandled, dialog) = handleDialogs(dialog, args)
+
+        if (dialog == null) {
             return DialogHandlerResult.NoDialogDetected
+        }
+
+        if (bWasDialogHandled) {
+            return DialogHandlerResult.Handled(dialog)
+        }
 
         when (dialog.name) {
             "date_changed" -> {
