@@ -192,6 +192,20 @@ object PageDailyRacesDifficultySelection : PageInterface {
     override val nextButton: ComponentInterface? = null
 }
 
+object PageCampaignRunnerSelection : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageCampaignRunnerSelection"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        ButtonBack,
+        ButtonNext,
+        ButtonCareerInfo,
+        ButtonDetails,
+    )
+
+    override val prevButton: ComponentInterface? = ButtonBack
+    override val nextButton: ComponentInterface? = ButtonNext
+}
+
 object PageExtraRacesRunnerSelection : PageInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]PageExtraRacesRunnerSelection"
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
@@ -406,4 +420,16 @@ object PageChampionsMeetingPostRace : PageInterface {
         return ButtonReplayWithImage.check(imageUtils, sourceBitmap = bitmap) ||
             ButtonClaim.check(imageUtils, sourceBitmap = bitmap)
     }
+}
+
+object PageScenarioSelect : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageScenarioSelect"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        ButtonScenarioDetails,
+        ButtonNext,
+    )
+
+    override val prevButton: ComponentInterface? = ButtonBack
+    override val nextButton: ComponentInterface? = ButtonNext
 }

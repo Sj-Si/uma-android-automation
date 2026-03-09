@@ -251,6 +251,7 @@ const PluginsSettings = () => {
         enableLegendRaceUseParfait,
         clubRequestShoeType,
         enableClubDonation,
+        campaignRunnerScenario,
     } = pluginsSettings
     
     useEffect(() => {
@@ -494,6 +495,24 @@ const PluginsSettings = () => {
                                 title={"Daily Sale Items to Purchase"}
                                 description={"Select which Daily Sale items to purchase. If the Daily Sale plugin is disabled, then this setting has no effect."}
                             />
+                        </View>
+                    </View>
+                )}
+                {enabledPlugins.includes("Campaign Runner") && (
+                    <View style={styles.inputContainer}>
+                        <CustomTitle title="Campaign Runner Settings" />
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Scenario Selection</Text>
+                            <CustomSelect
+                                options={[
+                                    { value: "ura_finale", label: "URA Finale" },
+                                    { value: "unity_cup", label: "Unity Cup" },
+                                ]}
+                                value={campaignRunnerScenario}
+                                onValueChange={(value) => updateSetting("campaignRunnerScenario", value)}
+                                placeholder="Select a Scenario"
+                            />
+                            <Text style={styles.inputDescription}>The campaign scenario to run.</Text>
                         </View>
                     </View>
                 )}

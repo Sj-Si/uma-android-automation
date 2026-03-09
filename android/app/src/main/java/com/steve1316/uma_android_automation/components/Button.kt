@@ -841,3 +841,23 @@ object ButtonOverwrite : ButtonInterface {
     override val TAG: String = "ButtonOverwrite"
     override val template = Template("components/button/overwrite", region = Region.bottomHalf)
 }
+
+object ButtonScenarioDetails : ButtonInterface {
+    override val TAG: String = "ButtonScenarioDetails"
+    override val template = Template("components/button/scenario_details", region = Region.middle)
+}
+
+object ButtonHomeCareer : ButtonInterface {
+    override val TAG: String = "ButtonHomeCareer"
+    override val template = Template("components/button/home_career", region = Region.bottomHalf)
+}
+
+object ButtonCareerInfo : ButtonInterface {
+    override val TAG: String = "ButtonCareerInfo"
+    override val template = Template("components/button/career_info", region = Region.topHalf)
+}
+
+object ButtonDetails : ButtonInterface {
+    override val TAG: String = "ButtonDetails"
+    override val template = Template("components/button/details", region = Region.topHalf)
+}

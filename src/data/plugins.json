@@ -38,5 +38,10 @@
         "name": "Daily Sale",
         "description": "Automatically purchases items from daily sales when they appear.",
         "enabled": true
+    },
+    {
+        "name": "Campaign Runner",
+        "description": "Automatically runs campaigns until stop conditions are met.",
+        "enabled": false
     }
 ]

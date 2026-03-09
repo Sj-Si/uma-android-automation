@@ -191,3 +191,13 @@ object IconNotificationExclamationHalfHeight : ComponentInterface {
     override val TAG: String = "IconNotificationExclamationHalfHeight"
     override val template = Template("components/icon/notification_exclamation_half_height")
 }
+
+object IconScenarioSelectUraFinale : ComponentInterface {
+    override val TAG: String = "IconScenarioSelectUraFinale"
+    override val template = Template("components/icon/scenario_select_ura_finale", region = Region.middle)
+}
+
+object IconScenarioSelectUnityCup : ComponentInterface {
+    override val TAG: String = "IconScenarioSelectUnityCup"
+    override val template = Template("components/icon/scenario_select_unity_cup", region = Region.middle)
+}

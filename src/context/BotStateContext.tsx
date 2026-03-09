@@ -86,6 +86,7 @@ export interface Settings {
         enableLegendRaceUseParfait: boolean
         clubRequestShoeType: string
         enableClubDonation: boolean
+        campaignRunnerScenario: string
     }
 
     // Training Event settings
@@ -271,6 +272,7 @@ export const defaultSettings: Settings = {
         enableLegendRaceUseParfait: true,
         clubRequestShoeType: "medium",
         enableClubDonation: true,
+        campaignRunnerScenario: "ura_finale",
     },
     trainingEvent: {
         enablePrioritizeEnergyOptions: false,
