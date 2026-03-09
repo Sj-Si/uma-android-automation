@@ -1039,13 +1039,19 @@
             let ws = null
             let autoScroll = true
             let messageCount = 0
+            let visibleMessageCount = 0
             let allMessages = []
             let activeFilters = new Set(["VERBOSE", "DEBUG", "INFO", "WARN", "ERROR"])
             let searchQuery = ""
             let isFiltering = false
+            let messageCache = []
             let reconnectAttempts = 0
             let reconnectInterval = null
             const maxReconnectDelay = 30000
+
+            // Synchronization state with LogStreamServer.
+            let isSyncing = true
+            let syncingBuffer = []
 
             // DOM references.
             const logContainer = document.getElementById("logContainer")
@@ -1062,6 +1068,28 @@
 
             let currentFontSize = 12.5 // Default font size in pixels.
 
+            /**
+             * Updates the message count display.
+             */
+            function updateMessageCountDisplay() {
+                if (visibleMessageCount === messageCount) {
+                    messageCountEl.textContent = messageCount
+                } else {
+                    messageCountEl.textContent = visibleMessageCount + " / " + messageCount
+                }
+            }
+
+            /**
+             * Debounce helper to delay execution of a function.
+             */
+            function debounce(func, wait) {
+                let timeout
+                return function (...args) {
+                    clearTimeout(timeout)
+                    timeout = setTimeout(() => func.apply(this, args), wait)
+                }
+            }
+
             // ==============================================
             // WebSocket Connection
             // ==============================================
@@ -1075,6 +1103,10 @@
                 } else {
                     setStatus("connecting", "Connecting...")
                 }
+
+                // Reset sync state on fresh connection.
+                isSyncing = true
+                syncingBuffer = []
 
                 const protocol = location.protocol === "https:" ? "wss:" : "ws:"
                 const wsUrl = protocol + "//" + location.host
@@ -1095,24 +1127,35 @@
 
                 ws.onmessage = function (event) {
                     if (event.data === "HISTORY_DONE") {
-                        setTimeout(function () {
-                            processAllHistoryForDashboard()
-                        }, 10)
+                        // History sync is finished. Process all buffered messages.
+                        isSyncing = false
+                        appendBatchMessages(syncingBuffer)
+                        syncingBuffer = []
+                        processAllHistoryForDashboard()
+                    } else if (event.data === "CMD:CLEAR") {
+                        // Received a signal from the server to clear the display for a new run.
+                        clearDisplay()
                     } else if (event.data.startsWith("HISTORY_BATCH:")) {
                         var msgs = event.data.substring(14).split("---LOG_SEPARATOR---")
-                        setTimeout(function () {
-                            appendHistoryBatch(msgs)
-                        }, 10)
+                        if (isSyncing) {
+                            syncingBuffer.push.apply(syncingBuffer, msgs)
+                        } else {
+                            appendBatchMessages(msgs)
+                        }
                     } else if (event.data.startsWith("BATCH:")) {
                         var msgs = event.data.substring(6).split("---LOG_SEPARATOR---")
-                        // Yield to the browser renderer using setTimeout so "Connected" paints instantly
-                        // before processing the heavy DOM insertions of the log messages.
-                        setTimeout(function () {
+                        if (isSyncing) {
+                            syncingBuffer.push.apply(syncingBuffer, msgs)
+                        } else {
                             appendBatchMessages(msgs)
-                        }, 10)
+                        }
                     } else {
                         // Process individual log messages.
-                        appendLogMessage(event.data)
+                        if (isSyncing) {
+                            syncingBuffer.push(event.data)
+                        } else {
+                            appendLogMessage(event.data)
+                        }
                     }
                 }
 
@@ -1211,7 +1254,6 @@
             function appendLogMessage(rawMessage) {
                 if (!rawMessage) return
                 messageCount++
-                messageCountEl.textContent = messageCount
 
                 // Hide empty state on first message.
                 if (emptyState) {
@@ -1225,7 +1267,19 @@
                 processSpecialLogs(parsed)
 
                 var entry = createLogEntry(rawMessage, parsed)
+                
+                // Add to message cache for fast filtering.
+                messageCache.push({
+                    el: entry,
+                    text: rawMessage.toLowerCase(),
+                    level: parsed.level
+                })
+
+                if (!entry.classList.contains("hidden")) {
+                    visibleMessageCount++
+                }
                 logContainer.appendChild(entry)
+                updateMessageCountDisplay()
 
                 // Auto-scroll to bottom.
                 if (autoScroll) {
@@ -1246,7 +1300,6 @@
                 if (validMessages.length === 0) return
 
                 messageCount += validMessages.length
-                messageCountEl.textContent = messageCount
 
                 if (emptyState) {
                     emptyState.style.display = "none"
@@ -1272,6 +1325,17 @@
                         processSpecialLogs(parsed, batchState)
                         
                         var entry = createLogEntry(rawMessage, parsed)
+                        
+                        // Add to message cache for fast filtering.
+                        messageCache.push({
+                            el: entry,
+                            text: rawMessage.toLowerCase(),
+                            level: parsed.level
+                        })
+
+                        if (!entry.classList.contains("hidden")) {
+                            visibleMessageCount++
+                        }
                         fragment.appendChild(entry)
                     } catch (e) {
                         console.error("Error processing log in batch:", e, rawMessage)
@@ -1279,71 +1343,13 @@
                 })
 
                 logContainer.appendChild(fragment)
+                updateMessageCountDisplay()
                 
                 // Apply the final accumulated state from this batch to the DOM.
                 applyBatchStateToDashboard(batchState)
 
                 if (autoScroll) {
                     scrollToBottom()
-                }
-            }
-
-            /**
-             * Efficiently prepends a batch of history log messages using a DocumentFragment.
-             * @param {Array<string>} rawMessages Array of raw log message strings in reverse chronological order.
-             */
-            function appendHistoryBatch(rawMessages) {
-                if (!rawMessages || rawMessages.length === 0) return
-
-                var validMessages = rawMessages.filter(function (m) {
-                    return m
-                })
-                if (validMessages.length === 0) return
-
-                messageCount += validMessages.length
-                messageCountEl.textContent = messageCount
-
-                if (emptyState) {
-                    emptyState.style.display = "none"
-                }
-
-                // Reverse back to chronological order for this batch.
-                validMessages.reverse()
-
-                var fragment = document.createDocumentFragment()
-                var batchArray = []
-
-                validMessages.forEach(function (rawMessage) {
-                    try {
-                        var parsed = parseMessage(rawMessage)
-                        batchArray.push({ raw: rawMessage, parsed: parsed })
-                        
-                        var entry = createLogEntry(rawMessage, parsed)
-                        fragment.appendChild(entry)
-                    } catch (e) {
-                        console.error("Error processing log in history batch:", e, rawMessage)
-                    }
-                })
-
-                // Prepend this batch to allMessages to maintain overall chronological order.
-                allMessages = batchArray.concat(allMessages)
-
-                // Save current scroll state before prepending.
-                var previousScrollHeight = logContainer.scrollHeight;
-                var previousScrollTop = logContainer.scrollTop;
-
-                // Insert at the beginning of the container.
-                if (logContainer.firstChild) {
-                    logContainer.insertBefore(fragment, logContainer.firstChild)
-                } else {
-                    logContainer.appendChild(fragment)
-                }
-                
-                // Adjust scroll position to counteract the prepended elements
-                // so the current view doesn't jump around.
-                var newScrollHeight = logContainer.scrollHeight;
-                if (previousScrollHeight > 0) {
-                    logContainer.scrollTop = previousScrollTop + (newScrollHeight - previousScrollHeight);
                 }
             }
 
@@ -1439,22 +1445,26 @@
              * Iterates through all log entries and applies visibility based on active filters and search.
              */
             function applyFilters() {
-                var entries = logContainer.querySelectorAll(".log-entry")
-
                 // Temporarily flag that we are filtering so the scroll listener
                 // doesn't falsely disable auto-scroll due to the container resizing.
                 isFiltering = true
 
-                entries.forEach(function (entry) {
-                    var level = entry.dataset.level
-                    var matchesLevel = activeFilters.has(level)
-                    var matchesSearch = !searchQuery || entry.textContent.toLowerCase().includes(searchQuery)
+                var visibleCount = 0
+
+                messageCache.forEach(function (cached) {
+                    var matchesLevel = activeFilters.has(cached.level)
+                    var matchesSearch = !searchQuery || cached.text.includes(searchQuery)
+                    
                     if (matchesLevel && matchesSearch) {
-                        entry.classList.remove("hidden")
+                        cached.el.classList.remove("hidden")
+                        visibleCount++
                     } else {
-                        entry.classList.add("hidden")
+                        cached.el.classList.add("hidden")
                     }
                 })
+
+                visibleMessageCount = visibleCount
+                updateMessageCountDisplay()
 
                 if (autoScroll) {
                     scrollToBottom()
@@ -1465,6 +1475,11 @@
                     isFiltering = false
                 }, 50)
             }
+
+            /**
+             * Debounced version of applyFilters for search input performance.
+             */
+            const debouncedApplyFilters = debounce(applyFilters, 200)
 
             /**
              * Enables or disables the automatic scrolling behavior for new logs.
@@ -1516,8 +1531,10 @@
                     entry.remove()
                 })
                 allMessages = []
+                messageCache = []
                 messageCount = 0
-                messageCountEl.textContent = "0"
+                visibleMessageCount = 0
+                updateMessageCountDisplay()
 
                 // Reset the trainee name display.
                 document.getElementById("dashboardName").textContent = "-"
@@ -1581,7 +1598,7 @@
             searchInput.addEventListener("input", function () {
                 searchQuery = this.value.toLowerCase().trim()
                 searchClear.classList.toggle("visible", this.value.length > 0)
-                applyFilters()
+                debouncedApplyFilters()
             })
 
             // Listen for click on the clear button to reset search.
@@ -1589,7 +1606,7 @@
                 searchInput.value = ""
                 searchQuery = ""
                 this.classList.remove("visible")
-                applyFilters()
+                applyFilters() // Apply immediately on clear.
                 searchInput.focus()
             })
 

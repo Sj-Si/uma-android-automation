@@ -15,6 +15,7 @@ import io.ktor.server.websocket.*
 import io.ktor.http.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -41,6 +42,10 @@ object LogStreamServer {
 	var isRunning = false
 		private set
 
+	// Mute flag to stop broadcasting logs after a run concludes.
+	@Volatile
+	private var isMuted = false
+
 	// Thread-safe set of currently active WebSocket client sessions.
 	private val clients = CopyOnWriteArraySet<DefaultWebSocketServerSession>()
 
@@ -52,6 +57,26 @@ object LogStreamServer {
 
 	// Maximum number of messages to retain in the history buffer.
 	private val maxBufferSize = 15000
+
+	// Sealed class representing different log actions to ensure sequential processing.
+	private sealed class LogAction {
+		data class NewClient(val session: DefaultWebSocketServerSession) : LogAction()
+		data class Broadcast(val message: String) : LogAction()
+		object Clear : LogAction()
+	}
+
+	// Channel for serializing log actions.
+	private var actionChannel: Channel<LogAction>? = null
+
+	/**
+	 * Resets the mute flag and clears the buffer to allow log broadcasting for a new run.
+	 */
+	fun resetMute() {
+		Log.i(TAG, "Log stream mute reset requested.")
+		serverScope?.launch {
+			actionChannel?.send(LogAction.Clear)
+		}
+	}
 
 	/**
 	 * Starts the log streaming server on the specified port and registers with EventBus.
@@ -68,6 +93,26 @@ object LogStreamServer {
 
 		try {
 			serverScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+			actionChannel = Channel(Channel.UNLIMITED)
+
+			// Start the core log worker that serializes all history syncs and live broadcasts.
+			serverScope?.launch {
+				actionChannel?.let { channel ->
+					for (action in channel) {
+						when (action) {
+							is LogAction.NewClient -> {
+								handleNewClientAction(action.session)
+							}
+							is LogAction.Broadcast -> {
+								handleBroadcastAction(action.message)
+							}
+							is LogAction.Clear -> {
+								handleClearAction()
+							}
+						}
+					}
+				}
+			}
 
 			// Bind to all interfaces so devices on the local network can connect.
 			server = embeddedServer(CIO, host = "0.0.0.0", port = port) {
@@ -146,6 +191,8 @@ object LogStreamServer {
 			isRunning = false
 			serverScope?.cancel()
 			serverScope = null
+			actionChannel?.close()
+			actionChannel = null
 		}
 	}
 
@@ -163,12 +210,16 @@ object LogStreamServer {
 		}
 
 		// Shutdown the Ktor server instance with a brief grace period.
-		server?.stop(1000, 2000)
+		server?.stop(500, 1000)
 		server = null
 
 		// Cancel the coroutine scope to clean up background tasks.
 		serverScope?.cancel()
 		serverScope = null
+
+		// Close the action channel.
+		actionChannel?.close()
+		actionChannel = null
 
 		// Clear the message buffer to free up memory.
 		clearBuffer()
@@ -192,6 +243,21 @@ object LogStreamServer {
 		// Only process events that are identified as MessageLog entries.
 		if (event.eventName == "MessageLog") {
 			broadcast(event.message)
+		}
+	}
+
+	/**
+	 * Subscriber for MediaProjectionService events via EventBus.
+	 *
+	 * Stops the log server if the projection service is stopped via notification or UI.
+	 *
+	 * @param event The JSEvent object containing the event details.
+	 */
+	@Subscribe(threadMode = ThreadMode.BACKGROUND)
+	fun onMediaProjectionEvent(event: JSEvent) {
+		if (event.eventName == "MediaProjectionService" && event.message == "Not Running") {
+			Log.i(TAG, "MediaProjectionService stopped. Initiating LogStreamServer shutdown.")
+			stop()
 		}
 	}
 
@@ -285,37 +351,51 @@ object LogStreamServer {
 	/**
 	 * Handles an individual WebSocket session lifecycle.
 	 *
-	 * Sends buffered history on connect and keeps the session alive until the client disconnects.
+	 * Enqueues a NewClient action to ensure sequential history delivery relative to live broadcasts.
 	 *
 	 * @param session The active WebSocket server session.
 	 */
 	private suspend fun handleWebSocketSession(session: DefaultWebSocketServerSession) {
-		Log.d(TAG, "WebSocket client connected. Total clients: ${clients.size + 1}")
-		clients.add(session)
+		Log.d(TAG, "WebSocket client connection initiated.")
+
+		// Enqueue the registration action to the background worker.
+		actionChannel?.send(LogAction.NewClient(session))
 
 		try {
-			// Create a snapshot of the current history buffer and reverse it to send newest first.
+			// Keep the session alive until the client disconnects.
+			for (frame in session.incoming) {
+				// The server does not handle incoming messages from clients.
+			}
+		} catch (e: Exception) {
+			Log.w(TAG, "WebSocket session exception: ${e.message}")
+		} finally {
+			clients.remove(session)
+			Log.d(TAG, "WebSocket client disconnected.")
+		}
+	}
+
+	/**
+	 * Performs history synchronization for a new client session.
+	 * Called by the background worker to ensure no live logs are sent before history is done.
+	 */
+	private suspend fun handleNewClientAction(session: DefaultWebSocketServerSession) {
+		try {
 			val historyToSync = synchronized(bufferLock) {
-				messageBuffer.toList().asReversed()
+				messageBuffer.toList() // Send chronological (oldest to newest)
 			}
 
-			// Send historical logs in batches to optimize network throughput.
-			val batched = historyToSync.chunked(100)
+			val batched = historyToSync.chunked(200)
 			for (batch in batched) {
 				val combined = "HISTORY_BATCH:" + batch.joinToString("---LOG_SEPARATOR---")
 				session.send(Frame.Text(combined))
 			}
 			session.send(Frame.Text("HISTORY_DONE"))
 
-			// Keep the session alive by consuming incoming frames until the client disconnects.
-			for (frame in session.incoming) {
-				// The server does not expect or handle incoming messages from clients.
-			}
+			// Now that history is synced, add to clients for real-time broadcasts.
+			clients.add(session)
+			Log.d(TAG, "WebSocket client history sync complete and added to active set.")
 		} catch (e: Exception) {
-			Log.w(TAG, "WebSocket exception: ${e.message}")
-		} finally {
-			clients.remove(session)
-			Log.d(TAG, "WebSocket client disconnected. Remaining clients: ${clients.size}")
+			Log.e(TAG, "Failed to sync history for new client: ${e.message}")
 		}
 	}
 
@@ -325,6 +405,25 @@ object LogStreamServer {
 	private fun clearBuffer() {
 		synchronized(bufferLock) {
 			messageBuffer.clear()
+		}
+	}
+
+	/**
+	 * Handles a clear action by clearing the history buffer and notifying all clients.
+	 * Called by the background worker.
+	 */
+	private suspend fun handleClearAction() {
+		Log.i(TAG, "Executing log clear action.")
+		clearBuffer()
+		isMuted = false // Ensure we are unmuted for the new run.
+		
+		// Signal all connected clients to clear their displays.
+		for (client in clients) {
+			try {
+				client.send(Frame.Text("CMD:CLEAR"))
+			} catch (e: Exception) {
+				clients.remove(client)
+			}
 		}
 	}
 
@@ -346,35 +445,47 @@ object LogStreamServer {
 	}
 
 	/**
-	 * Broadcasts a log message to all connected clients and adds it to the history buffer.
-	 *
-	 * @param message The log message string to be sent to clients.
+	 * Enqueues a log message for sequential processing.
 	 */
 	private fun broadcast(message: String) {
-		// Persist the message in the history buffer for late joiners.
+		if (!isRunning) return
+
+		// Enqueue the broadcast action to ensure it is processed chronologically relative to new sessions.
+		serverScope?.launch {
+			actionChannel?.send(LogAction.Broadcast(message))
+		}
+	}
+
+	/**
+	 * Processes a broadcast action by updating the buffer and sending to all active clients.
+	 * Called by the background worker.
+	 */
+	private suspend fun handleBroadcastAction(message: String) {
+		if (isMuted) return
+
+		// Update history buffer.
 		synchronized(bufferLock) {
 			messageBuffer.add(message)
-			// Maintain the buffer size within the specified limit.
 			if (messageBuffer.size > maxBufferSize) {
 				messageBuffer.removeAt(0)
 			}
 		}
 
-		// If no clients are connected, there is no need to proceed with broadcasting.
-		if (clients.isEmpty()) {
-			return
+		// Detect end-of-run markers to mute subsequent logs after this one is buffered/sent.
+		if (message.contains("Campaign main loop exiting") || message.contains("Total runtime of")) {
+			Log.i(TAG, "End of run detected in logs. Muting subsequent broadcasts.")
+			isMuted = true
 		}
 
-		// Launch a coroutine to send to all active clients without blocking the EventBus thread.
-		serverScope?.launch {
-			for (client in clients) {
-				try {
-					client.send(Frame.Text(message))
-				} catch (e: Exception) {
-					// Remove the client if delivery fails (likely disconnected).
-					Log.w(TAG, "Failed to send message to client: ${e.message}")
-					clients.remove(client)
-				}
+		// Skip transmission if no clients.
+		if (clients.isEmpty()) return
+
+		// Broadcast to all active clients.
+		for (client in clients) {
+			try {
+				client.send(Frame.Text(message))
+			} catch (e: Exception) {
+				clients.remove(client)
 			}
 		}
 	}

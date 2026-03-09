@@ -149,7 +149,10 @@ open class DialogHandler(val game: Game) {
 						dialog.ok(imageUtils = game.imageUtils)
                         // Confirming this dialog triggers connection to server.
                         game.waitForLoading()
-						game.trainee.bHasSetRunningStyle = true
+						// If date is unknown we want to set style next time we're at
+						// race prep screen. See note at bottom of this handler.
+						game.trainee.bHasSetRunningStyle = game.currentDate.day != 1
+						game.racing.bHasSetTemporaryRunningStyle = true
 						return Pair(true, dialog)
 					}
 					// Auto-select the optimal running style based on trainee aptitudes.
@@ -185,6 +188,7 @@ open class DialogHandler(val game: Game) {
 				if (game.currentDate.day != 1) {
 					game.trainee.bHasSetRunningStyle = true
 				}
+				game.racing.bHasSetTemporaryRunningStyle = true
 				dialog.ok(imageUtils = game.imageUtils)
 			}
 			"trophy_won" -> dialog.close(imageUtils = game.imageUtils)

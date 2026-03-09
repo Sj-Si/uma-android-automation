@@ -4,7 +4,6 @@ import android.util.Log
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
 import com.steve1316.automation_library.utils.SettingsHelper
-import com.steve1316.automation_library.utils.SQLiteSettingsManager
 import com.steve1316.automation_library.utils.MessageLog
 import net.ricecode.similarity.JaroWinklerStrategy
 import net.ricecode.similarity.StringSimilarityServiceImpl
@@ -35,11 +34,7 @@ class TrainingEventRecognizer(private val game: Game, private val imageUtils: Cu
 	
 	// The full character event data should be stored in SQLite and will be loaded here.
 	private val characterEventData: JSONObject? = try {
-		val settingsManager = SQLiteSettingsManager(game.myContext)
-		if (!settingsManager.isAvailable()) {
-			settingsManager.initialize()
-		}
-		val characterDataString = settingsManager.loadSetting("trainingEvent", "characterEventData")
+		val characterDataString = SettingsHelper.getStringSetting("trainingEvent", "characterEventData")
 		if (characterDataString != null && characterDataString.isNotEmpty()) {
 			val jsonObject = JSONObject(characterDataString)
 			if (game.debugMode) MessageLog.d(TAG, "Character event data length: ${jsonObject.length()}.")
@@ -54,11 +49,7 @@ class TrainingEventRecognizer(private val game: Game, private val imageUtils: Cu
 	
 	// The full support event data should be stored in SQLite and will be loaded here.
 	private val supportEventData: JSONObject? = try {
-		val settingsManager = SQLiteSettingsManager(game.myContext)
-		if (!settingsManager.isAvailable()) {
-			settingsManager.initialize()
-		}
-		val supportDataString = settingsManager.loadSetting("trainingEvent", "supportEventData")
+		val supportDataString = SettingsHelper.getStringSetting("trainingEvent", "supportEventData")
 		if (supportDataString != null && supportDataString.isNotEmpty()) {
 			val jsonObject = JSONObject(supportDataString)
 			if (game.debugMode) MessageLog.d(TAG, "Support event data length: ${jsonObject.length()}.")

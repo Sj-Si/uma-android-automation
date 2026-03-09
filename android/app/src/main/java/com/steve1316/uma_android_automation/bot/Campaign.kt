@@ -705,6 +705,10 @@ open class Campaign(game: Game) : DialogHandler(game) {
                 } else {
                     MessageLog.e(TAG, "Campaign main loop exiting: $stopReason")
                 }
+
+                if (DiscordUtils.enableDiscordNotifications) {
+                    game.wait(1.0, skipWaitingForLoading = true)
+                }
                 break
             }
 		}

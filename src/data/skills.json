@@ -142,7 +142,7 @@
         "condition": "is_finalcorner==1&corner==0&bashin_diff_behind<=1",
         "precondition": "",
         "inherited": true,
-        "community_tier": null,
+        "community_tier": 1,
         "versions": [],
         "upgrade": null,
         "downgrade": null
@@ -2446,7 +2446,7 @@
         "condition": "distance_type==3&straight_random==1",
         "precondition": "",
         "inherited": false,
-        "community_tier": null,
+        "community_tier": 1,
         "versions": [
             201101,
             201102
@@ -3262,7 +3262,7 @@
         "condition": "change_order_up_finalcorner_after>=3&is_finalcorner==1&corner==0",
         "precondition": "",
         "inherited": true,
-        "community_tier": null,
+        "community_tier": 1,
         "versions": [],
         "upgrade": null,
         "downgrade": null
@@ -3852,7 +3852,7 @@
         "condition": "distance_type==1&phase_laterhalf_random==1&order_rate<=50",
         "precondition": "",
         "inherited": false,
-        "community_tier": null,
+        "community_tier": 1,
         "versions": [
             202042
         ],
@@ -4720,7 +4720,7 @@
         "condition": "distance_type==1&phase_laterhalf_random==1&order_rate<=50",
         "precondition": "",
         "inherited": false,
-        "community_tier": null,
+        "community_tier": 1,
         "versions": [
             202041
         ],
@@ -5865,7 +5865,7 @@
         "condition": "order<=4&phase==1&corner!=0&bashin_diff_behind<=3",
         "precondition": "",
         "inherited": true,
-        "community_tier": null,
+        "community_tier": 1,
         "versions": [],
         "upgrade": null,
         "downgrade": null
@@ -7244,7 +7244,7 @@
         "condition": "running_style==4&blocked_front_continuetime>=1&accumulatetime>=10",
         "precondition": "",
         "inherited": false,
-        "community_tier": null,
+        "community_tier": 3,
         "versions": [
             201492
         ],
@@ -7375,10 +7375,10 @@
         "eval_pt": 180,
         "pt_ratio": 0.9,
         "rarity": 1,
-        "condition": "is_last_straight==1&distance_diff_top>=5&order_rate<80@is_last_straight==1&distance_diff_top>=5&order_rate>=80",
+        "condition": "is_finalcorner==1&corner==0&distance_diff_top>=5&order_rate<80@is_finalcorner==1&corner==0&distance_diff_top>=5&order_rate>=80",
         "precondition": "",
         "inherited": true,
-        "community_tier": null,
+        "community_tier": 2,
         "versions": [],
         "upgrade": null,
         "downgrade": null

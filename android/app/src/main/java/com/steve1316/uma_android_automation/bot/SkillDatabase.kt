@@ -72,13 +72,14 @@ class SkillDatabase (private val game: Game) {
      */
     private fun loadSkillData(): Map<String, SkillData> {
         val settingsManager = SQLiteSettingsManager(game.myContext)
-        if (!settingsManager.initialize()) {
+        if (!settingsManager.isAvailable()) {
             MessageLog.e(TAG, "[ERROR] Database not available.")
+            settingsManager.close()
             return emptyMap()
         }
-        val database = settingsManager.getDatabase() ?: return emptyMap()
 
         try {
+            val database = settingsManager.readableDatabase
             val result: MutableMap<String, SkillData> = mutableMapOf()
 
             val query = "SELECT * FROM ${TABLE_SKILLS}"
