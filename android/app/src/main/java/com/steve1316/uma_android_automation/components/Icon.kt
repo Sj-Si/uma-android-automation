@@ -177,14 +177,14 @@ object IconTaskClearToast : ComponentInterface {
     override val template = Template("components/icon/task_clear_toast", region = Region.topHalf)
 }
 
-object IconEventExclusiveMissionsListTopLeft : ComponentInterface {
-    override val TAG: String = "IconEventExclusiveMissionsListTopLeft"
-    override val template = Template("components/icon/event_exclusive_missions_list_top_left", region = Region.leftHalf)
+object IconDialogScrollListTopLeft : ComponentInterface {
+    override val TAG: String = "IconDialogScrollListTopLeft"
+    override val template = Template("components/icon/dialog_scroll_list_top_left", region = Region.leftHalf)
 }
 
-object IconEventExclusiveMissionsListBottomRight : ComponentInterface {
-    override val TAG: String = "IconEventExclusiveMissionsListBottomRight"
-    override val template = Template("components/icon/event_exclusive_missions_list_bottom_right", region = Region.rightHalf)
+object IconDialogScrollListBottomRight : ComponentInterface {
+    override val TAG: String = "IconDialogScrollListBottomRight"
+    override val template = Template("components/icon/dialog_scroll_list_bottom_right", region = Region.rightHalf)
 }
 
 object IconNotificationExclamationHalfHeight : ComponentInterface {
@@ -200,4 +200,24 @@ object IconScenarioSelectUraFinale : ComponentInterface {
 object IconScenarioSelectUnityCup : ComponentInterface {
     override val TAG: String = "IconScenarioSelectUnityCup"
     override val template = Template("components/icon/scenario_select_unity_cup", region = Region.middle)
+}
+
+object IconFollowingPill : ComponentInterface {
+    override val TAG: String = "IconFollowingPill"
+    override val template = Template("components/icon/following_pill")
+}
+
+object IconTraineePill : ComponentInterface {
+    override val TAG: String = "IconTraineePill"
+    override val template = Template("components/icon/trainee_pill")
+}
+
+object IconDuplicateSupportPill : ComponentInterface {
+    override val TAG: String = "IconDuplicateSupportPill"
+    override val template = Template("components/icon/duplicate_support_pill")
+}
+
+object IconSelectedPill : ComponentInterface {
+    override val TAG: String = "IconSelectedPill"
+    override val template = Template("components/icon/selected_pill")
 }

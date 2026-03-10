@@ -169,3 +169,8 @@ object LabelChampionsMeetingRacesHeader : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]LabelChampionsMeetingRacesHeader"
     override val template = Template("components/label/champions_meeting_races_header", region = Region.topHalf)
 }
+
+object LabelRemove : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelRemove"
+    override val template = Template("components/label/remove")
+}

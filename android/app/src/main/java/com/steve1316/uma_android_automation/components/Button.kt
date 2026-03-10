@@ -26,6 +26,11 @@ object ButtonAgenda : ButtonInterface {
     override val template = Template("components/button/agenda")
 }
 
+object ButtonAutoFill : ButtonInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]ButtonAutoFill"
+    override val template = Template("components/button/auto_fill")
+}
+
 object ButtonAutoSelect : ButtonInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonAutoSelect"
     override val template = Template("components/button/auto_select")
@@ -852,6 +857,11 @@ object ButtonHomeCareer : ButtonInterface {
     override val template = Template("components/button/home_career", region = Region.bottomHalf)
 }
 
+object ButtonHomeCareerResume : ButtonInterface {
+    override val TAG: String = "ButtonHomeCareerResume"
+    override val template = Template("components/button/home_career_resume", region = Region.bottomHalf)
+}
+
 object ButtonCareerInfo : ButtonInterface {
     override val TAG: String = "ButtonCareerInfo"
     override val template = Template("components/button/career_info", region = Region.topHalf)
@@ -860,4 +870,29 @@ object ButtonCareerInfo : ButtonInterface {
 object ButtonDetails : ButtonInterface {
     override val TAG: String = "ButtonDetails"
     override val template = Template("components/button/details", region = Region.topHalf)
+}
+
+object ButtonLegacySelectRemove : ButtonInterface {
+    override val TAG: String = "ButtonLegacySelectRemove"
+    override val template = Template("components/button/legacy_select_remove", region = Region.bottomHalf)
+}
+
+object ButtonSupportFormationGreenPlus : ButtonInterface {
+    override val TAG: String = "ButtonSupportFormationGreenPlus"
+    override val template = Template("components/button/support_formation_green_plus")
+}
+
+object ButtonSkip0 : ButtonInterface {
+    override val TAG: String = "ButtonSkip0"
+    override val template = Template("components/button/skip_0", region = Region.bottomHalf)
+}
+
+object ButtonSkip1 : ButtonInterface {
+    override val TAG: String = "ButtonSkip1"
+    override val template = Template("components/button/skip_1", region = Region.bottomHalf)
+}
+
+object ButtonSkip2 : ButtonInterface {
+    override val TAG: String = "ButtonSkip2"
+    override val template = Template("components/button/skip_2", region = Region.bottomHalf)
 }

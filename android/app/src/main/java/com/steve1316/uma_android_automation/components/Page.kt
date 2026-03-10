@@ -192,20 +192,6 @@ object PageDailyRacesDifficultySelection : PageInterface {
     override val nextButton: ComponentInterface? = null
 }
 
-object PageCampaignRunnerSelection : PageInterface {
-    override val TAG: String = "[${MainActivity.loggerTag}]PageCampaignRunnerSelection"
-    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
-    override val identifyingComponents: List<ComponentInterface> = listOf(
-        ButtonBack,
-        ButtonNext,
-        ButtonCareerInfo,
-        ButtonDetails,
-    )
-
-    override val prevButton: ComponentInterface? = ButtonBack
-    override val nextButton: ComponentInterface? = ButtonNext
-}
-
 object PageExtraRacesRunnerSelection : PageInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]PageExtraRacesRunnerSelection"
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
@@ -426,10 +412,42 @@ object PageScenarioSelect : PageInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]PageScenarioSelect"
     override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
     override val identifyingComponents: List<ComponentInterface> = listOf(
-        ButtonScenarioDetails,
-        ButtonNext,
+        BannerScenarioSelect,
     )
 
     override val prevButton: ComponentInterface? = ButtonBack
     override val nextButton: ComponentInterface? = ButtonNext
+}
+
+object PageTraineeSelect : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageTraineeSelect"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        BannerTraineeSelect,
+    )
+
+    override val prevButton: ComponentInterface? = ButtonBack
+    override val nextButton: ComponentInterface? = ButtonNext
+}
+
+object PageLegacySelect : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageLegacySelect"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        BannerLegacySelect,
+    )
+
+    override val prevButton: ComponentInterface? = ButtonBack
+    override val nextButton: ComponentInterface? = ButtonNext
+}
+
+object PageSupportFormation : PageInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]PageSupportFormation"
+    override val comparisonMode: ComponentComparisonMode = ComponentComparisonMode.AND
+    override val identifyingComponents: List<ComponentInterface> = listOf(
+        BannerSupportFormation,
+    )
+
+    override val prevButton: ComponentInterface? = ButtonBack
+    override val nextButton: ComponentInterface? = ButtonStartCareerOffset
 }

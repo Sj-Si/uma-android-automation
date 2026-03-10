@@ -371,6 +371,7 @@ object DialogObjects {
         DialogPurchaseAlarmClock,           // Career
         DialogPurchaseCarats,               // Anywhere (ALWAYS THROW ERROR)
         DialogPurchaseDailyRaceTicket,      // Daily Races
+        DialogQuickModeSettings,            // Campaign
         DialogRaceDetails,                  // Daily Races, Special Events, and Career
         DialogRacePlayback,                 // Career
         DialogRaceRecommendations,          // Career

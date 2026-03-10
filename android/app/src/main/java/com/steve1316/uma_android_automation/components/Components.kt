@@ -29,6 +29,7 @@ object Region {
     val leftHalf: IntArray = intArrayOf(0, 0, SharedData.displayWidth / 2, SharedData.displayHeight)
     val rightHalf: IntArray = intArrayOf(SharedData.displayWidth / 2, 0, SharedData.displayWidth / 2, SharedData.displayHeight)
     val topRightThird: IntArray = intArrayOf(SharedData.displayWidth - (SharedData.displayWidth / 3), 0, SharedData.displayWidth / 3, SharedData.displayHeight - (SharedData.displayHeight / 3))
+    val topLeftQuarter: IntArray = intArrayOf(SharedData.displayWidth - (SharedData.displayWidth / 4), 0, SharedData.displayWidth / 4, SharedData.displayHeight - (SharedData.displayHeight / 4))
 }
 
 /** Defines a template image file and provides helpful functions.
