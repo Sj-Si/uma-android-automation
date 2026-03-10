@@ -26,6 +26,7 @@ import com.steve1316.uma_android_automation.components.MenuBar
 import com.steve1316.uma_android_automation.components.PageHome
 import com.steve1316.uma_android_automation.components.PageInterface
 
+import com.steve1316.uma_android_automation.bot.plugins.CampaignRunner
 import com.steve1316.uma_android_automation.bot.plugins.ChampionsMeeting
 import com.steve1316.uma_android_automation.bot.plugins.ClubActivity
 import com.steve1316.uma_android_automation.bot.plugins.DailyRaces
@@ -521,6 +522,7 @@ class PluginFactory {
             }
 
             return when (pluginName) {
+                "CampaignRunner" -> CampaignRunner(game, menuBar, commonDialogHandler = dialogHandler)
                 "ChampionsMeeting" -> ChampionsMeeting(game, menuBar, commonDialogHandler = dialogHandler)
                 "ClubActivity" -> ClubActivity(game, menuBar, commonDialogHandler = dialogHandler)
                 "DailyRaces" -> DailyRaces(game, menuBar, commonDialogHandler = dialogHandler)

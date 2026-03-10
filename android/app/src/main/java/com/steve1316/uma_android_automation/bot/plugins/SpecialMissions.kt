@@ -24,8 +24,8 @@ import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabS
 import com.steve1316.uma_android_automation.components.ButtonSpecialMissionsTabTitles
 import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.DialogInterface
-import com.steve1316.uma_android_automation.components.IconEventExclusiveMissionsListBottomRight
-import com.steve1316.uma_android_automation.components.IconEventExclusiveMissionsListTopLeft
+import com.steve1316.uma_android_automation.components.IconDialogScrollListBottomRight
+import com.steve1316.uma_android_automation.components.IconDialogScrollListTopLeft
 import com.steve1316.uma_android_automation.components.IconNotificationExclamationHalfHeight
 import com.steve1316.uma_android_automation.components.MenuBar
 import com.steve1316.uma_android_automation.components.PageInterface
@@ -153,8 +153,8 @@ class SpecialMissions(
     private fun handleEventExclusiveMisisons() {
         val scrollList: ScrollList? = ScrollList.create(
             game,
-            listTopLeftComponent = IconEventExclusiveMissionsListTopLeft,
-            listBottomRightComponent = IconEventExclusiveMissionsListBottomRight,
+            listTopLeftComponent = IconDialogScrollListTopLeft,
+            listBottomRightComponent = IconDialogScrollListBottomRight,
         )
         if (scrollList == null) {
             MessageLog.e(TAG, "[$name] Failed to detect EventExclusiveMissions list.")

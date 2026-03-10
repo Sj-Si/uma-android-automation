@@ -11,6 +11,7 @@ import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.Campaign
+import com.steve1316.uma_android_automation.bot.CampaignResult
 
 import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.PluginFactory
@@ -93,7 +94,7 @@ class Plugins(game: Game) : Campaign(game) {
         return false
     }
 
-	override fun start() {
+	override fun start(maxRuntimeMinutes: Int, bShouldStopAtMainScreen: Boolean): CampaignResult {
 		MessageLog.i(TAG, "[PLUGINS] Starting process for handling plugins.")
 
         for (pluginName in pluginsSetting) {
@@ -109,5 +110,7 @@ class Plugins(game: Game) : Campaign(game) {
                 MessageLog.w(TAG, "[PLUGINS] [${plugin.name}] Failed.")
             }
         }
+
+        return CampaignResult.CareerComplete
 	}
 }
