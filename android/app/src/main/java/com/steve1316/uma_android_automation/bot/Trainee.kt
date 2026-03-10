@@ -31,6 +31,14 @@ import com.steve1316.uma_android_automation.components.IconMoodAwful
 import com.steve1316.uma_android_automation.components.LabelStatDistance
 import com.steve1316.uma_android_automation.components.LabelStatTrackSurface
 import com.steve1316.uma_android_automation.components.LabelStatStyle
+import com.steve1316.uma_android_automation.components.LabelStatAptitudeA
+import com.steve1316.uma_android_automation.components.LabelStatAptitudeB
+import com.steve1316.uma_android_automation.components.LabelStatAptitudeC
+import com.steve1316.uma_android_automation.components.LabelStatAptitudeD
+import com.steve1316.uma_android_automation.components.LabelStatAptitudeE
+import com.steve1316.uma_android_automation.components.LabelStatAptitudeF
+import com.steve1316.uma_android_automation.components.LabelStatAptitudeG
+import com.steve1316.uma_android_automation.components.LabelStatAptitudeS
 
 /** Defines a trainee (uma).
  *
@@ -61,6 +69,17 @@ import com.steve1316.uma_android_automation.components.LabelStatStyle
 class Trainee {
     companion object {
         const val TAG: String = "[${MainActivity.loggerTag}]Trainee"
+
+        val aptitudeComponentMap: Map<Aptitude, ComponentInterface> = mapOf(
+            Aptitude.A to LabelStatAptitudeA,
+            Aptitude.B to LabelStatAptitudeB,
+            Aptitude.C to LabelStatAptitudeC,
+            Aptitude.D to LabelStatAptitudeD,
+            Aptitude.E to LabelStatAptitudeE,
+            Aptitude.F to LabelStatAptitudeF,
+            Aptitude.G to LabelStatAptitudeG,
+            Aptitude.S to LabelStatAptitudeS,
+        )
 
         /** Stores the trainee's current stat values. */
         data class Stats(
@@ -357,8 +376,8 @@ class Trainee {
                 MessageLog.e(TAG, "findAptitudesInBitmap<${T::class.simpleName}>:: Failed to create cropped bitmap: ${option}.")
                 return@forEachIndexed
             }
-            for (aptitude in Aptitude.entries) {
-                if (imageUtils.findImageWithBitmap("stat_aptitude_${aptitude.name}", croppedBitmap, suppressError = true) != null) {
+            for ((aptitude, component) in aptitudeComponentMap.entries) {
+                if (component.check(imageUtils, sourceBitmap = croppedBitmap)) {
                     result[option] = aptitude
                     break
                 }

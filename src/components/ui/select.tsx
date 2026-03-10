@@ -6,7 +6,7 @@ import { cn } from "@/src/lib/utils"
 import * as SelectPrimitive from "@rn-primitives/select"
 import { Check, ChevronDown, ChevronDownIcon, ChevronUpIcon } from "lucide-react-native"
 import * as React from "react"
-import { Platform, ScrollView, StyleSheet, View } from "react-native"
+import { Platform, ScrollView, StyleSheet, View, StyleProp, TextStyle } from "react-native"
 import { FullWindowOverlay as RNFullWindowOverlay } from "react-native-screens"
 
 type Option = SelectPrimitive.Option
@@ -120,11 +120,11 @@ function SelectContent({
     )
 }
 
-function SelectLabel({ className, ...props }: SelectPrimitive.LabelProps & React.RefAttributes<SelectPrimitive.LabelRef>) {
-    return <SelectPrimitive.Label className={cn("text-muted-foreground px-2 py-2 text-xs sm:py-1.5", className)} {...props} />
+function SelectLabel({ className, style, ...props }: SelectPrimitive.LabelProps & React.RefAttributes<SelectPrimitive.LabelRef>) {
+    return <SelectPrimitive.Label style={style} className={cn("text-muted-foreground px-2 py-2 text-xs sm:py-1.5", className)} {...props} />
 }
 
-function SelectItem({ className, children, ...props }: SelectPrimitive.ItemProps & React.RefAttributes<SelectPrimitive.ItemRef>) {
+function SelectItem({ className, children, textStyle, ...props }: SelectPrimitive.ItemProps & { textStyle?: StyleProp<TextStyle> } & React.RefAttributes<SelectPrimitive.ItemRef>) {
     return (
         <SelectPrimitive.Item
             className={cn(
@@ -142,7 +142,7 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.ItemProps
                     <Icon as={Check} className="text-muted-foreground size-4 shrink-0" />
                 </SelectPrimitive.ItemIndicator>
             </View>
-            <SelectPrimitive.ItemText className="text-foreground group-active:text-accent-foreground select-none text-sm" />
+            <SelectPrimitive.ItemText style={textStyle} className="text-foreground group-active:text-accent-foreground select-none text-sm" />
         </SelectPrimitive.Item>
     )
 }

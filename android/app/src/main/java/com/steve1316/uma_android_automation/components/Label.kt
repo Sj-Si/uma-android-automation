@@ -174,3 +174,113 @@ object LabelRemove : ComponentInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]LabelRemove"
     override val template = Template("components/label/remove")
 }
+
+object LabelConnecting : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelConnecting"
+    override val template = Template("components/label/connecting", region = Region.topHalf)
+}
+
+object LabelNowLoading : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelNowLoading"
+    override val template = Template("components/label/now_loading", region = Region.bottomHalf)
+}
+
+object LabelOrdinaryCuties : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelOrdinaryCuties"
+    override val template = Template("components/label/ordinary_cuties", region = Region.middle)
+}
+
+object LabelStatMaxed : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelStatMaxed"
+    override val template = Template("components/label/stat_maxed")
+}
+
+object LabelStatAptitudeA : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelStatAptitudeA"
+    override val template = Template("components/label/stat_aptitude_A")
+}
+
+object LabelStatAptitudeB : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelStatAptitudeB"
+    override val template = Template("components/label/stat_aptitude_B")
+}
+
+object LabelStatAptitudeC : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelStatAptitudeC"
+    override val template = Template("components/label/stat_aptitude_C")
+}
+
+object LabelStatAptitudeD : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelStatAptitudeD"
+    override val template = Template("components/label/stat_aptitude_D")
+}
+
+object LabelStatAptitudeE : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelStatAptitudeE"
+    override val template = Template("components/label/stat_aptitude_E")
+}
+
+object LabelStatAptitudeF : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelStatAptitudeF"
+    override val template = Template("components/label/stat_aptitude_F")
+}
+
+object LabelStatAptitudeG : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelStatAptitudeG"
+    override val template = Template("components/label/stat_aptitude_G")
+}
+
+object LabelStatAptitudeS : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelStatAptitudeS"
+    override val template = Template("components/label/stat_aptitude_S")
+}
+
+object LabelRecreationDateComplete : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelRecreationDateComplete"
+    override val template = Template("components/label/recreation_date_complete", region = Region.middle)
+}
+
+object LabelRaceSelectionFans : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelRaceSelectionFans"
+    override val template = Template("components/label/race_selection_fans", region = Region.bottomHalf)
+}
+
+object LabelRaceCriteriaFans : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelRaceCriteriaFans"
+    override val template = Template("components/label/race_criteria_fans", region = Region.topHalf)
+}
+
+object LabelRaceCriteriaG3OrAbove : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelRaceCriteriaG3OrAbove"
+    override val template = Template("components/label/race_criteria_g3_or_above", region = Region.topHalf)
+}
+
+object LabelRaceCriteriaMaiden : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelRaceCriteriaMaiden"
+    override val template = Template("components/label/race_criteria_maiden", region = Region.topHalf)
+}
+
+object LabelRaceCriteriaPreOpOrAbove : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelRaceCriteriaPreOpOrAbove"
+    override val template = Template("components/label/race_criteria_pre_op_or_above", region = Region.topHalf)
+}
+
+object LabelRaceCriteriaTrophies : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelRaceCriteriaTrophies"
+    override val template = Template("components/label/race_criteria_trophies", region = Region.topHalf)
+}
+
+object LabelThereAreNoRacesToCompeteIn : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelThereAreNoRacesToCompeteIn"
+    override val template = Template("components/label/there_are_no_races_to_compete_in", region = Region.middle)
+}
+
+object LabelEventProgress : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelEventProgress"
+    override val template = Template("components/label/event_progress", region = Region.middle)
+}
+
+object LabelRecreationUmamusume : ComponentInterface {
+    override val TAG: String = "[${MainActivity.loggerTag}]LabelRecreationUmamusume"
+    override val template = Template("components/label/recreation_umamusume", region = Region.middle)
+}

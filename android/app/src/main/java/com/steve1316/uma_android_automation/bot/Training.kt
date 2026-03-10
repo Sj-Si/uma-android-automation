@@ -15,22 +15,26 @@ import com.steve1316.uma_android_automation.utils.GameDate
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.utils.BotService
 import com.steve1316.automation_library.utils.MessageLog
-import com.steve1316.uma_android_automation.components.ComponentInterface
+
+import com.steve1316.uma_android_automation.components.ButtonBack
+import com.steve1316.uma_android_automation.components.ButtonOk
+import com.steve1316.uma_android_automation.components.ButtonTraining
+import com.steve1316.uma_android_automation.components.ButtonTrainingGuts
+import com.steve1316.uma_android_automation.components.ButtonTrainingPower
 import com.steve1316.uma_android_automation.components.ButtonTrainingSpeed
 import com.steve1316.uma_android_automation.components.ButtonTrainingStamina
-import com.steve1316.uma_android_automation.components.ButtonTrainingPower
-import com.steve1316.uma_android_automation.components.ButtonTrainingGuts
 import com.steve1316.uma_android_automation.components.ButtonTrainingWit
-import com.steve1316.uma_android_automation.components.ButtonTraining
-import com.steve1316.uma_android_automation.components.ButtonBack
+import com.steve1316.uma_android_automation.components.ComponentInterface
+import com.steve1316.uma_android_automation.components.IconStatSkillHint
+import com.steve1316.uma_android_automation.components.IconTrainingHeaderGuts
+import com.steve1316.uma_android_automation.components.IconTrainingHeaderPower
 import com.steve1316.uma_android_automation.components.IconTrainingHeaderSpeed
 import com.steve1316.uma_android_automation.components.IconTrainingHeaderStamina
-import com.steve1316.uma_android_automation.components.IconTrainingHeaderPower
-import com.steve1316.uma_android_automation.components.IconTrainingHeaderGuts
 import com.steve1316.uma_android_automation.components.IconTrainingHeaderWit
-import com.steve1316.uma_android_automation.components.LabelTrainingFailureChance
-import com.steve1316.uma_android_automation.components.LabelTrainingCannotPerform
 import com.steve1316.uma_android_automation.components.LabelStatTableHeaderSkillPoints
+import com.steve1316.uma_android_automation.components.LabelTrainingCannotPerform
+import com.steve1316.uma_android_automation.components.LabelTrainingFailureChance
+
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.ConcurrentHashMap
@@ -773,11 +777,11 @@ class Training(private val game: Game) {
             // This ensures skill hints are detected even if some trainings are blacklisted.
             if (enablePrioritizeSkillHints) {
                 MessageLog.i(TAG, "[TRAINING] Skill hint prioritization is enabled. Scanning for skill hints before training analysis...")
-                val skillHintLocations = game.imageUtils.findAll("stat_skill_hint", region = game.imageUtils.regionBottomHalf)
+                val skillHintLocations: ArrayList<Point> = IconStatSkillHint.findAll(game.imageUtils, region = game.imageUtils.regionBottomHalf)
                 if (skillHintLocations.isNotEmpty()) {
                     MessageLog.i(TAG, "[TRAINING] Found ${skillHintLocations.size} skill hint(s) on the training screen. Tapping on the first skill hint location and skipping training analysis.")
                     val firstHint = skillHintLocations.first()
-                    game.tap(firstHint.x, firstHint.y, "stat_skill_hint", taps = 3)
+                    game.tap(firstHint.x, firstHint.y, IconStatSkillHint.template.path, taps = 3)
                     game.wait(1.0)
                     MessageLog.i(TAG, "[TRAINING] Process to execute skill hint training completed.")
                     return
@@ -922,7 +926,11 @@ class Training(private val game: Game) {
                 Thread {
                     val startTimeSkillHints = System.currentTimeMillis()
                     try {
-                        val skillHintLocations = game.imageUtils.findAllWithBitmap("stat_skill_hint", sourceBitmap, region = game.imageUtils.regionTopHalf)
+                        val skillHintLocations: ArrayList<Point> = IconStatSkillHint.findAll(
+                            game.imageUtils,
+                            sourceBitmap = sourceBitmap,
+                            region = game.imageUtils.regionTopHalf,
+                        )
                         result.numSkillHints = skillHintLocations.size
                     } catch (e: Exception) {
                         Log.e(TAG, "[ERROR] Error in skill hint detection: ${e.stackTraceToString()}")
@@ -1211,11 +1219,21 @@ class Training(private val game: Game) {
 				}
 			}
 
-			game.findAndTapImage("training_${trainingSelected.name.lowercase()}", region = game.imageUtils.regionBottomHalf, taps = 3)
+            val trainingButtons: Map<StatName, ComponentInterface> = mapOf(
+                StatName.SPEED to ButtonTrainingSpeed,
+                StatName.STAMINA to ButtonTrainingStamina,
+                StatName.POWER to ButtonTrainingPower,
+                StatName.GUTS to ButtonTrainingGuts,
+                StatName.WIT to ButtonTrainingWit,
+            )
+
+            // These values are hardcoded and exhaustive. A KeyError would be a programmer error.
+            val trainingButton: ComponentInterface = trainingButtons[trainingSelected]!!
+            trainingButton.click(game.imageUtils, taps = 3)
             game.wait(game.dialogWaitDelay)
 
             // Dismiss any popup warning about a scheduled race.
-            game.findAndTapImage("ok", tries = 1, region = game.imageUtils.regionMiddle, suppressError = true)
+            ButtonOk.click(game.imageUtils, region = game.imageUtils.regionMiddle)
             game.waitForLoading()
 
 			MessageLog.i(TAG, "[TRAINING] Process to execute training completed.")

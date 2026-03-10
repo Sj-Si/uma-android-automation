@@ -23,7 +23,7 @@ import com.steve1316.uma_android_automation.utils.CustomImageUtils
 
 object ButtonAgenda : ButtonInterface {
     override val TAG: String = "[${MainActivity.loggerTag}]ButtonAgenda"
-    override val template = Template("components/button/agenda")
+    override val template = Template("components/button/agenda", region = Region.bottomHalf)
 }
 
 object ButtonAutoFill : ButtonInterface {
@@ -895,4 +895,14 @@ object ButtonSkip1 : ButtonInterface {
 object ButtonSkip2 : ButtonInterface {
     override val TAG: String = "ButtonSkip2"
     override val template = Template("components/button/skip_2", region = Region.bottomHalf)
+}
+
+object ButtonMyAgendas : ButtonInterface {
+    override val TAG: String = "ButtonMyAgendas"
+    override val template = Template("components/button/my_agendas", region = Region.bottomHalf)
+}
+
+object ButtonRaceAgendaLoadList : ButtonInterface {
+    override val TAG: String = "ButtonRaceAgendaLoadList"
+    override val template = Template("components/button/race_agenda_load_list", region = Region.rightHalf)
 }

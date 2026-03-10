@@ -131,7 +131,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
     }
 
     return (
-        <Button variant={variant} size={size} style={[getBackgroundColor(), getCustomStyle(), style]} disabled={disabled} {...props}>
+        <Button variant={variant as any} size={size} style={[getBackgroundColor(), getCustomStyle(), style]} disabled={disabled} {...props}>
             {isLoading && <ActivityIndicator size="small" color="#ffffff" />}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 {icon && iconPosition === "left" && icon}

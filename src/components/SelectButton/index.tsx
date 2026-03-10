@@ -1,47 +1,82 @@
-/** @format */
-
 import React, { useRef, useState, useMemo } from "react"
-import { View, LayoutChangeEvent, ViewStyle, PressableProps, StyleSheet } from "react-native"
+import { View, LayoutChangeEvent, StyleSheet, StyleProp, ViewStyle } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { Option, Select, SelectContent, SelectGroup, SelectItem, SelectLabel, NativeSelectScrollView } from "../ui/select"
+import { Separator } from "../ui/separator"
 import CustomButton from "../CustomButton"
 import { Ionicons } from "@expo/vector-icons"
 import * as SelectPrimitive from "@rn-primitives/select"
 
+/**
+ * Represents an option in the select dropdown.
+ */
 interface SelectOption {
+    /** The value of the option. */
     value: string
+    /** The display label of the option. */
     label: string
+    /** Whether the option is disabled. */
     disabled?: boolean
 }
 
-interface SelectButtonProps extends PressableProps {
+/**
+ * Props for the SelectButton component.
+ */
+interface SelectButtonProps {
+    /** The visual style variant of the button. */
     variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "success" | "info" | "warning" | "error"
+    /** The size preset for the button. */
     size?: "default" | "sm" | "lg" | "icon"
-    style?: ViewStyle
-    className?: string
-    isLoading?: boolean
-    fontSize?: number
+    /** Optional custom icon element. */
     icon?: React.ReactElement
-    iconName?: string
+    /** The name of the Ionicons icon to display. */
+    iconName?: React.ComponentProps<typeof Ionicons>["name"]
+    /** Whether the icon appears to the left or right of the text. */
     iconPosition?: "left" | "right"
+    /** The list of options for the select dropdown. */
     options?: SelectOption[]
+    /** The label for the option group. */
     groupLabel?: string
+    /** The portal host for the select dropdown. */
     portalHost?: string
+    /** The default selected value. */
     defaultValue?: string
+    /** The placeholder text when no option is selected. */
     placeholder?: string
+    /** The currently selected value. */
     value?: string
+    /** The function to set the selected value. */
     setValue?: React.Dispatch<React.SetStateAction<string>>
+    /** Callback fired when the value changes. */
     onValueChange?: (value: string | undefined) => void
+    /** Callback fired when the button is pressed. */
     onPress?: () => void
+    /** Optional custom style for the container. */
+    style?: StyleProp<ViewStyle>
 }
 
+/**
+ * A themed, configurable button component that opens a select dropdown.
+ * Automatically applies theme-aware colors based on the selected variant and dark/light mode.
+ * @param variant The visual style variant of the button.
+ * @param size The size preset for the button.
+ * @param icon Optional icon element.
+ * @param iconName The name of the Ionicons icon to display.
+ * @param iconPosition Whether the icon appears left or right.
+ * @param options The list of options.
+ * @param groupLabel The label for the option group.
+ * @param portalHost The portal host for the select dropdown.
+ * @param defaultValue The default selected value.
+ * @param placeholder The placeholder text.
+ * @param value The currently selected value.
+ * @param setValue The function to set the selected value.
+ * @param onValueChange Callback fired when the value changes.
+ * @param onPress Callback fired when the button is pressed.
+ * @param style Optional custom style for the container.
+ */
 const SelectButton: React.FC<SelectButtonProps> = ({
     variant = "default",
     size = "default",
-    style,
-    className = "",
-    isLoading = false,
-    fontSize,
     icon,
     iconName,
     iconPosition = "left",
@@ -54,13 +89,18 @@ const SelectButton: React.FC<SelectButtonProps> = ({
     setValue,
     onValueChange,
     onPress,
-    ...props
+    style,
 }) => {
+    // The current theme colors and dark mode status.
     const { colors, isDark } = useTheme()
 
+    // Reference to the trigger element to measure its width.
     const triggerRef = useRef<View>(null)
+
+    // The width of the trigger element to match the dropdown width.
     const [triggerWidth, setTriggerWidth] = useState<number>(0)
 
+    // The currently selected option's label.
     const currentLabel = options.find((item) => item.value === value || item.value === defaultValue)?.label
 
     /**
@@ -117,6 +157,10 @@ const SelectButton: React.FC<SelectButtonProps> = ({
         }
     }
 
+    /**
+     * Determine the background color for the select content based on variant and theme.
+     * @returns The background color for the select dropdown.
+     */
     const getSelectContentBackgroundColor = () => {
         if (variant === "default") {
             return isDark ? colors.primary : colors.secondary
@@ -130,7 +174,6 @@ const SelectButton: React.FC<SelectButtonProps> = ({
             StyleSheet.create({
                 container: {
                     flexDirection: "row",
-                    overflow: "hidden",
                     alignItems: "center",
                 },
                 button: {
@@ -141,16 +184,6 @@ const SelectButton: React.FC<SelectButtonProps> = ({
                 buttonDropdown: {
                     borderTopLeftRadius: 0,
                     borderBottomLeftRadius: 0,
-                },
-                verticalRuleContainer: {
-                    flex: 1,
-                    justifyContent: "center",
-                    alignItems: "center",
-                },
-                verticalRule: {
-                    width: 1,
-                    height: "70%",
-                    backgroundColor: colors.border,
                 },
             }),
         [colors]
@@ -166,12 +199,19 @@ const SelectButton: React.FC<SelectButtonProps> = ({
         setTriggerWidth(measuredWidth)
     }
 
+    /**
+     * Callback fired when the main button is pressed.
+     */
     const onPressButton = () => {
         if (onPress) {
             onPress()
         }
     }
 
+    /**
+     * Callback fired when an option is selected from the dropdown.
+     * @param option The selected option.
+     */
     const handleValueChange = (option: Option) => {
         if (onValueChange) {
             onValueChange(option?.value || "")
@@ -181,6 +221,10 @@ const SelectButton: React.FC<SelectButtonProps> = ({
         }
     }
 
+    /**
+     * Determine which icon to display based on props.
+     * @returns The icon element to render.
+     */
     const getIcon = (): React.ReactElement | undefined => {
         if (icon) {
             return icon
@@ -193,15 +237,13 @@ const SelectButton: React.FC<SelectButtonProps> = ({
 
     return (
         <Select onValueChange={handleValueChange} value={value as any} defaultValue={defaultValue as any}>
-            <View style={styles.container} ref={triggerRef} onLayout={onTriggerLayout}>
-                <CustomButton style={styles.button} variant={variant} icon={getIcon()} iconPosition={iconPosition} size={size} isLoading={false} onPress={onPressButton}>
+            <View style={[styles.container, style]} ref={triggerRef} onLayout={onTriggerLayout}>
+                <CustomButton style={styles.button} variant={variant as any} icon={getIcon()} iconPosition={iconPosition} size={size} isLoading={false} onPress={onPressButton}>
                     {currentLabel ?? placeholder}
                 </CustomButton>
-                <View style={styles.verticalRuleContainer}>
-                    <View style={styles.verticalRule} />
-                </View>
+                <Separator orientation="vertical" />
                 <SelectPrimitive.Trigger asChild>
-                    <CustomButton style={styles.buttonDropdown} variant={variant} size={size} isLoading={false}>
+                    <CustomButton style={styles.buttonDropdown} variant={variant as any} size={"icon"} isLoading={false}>
                         <Ionicons name="caret-down" size={20} color={getTextColor()} />
                     </CustomButton>
                 </SelectPrimitive.Trigger>
@@ -219,10 +261,10 @@ const SelectButton: React.FC<SelectButtonProps> = ({
             >
                 <NativeSelectScrollView>
                     <SelectGroup>
-                        {groupLabel && <SelectLabel>{groupLabel}</SelectLabel>}
+                        {groupLabel && <SelectLabel style={{ color: getTextColor() }}>{groupLabel}</SelectLabel>}
                         {options &&
                             options.map((option) => (
-                                <SelectItem key={option.value} label={option.label} value={option.value} disabled={option.disabled}>
+                                <SelectItem key={option.value} label={option.label} value={option.value} disabled={option.disabled} textStyle={{ color: getTextColor() }}>
                                     {option.label}
                                 </SelectItem>
                             ))}

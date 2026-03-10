@@ -235,7 +235,7 @@ class Racing (private val game: Game) {
      */
     fun startRaceListDetectionTest() {
         MessageLog.i(TAG, "\n[TEST] Now beginning detection test on the Race List screen for the currently displayed races.")
-        if (game.imageUtils.findImage("race_status").first == null) {
+        if (!ButtonRaceListFullStats.check(game.imageUtils)) {
             MessageLog.i(TAG, "[TEST] Bot is not on the Race List screen. Ending the test.")
             return
         }
@@ -244,7 +244,7 @@ class Racing (private val game: Game) {
         game.updateDate()
 
         // Check for all double star predictions.
-        val doublePredictionLocations = game.imageUtils.findAll("race_extra_double_prediction")
+        val doublePredictionLocations = IconRaceListPredictionDoubleStar.findAll(game.imageUtils)
         MessageLog.i(TAG, "[TEST] Found ${doublePredictionLocations.size} races with double predictions.")
         
         doublePredictionLocations.forEachIndexed { index, location ->
@@ -294,7 +294,7 @@ class Racing (private val game: Game) {
         }
 
         // If there are no races available, cancel the racing process.
-        if (game.imageUtils.findImage("race_none_available", tries = 1, region = game.imageUtils.regionMiddle, suppressError = true).first != null) {
+        if (LabelThereAreNoRacesToCompeteIn.check(game.imageUtils)) {
             MessageLog.i(TAG, "[RACE] There are no races to compete in. Canceling the racing process and doing something else.")
             MessageLog.i(TAG, "********************")
             // Clear requirement flags since we cannot proceed with racing.
@@ -332,7 +332,7 @@ class Racing (private val game: Game) {
                 return false
             }
             return handleExtraRace(isScheduledRace = isScheduledRace)
-        } else if (game.imageUtils.findImage("race_change_strategy", tries = 1, region = game.imageUtils.regionMiddle).first != null) {
+        } else if (ButtonChangeRunningStyle.check(game.imageUtils)) {
             MessageLog.i(TAG, "[RACE] The bot is currently sitting on the race screen. Most likely here for a scheduled race.")
             handleStandaloneRace()
         }
@@ -379,16 +379,15 @@ class Racing (private val game: Game) {
         }
 
         // If there is a popup warning about racing too many times, confirm the popup to continue as this is a mandatory race.
-        if (game.imageUtils.findImage("ok", tries = 1, region = game.imageUtils.regionMiddle).first != null) {
-            game.findAndTapImage("ok", tries = 1, region = game.imageUtils.regionMiddle, suppressError = true)
+        if (ButtonOk.click(game.imageUtils, region = game.imageUtils.regionMiddle)) {
             game.wait(2.0)
         }
 
         MessageLog.i(TAG, "[RACE] Confirming the mandatory race selection.")
-        game.findAndTapImage("race_confirm", tries = 3, region = game.imageUtils.regionBottomHalf)
+        ButtonRace.click(game.imageUtils, tries = 3)
         game.wait(1.0)
         MessageLog.i(TAG, "[RACE] Confirming any popup from the mandatory race selection.")
-        game.findAndTapImage("race_confirm", tries = 3, region = game.imageUtils.regionBottomHalf)
+        ButtonRace.click(game.imageUtils, tries = 3)
         game.wait(2.0)
 
         game.waitForLoading()
@@ -637,21 +636,12 @@ class Racing (private val game: Game) {
                 }
             }
 
-            // If there is a popup warning about repeating races 3+ times, stop the process and do something else other than racing.
-            // Note that if the Racing Plan is set to be mandatory, then this popup is dismissed.
-            if (game.imageUtils.findImage("race_repeat_warning").first != null) {
-                if (!enableForceRacing && !enableMandatoryRacingPlan) {
-                    raceRepeatWarningCheck = true
-                    MessageLog.i(TAG, "[RACE] Closing popup warning of doing more than 3+ races and setting flag to prevent racing for now. Canceling the racing process and doing something else.")
-                    game.findAndTapImage("cancel", region = game.imageUtils.regionBottomHalf)
-                    // Clear requirement flags since we cannot proceed with racing.
-                    clearRacingRequirementFlags()
-                    MessageLog.i(TAG, "********************")
-                    return false
-                } else {
-                    game.findAndTapImage("ok", tries = 1, region = game.imageUtils.regionMiddle)
-                    game.wait(1.0)
-                }
+            // Check for the consecutive race dialog before proceeding.
+            val overrideIgnore: Boolean = enableForceRacing || enableMandatoryRacingPlan
+            val (bWasDialogHandled, dialog) = game.campaign.handleDialogs(args = mapOf("overrideIgnoreConsecutiveRaceWarning" to overrideIgnore))
+            if (dialog != null && dialog.name == "consecutive_race_warning" && !overrideIgnore) {
+                MessageLog.i(TAG, "[RACE] Consecutive race warning but conditions dictate to not race. Skipping...")
+                return false
             }
 
             // There is an extra race.
@@ -664,7 +654,7 @@ class Racing (private val game: Game) {
                 return false
             }
 
-            val maxCount = game.imageUtils.findAll("race_selection_fans", region = game.imageUtils.regionBottomHalf).size
+            val maxCount = LabelRaceSelectionFans.findAll(game.imageUtils).size
             if (maxCount == 0) {
                 // If there is a fan/trophy requirement but no races available, reset the flags and proceed with training to advance the day.
                 if (hasFanRequirement || hasTrophyRequirement) {
@@ -756,9 +746,9 @@ class Racing (private val game: Game) {
         }
 
         // Confirm the selection and the resultant popup and then wait for the game to load.
-        game.findAndTapImage("race_confirm", tries = 30, region = game.imageUtils.regionBottomHalf)
+        ButtonRace.click(game.imageUtils, tries = 30)
         game.wait(1.0)
-        game.findAndTapImage("race_confirm", tries = 10, region = game.imageUtils.regionBottomHalf)
+        ButtonRace.click(game.imageUtils, tries = 10)
         game.wait(2.0)
 
         // Skip the race if possible, otherwise run it manually.
@@ -789,7 +779,7 @@ class Racing (private val game: Game) {
         MessageLog.i(TAG, "[RACE] Loaded ${userPlannedRaces.size} user-selected races and ${raceData.size} race entries.")
 
         // Detects all double-star race predictions on screen.
-        val doublePredictionLocations = game.imageUtils.findAll("race_extra_double_prediction")
+        val doublePredictionLocations = IconRaceListPredictionDoubleStar.findAll(game.imageUtils)
         MessageLog.i(TAG, "[RACE] Found ${doublePredictionLocations.size} double-star prediction locations.")
         if (doublePredictionLocations.isEmpty()) {
             MessageLog.i(TAG, "[RACE] No double-star predictions found. Canceling racing process.")
@@ -845,7 +835,7 @@ class Racing (private val game: Game) {
 
                             if (higherFanLocation != null) {
                                 MessageLog.i(TAG, "[RACE] ✓ Found higher-fan variant after scrolling. Selecting it.")
-                                game.tap(higherFanLocation.x, higherFanLocation.y, "race_extra_double_prediction", ignoreWaiting = true)
+                                game.tap(higherFanLocation.x, higherFanLocation.y, IconRaceListPredictionDoubleStar.template.path, ignoreWaiting = true)
                                 return true
                             } else {
                                 // Not found after scroll, scroll back up and use the first found location.
@@ -856,11 +846,11 @@ class Racing (private val game: Game) {
                                     val relocatedLocation = findRaceLocationByName(currentDoublePredictions, mandatoryExtraRaceData.name)
                                     val finalLocation = relocatedLocation ?: firstFoundLocation
                                     MessageLog.i(TAG, "[RACE] Mandatory extra race \"${mandatoryExtraRaceData.name}\" found. Selecting it.")
-                                    game.tap(finalLocation.x, finalLocation.y, "race_extra_double_prediction", ignoreWaiting = true)
+                                    game.tap(finalLocation.x, finalLocation.y, IconRaceListPredictionDoubleStar.template.path, ignoreWaiting = true)
                                     return true
                                 } else {
                                     MessageLog.i(TAG, "[RACE] Could not scroll back. Using first found position.")
-                                    game.tap(firstFoundLocation.x, firstFoundLocation.y, "race_extra_double_prediction", ignoreWaiting = true)
+                                    game.tap(firstFoundLocation.x, firstFoundLocation.y, IconRaceListPredictionDoubleStar.template.path, ignoreWaiting = true)
                                     return true
                                 }
                             }
@@ -868,7 +858,7 @@ class Racing (private val game: Game) {
                     }
 
                     MessageLog.i(TAG, "[RACE] Mandatory extra race \"${mandatoryExtraRaceData.name}\" found on screen with double predictions${if (scrollAttempt > 0) " after $scrollAttempt scroll(s)" else ""}. Selecting it immediately (skipping opportunity cost analysis).")
-                    game.tap(mandatoryExtraRaceLocation.x, mandatoryExtraRaceLocation.y, "race_extra_double_prediction", ignoreWaiting = true)
+                    game.tap(mandatoryExtraRaceLocation.x, mandatoryExtraRaceLocation.y, IconRaceListPredictionDoubleStar.template.path, ignoreWaiting = true)
                     return true
                 }
 
@@ -1058,7 +1048,7 @@ class Racing (private val game: Game) {
         }
 
         MessageLog.i(TAG, "[RACE] Selecting smart racing choice: ${bestRace.raceData.name} (score: ${game.decimalFormat.format(bestRace.score)}).")
-        game.tap(targetRaceLocation.x, targetRaceLocation.y, "race_extra_double_prediction", ignoreWaiting = true)
+        game.tap(targetRaceLocation.x, targetRaceLocation.y, IconRaceListPredictionDoubleStar.template.path, ignoreWaiting = true)
 
         return true
     }
@@ -1072,7 +1062,7 @@ class Racing (private val game: Game) {
         MessageLog.i(TAG, "[RACE] Using traditional racing logic for extra races...")
 
         // Detects double-star races on screen.
-        var doublePredictionLocations = game.imageUtils.findAll("race_extra_double_prediction")
+        var doublePredictionLocations = IconRaceListPredictionDoubleStar.findAll(game.imageUtils)
 
         // If no double predictions found and fans/Pre-OP/G3 requirement is active and is after Junior Year, scroll to find them.
         if (doublePredictionLocations.isEmpty() && game.currentDate.year != DateYear.JUNIOR && (hasFanRequirement || hasPreOpOrAboveRequirement || hasG3OrAboveRequirement)) {
@@ -1112,7 +1102,7 @@ class Racing (private val game: Game) {
                 // Check if any matched race is G1.
                 if (raceDataList.any { it.grade == RaceGrade.G1 }) {
                     MessageLog.i(TAG, "[RACE] Only one race with double predictions and it's G1. Selecting it.")
-                    game.tap(doublePredictionLocations[0].x, doublePredictionLocations[0].y, "race_extra_double_prediction", ignoreWaiting = true)
+                    game.tap(doublePredictionLocations[0].x, doublePredictionLocations[0].y, IconRaceListPredictionDoubleStar.template.path, ignoreWaiting = true)
                     return true
                 } else {
                     // Not G1. Trophy requirement specifically needs G1 races, so cancel.
@@ -1125,23 +1115,23 @@ class Racing (private val game: Game) {
                 } else {
                     MessageLog.i(TAG, "[RACE] Only one race with double predictions and G3 or above criteria active. Selecting it.")
                 }
-                game.tap(doublePredictionLocations[0].x, doublePredictionLocations[0].y, "race_extra_double_prediction", ignoreWaiting = true)
+                game.tap(doublePredictionLocations[0].x, doublePredictionLocations[0].y, IconRaceListPredictionDoubleStar.template.path, ignoreWaiting = true)
                 return true
             } else {
                 MessageLog.i(TAG, "[RACE] Only one race with double predictions. Selecting it.")
-                game.tap(doublePredictionLocations[0].x, doublePredictionLocations[0].y, "race_extra_double_prediction", ignoreWaiting = true)
+                game.tap(doublePredictionLocations[0].x, doublePredictionLocations[0].y, IconRaceListPredictionDoubleStar.template.path, ignoreWaiting = true)
                 return true
             }
         }
 
         // Otherwise, iterates through each extra race to determine fan gain and double prediction status.
-        val (sourceBitmap, templateBitmap) = game.imageUtils.getBitmaps("race_extra_double_prediction")
+        val sourceBitmap: Bitmap = game.imageUtils.getSourceBitmap()
         val listOfRaces = ArrayList<RaceDetails>()
         val extraRaceLocations = ArrayList<Point>()
         val raceNamesList = ArrayList<String>()
 
         for (count in 0 until maxCount) {
-            val selectedExtraRace = game.imageUtils.findImage("race_extra_selection", region = game.imageUtils.regionBottomHalf).first ?: break
+            val selectedExtraRace = IconRaceListSelectionBracketBottomRight.find(game.imageUtils).first ?: break
             extraRaceLocations.add(selectedExtraRace)
 
             // Extract race name for G1 filtering if trophy requirement is active.
@@ -1150,13 +1140,13 @@ class Racing (private val game: Game) {
                 raceNamesList.add(raceName)
             }
 
-            val raceDetails = game.imageUtils.determineExtraRaceFans(selectedExtraRace, sourceBitmap, templateBitmap!!, forceRacing = enableForceRacing)
+            val raceDetails = game.imageUtils.determineExtraRaceFans(selectedExtraRace, sourceBitmap, forceRacing = enableForceRacing)
             listOfRaces.add(raceDetails)
 
             if (count + 1 < maxCount) {
                 val nextX = game.imageUtils.relX(selectedExtraRace.x, -100)
                 val nextY = game.imageUtils.relY(selectedExtraRace.y, 150)
-                game.tap(nextX.toDouble(), nextY.toDouble(), "race_extra_selection", ignoreWaiting = true)
+                game.tap(nextX.toDouble(), nextY.toDouble(), IconRaceListSelectionBracketBottomRight.template.path, ignoreWaiting = true)
             }
 
             game.wait(0.5)
@@ -1215,7 +1205,7 @@ class Racing (private val game: Game) {
         game.tap(
             target.x - game.imageUtils.relWidth((100 * 1.36).toInt()),
             target.y - game.imageUtils.relHeight(70),
-            "race_extra_selection",
+            IconRaceListSelectionBracketBottomRight.template.path,
             ignoreWaiting = true,
         )
 
@@ -1238,7 +1228,7 @@ class Racing (private val game: Game) {
         // Only load the agenda once per career.
         if (!enableUserInGameRaceAgenda || hasLoadedUserRaceAgenda || game.currentDate.bIsFinaleSeason) {
             return
-        } else if (game.imageUtils.findImage("race_maiden_criteria", tries = 1, region = game.imageUtils.regionTopHalf).first != null) {
+        } else if (LabelRaceCriteriaMaiden.check(game.imageUtils)) {
             MessageLog.i(TAG, "[RACE] A maiden race needs to be won first before applying the user's race agenda.")
             return
         }
@@ -1276,7 +1266,7 @@ class Racing (private val game: Game) {
         
         // It is assumed that the user is already at the screen with the list of selectable races.
         // Now tap on the Agenda button.
-        if (!game.findAndTapImage("race_agenda", tries = 1, region = game.imageUtils.regionBottomHalf)) {
+        if (!ButtonAgenda.click(game.imageUtils)) {
             MessageLog.w(TAG, "[RACE] Could not find the Agenda button. Backing out and skipping agenda loading.")
             ButtonBack.click(game.imageUtils)
             game.waitForLoading()
@@ -1285,7 +1275,7 @@ class Racing (private val game: Game) {
         game.wait(game.dialogWaitDelay)
 
         // Now tap on the My Agenda button.
-        if (!game.findAndTapImage("race_my_agenda", tries = 1, region = game.imageUtils.regionBottomHalf)) {
+        if (!ButtonMyAgendas.click(game.imageUtils)) {
             MessageLog.w(TAG, "[RACE] Could not find the My Agenda button. Closing and backing out.")
             ButtonClose.click(game.imageUtils)
             game.wait(0.5)
@@ -1296,7 +1286,7 @@ class Racing (private val game: Game) {
         game.wait(game.dialogWaitDelay)
         
         // Check if an agenda is already loaded. If so, then the user must have loaded this earlier in the career so no need to select it again.
-        if (game.imageUtils.findImage("race_agenda_empty", tries = 1, region = game.imageUtils.regionTopHalf).first == null) {
+        if (!IconRaceAgendaEmpty.check(game.imageUtils)) {
             MessageLog.i(TAG, "[RACE] A race agenda is already loaded. Skipping agenda selection.")
 
             // Mark as loaded so we don't try again this run and close the popup.
@@ -1320,8 +1310,7 @@ class Racing (private val game: Game) {
             val sourceBitmap = game.imageUtils.getSourceBitmap()
             
             // Find all the Load List buttons on the current screen.
-            val loadListButtonLocations = game.imageUtils.findAll("race_agenda_load_list")
-            
+            val loadListButtonLocations: ArrayList<Point> = ButtonRaceAgendaLoadList.findAll(game.imageUtils, sourceBitmap = sourceBitmap)
             if (loadListButtonLocations.isEmpty()) {
                 MessageLog.w(TAG, "[RACE] No Load List buttons found on screen.")
                 break
@@ -1345,7 +1334,7 @@ class Racing (private val game: Game) {
                     // 2)   The scheduled_race dialog appears.
                     // 3)   The my_agendas dialog closes automatically and
                     //      the scheduled_races dialog remains on screen.
-                    game.gestureUtils.tap(buttonLocation.x, buttonLocation.y, "race_agenda_load_list")
+                    game.gestureUtils.tap(buttonLocation.x, buttonLocation.y, ButtonRaceAgendaLoadList.template.path)
 
                     // Timeout after 5 seconds. Shouldn't ever take near that long.
                     val timeoutMs: Int = 5000
@@ -1546,7 +1535,7 @@ class Racing (private val game: Game) {
 
         // Check for fan requirement on the main screen.
         val sourceBitmap = sourceBitmap ?: game.imageUtils.getSourceBitmap()
-        val needsFanRequirement = game.imageUtils.findImageWithBitmap("race_fans_criteria", sourceBitmap, region = game.imageUtils.regionTopHalf, customConfidence = 0.90) != null
+        val needsFanRequirement = LabelRaceCriteriaFans.check(game.imageUtils, sourceBitmap = sourceBitmap, confidence = 0.9)
         if (needsFanRequirement) {
             hasFanRequirement = true
             MessageLog.i(TAG, "[RACE] Fan requirement criteria detected on main screen. Forcing racing to fulfill requirement.")
@@ -1558,12 +1547,12 @@ class Racing (private val game: Game) {
             }
             
             // Check for trophy requirement on the main screen.
-            val needsTrophyRequirement = game.imageUtils.findImageWithBitmap("race_trophies_criteria", sourceBitmap, region = game.imageUtils.regionTopHalf, customConfidence = 0.90) != null
+            val needsTrophyRequirement = LabelRaceCriteriaTrophies.check(game.imageUtils, sourceBitmap = sourceBitmap, confidence = 0.9)
             if (needsTrophyRequirement) {
                 hasTrophyRequirement = true
                 
                 // Check for Pre-OP or above criteria.
-                val needsPreOpOrAbove = game.imageUtils.findImageWithBitmap("race_pre_op_or_above_criteria", sourceBitmap, region = game.imageUtils.regionTopHalf, customConfidence = 0.90) != null
+                val needsPreOpOrAbove = LabelRaceCriteriaPreOpOrAbove.check(game.imageUtils, sourceBitmap = sourceBitmap, confidence = 0.9)
                 if (needsPreOpOrAbove) {
                     hasPreOpOrAboveRequirement = true
                     MessageLog.i(TAG, "[RACE] Trophy requirement with Pre-OP or above criteria detected. Any race can be run to fulfill the requirement.")
@@ -1572,7 +1561,7 @@ class Racing (private val game: Game) {
                 }
 
                 // Check for G3 or above criteria.
-                val needsG3OrAbove = game.imageUtils.findImageWithBitmap("race_g3_or_above_criteria", sourceBitmap, region = game.imageUtils.regionTopHalf, customConfidence = 0.90) != null
+                val needsG3OrAbove = LabelRaceCriteriaG3OrAbove.check(game.imageUtils, sourceBitmap = sourceBitmap, confidence = 0.9)
                 if (needsG3OrAbove) {
                     hasG3OrAboveRequirement = true
                     MessageLog.i(TAG, "[RACE] Trophy requirement with G3 or above criteria detected. Any race can be run to fulfill the requirement.")
@@ -1989,7 +1978,7 @@ class Racing (private val game: Game) {
                 // Otherwise click to progress through screens.
                 else -> {
                     MessageLog.d(TAG, "[RACE] runRaceWithRetries: No components detected. Tapping to progress...")
-                    game.tap(350.0, 450.0, "ok", taps = 3)
+                    game.tap(350.0, 450.0, taps = 3)
                 }
             }
         } while (raceRetries >= 0)
@@ -2041,7 +2030,7 @@ class Racing (private val game: Game) {
                     return true
                 }
                 // Tap on the screen to progress through screens.
-                else -> game.tap(350.0, 750.0, "ok", taps = 3)
+                else -> game.tap(350.0, 750.0, taps = 3)
             }
         }
         return false

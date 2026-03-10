@@ -14,9 +14,8 @@ import { Ionicons } from "@expo/vector-icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../components/ui/tooltip"
 import PageHeader from "../../components/PageHeader"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
-
-import scenarios from "../../data/scenarios.json"
 import SelectButton from "../../components/SelectButton"
+import scenarios from "../../data/scenarios.json"
 
 const styles = StyleSheet.create({
     root: {
@@ -167,9 +166,9 @@ const Home = () => {
     }
 
     /** Gets the appropriate icon name for the SelectButton based on device state. */
-    const getSelectButtonIconName = (): string => {
+    const getSelectButtonIconName = (): React.ComponentProps<typeof Ionicons>["name"] | undefined => {
         if (bsc.settings.general.scenario === "") {
-            return ""
+            return undefined
         } else if (isRunning) {
             return "stop-outline"
         } else {
@@ -192,22 +191,19 @@ const Home = () => {
 
     /** Returns a status indicator based on the device state. */
     const renderStatus = (): React.ReactElement | null => {
-        const warningTextLines: string[] = [
-            "Current Display: ${deviceMetrics?.width}x${deviceMetrics?.height} (${deviceMetrics?.dpi} DPI).",
-            "",
-            "Warning: Performance may be degraded due to ${unsupportedReason}.",
-            "",
-            "Supported Configurations:",
-            "• 1080x1920 @ 240 DPI",
-            "• 1080x2340 @ 450 DPI",
-            "",
-            "Note: Height is not as important to meet as the width. In addition, DPI is tied to the width and height together. How to calculate your specific DPI:",
-            "",
-            "DPI = sqrt(width^2 + height^2) / diagonal",
-            "",
-            "where width and height of the screen is in pixels, and diagonal is the diagonal size of the physical screen in inches.",
-        ]
-        const warningText: string = warningTextLines.join("\n")
+        const warningText = `Current Display: ${deviceMetrics?.width}x${deviceMetrics?.height} (${deviceMetrics?.dpi} DPI).
+
+Warning: Performance may be degraded due to ${unsupportedReason}.
+
+Supported Configurations:
+• 1080x1920 @ 240 DPI
+• 1080x2340 @ 450 DPI
+
+Note: Height is not as important to meet as the width. In addition, DPI is tied to the width and height together. How to calculate your specific DPI:
+
+DPI = sqrt(width^2 + height^2) / diagonal
+
+where width and height of the screen is in pixels, and diagonal is the diagonal size of the physical screen in inches.`
 
         if (unsupportedReason) {
             return (
@@ -222,14 +218,29 @@ const Home = () => {
                     </TooltipContent>
                 </Tooltip>
             )
-        } else if (deviceMetrics && !bsc.readyStatus && !isRunning) {
+        }
+
+        if (!bsc.readyStatus && !isRunning) {
             return (
                 <Tooltip delayDuration={150}>
                     <TooltipTrigger>
                         <Ionicons name="information-circle-outline" size={24} color={colors.info} />
                     </TooltipTrigger>
+                    <TooltipContent sideOffset={12} side="bottom" style={{ width: 200 }}>
+                        <Text>Select a Scenario to start from the center button dropdown.</Text>
+                    </TooltipContent>
+                </Tooltip>
+            )
+        }
+
+        if (deviceMetrics) {
+            return (
+                <Tooltip delayDuration={150}>
+                    <TooltipTrigger>
+                        <Ionicons name="checkmark-circle-outline" size={24} color={colors.success} />
+                    </TooltipTrigger>
                     <TooltipContent sideOffset={12} side="bottom">
-                        <Text>Select a Scenario in Settings to start</Text>
+                        <Text>Everything looks good and ready to go!</Text>
                     </TooltipContent>
                 </Tooltip>
             )
@@ -244,24 +255,22 @@ const Home = () => {
                 title=""
                 showHomeButton={false}
                 style={{ width: "100%" }}
-                centerComponent={
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                        <SelectButton
-                            variant={getSelectButtonVariant()}
-                            iconName={getSelectButtonIconName()}
-                            options={scenarios}
-                            placeholder={deviceMetrics ? "Select a Scenario" : "Not Ready"}
-                            value={bsc.settings.general.scenario}
-                            onValueChange={(value) => {
-                                const newScenario = value || ""
-                                bsc.setSettings({ ...bsc.settings, general: { ...bsc.settings.general, scenario: newScenario } })
-                                bsc.setReadyStatus(newScenario !== "")
-                            }}
-                            onPress={handleButtonPress}
-                        />
-                        {renderStatus()}
-                    </View>
+                leftComponent={
+                    <SelectButton
+                        variant={getSelectButtonVariant()}
+                        iconName={getSelectButtonIconName()}
+                        options={scenarios}
+                        placeholder={deviceMetrics ? "Select a Scenario" : "Not Ready"}
+                        value={bsc.settings.general.scenario}
+                        onValueChange={(value) => {
+                            const newScenario = value || ""
+                            bsc.setSettings({ ...bsc.settings, general: { ...bsc.settings.general, scenario: newScenario } })
+                            bsc.setReadyStatus(newScenario !== "")
+                        }}
+                        onPress={handleButtonPress}
+                    />
                 }
+                rightComponent={renderStatus()}
             />
 
             <View style={styles.contentContainer}>

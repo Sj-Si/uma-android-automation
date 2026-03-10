@@ -13,6 +13,8 @@ interface PageHeaderProps {
     showHomeButton?: boolean
     /** Optional React node to display on the left side of the header, next to the search icon. This is used if a standard string title is not sufficient. */
     titleComponent?: React.ReactNode
+    /** Optional React node to display on the left side of the header, together with the Hamburger menu icon and the Search icon. */
+    leftComponent?: React.ReactNode
     /** Optional React node to display in the center of the header. */
     centerComponent?: React.ReactNode
     /** Optional right-side component to render (e.g., `ThemeToggle`). */
@@ -77,11 +79,12 @@ const HighlightedText = ({ text, query, style, highlightColor }: { text: string;
  * @param title The title text for the header.
  * @param showHomeButton Whether to show the Home button.
  * @param titleComponent Optional React node to display in the center of the header.
+ * @param leftComponent Optional React node to display on the left side of the header.
  * @param centerComponent Optional React node to display in the center of the header.
  * @param rightComponent Optional React node to display in the right side of the header.
  * @param style Optional custom style for the header container.
  */
-const PageHeader = ({ title, showHomeButton = true, titleComponent, centerComponent, rightComponent, style }: PageHeaderProps) => {
+const PageHeader = ({ title, showHomeButton = true, titleComponent, leftComponent, centerComponent, rightComponent, style }: PageHeaderProps) => {
     const { colors } = useTheme()
     const navigation = useNavigation()
 
@@ -217,8 +220,7 @@ const PageHeader = ({ title, showHomeButton = true, titleComponent, centerCompon
                     flexDirection: "row",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    paddingTop: 8,
-                    paddingBottom: 12,
+                    marginBottom: 12,
                 },
                 headerLeft: {
                     flexDirection: "row",
@@ -226,12 +228,14 @@ const PageHeader = ({ title, showHomeButton = true, titleComponent, centerCompon
                     gap: 8,
                 },
                 headerCenter: {
-                    position: "absolute",
-                    left: 0,
-                    right: 0,
+                    flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
-                    pointerEvents: "box-none",
+                },
+                headerRight: {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
                 },
                 menuButton: {
                     padding: 8,
@@ -311,7 +315,6 @@ const PageHeader = ({ title, showHomeButton = true, titleComponent, centerCompon
     return (
         <View style={[{ zIndex: isSearching ? 100 : 1 }, style]}>
             <View style={styles.header}>
-                {!isSearching && centerComponent && <View style={styles.headerCenter}>{centerComponent}</View>}
                 <View style={[styles.headerLeft, { flex: isSearching ? 1 : undefined }]}>
                     {/* Hamburger menu button */}
                     <TouchableOpacity onPress={openDrawer} style={styles.menuButton} activeOpacity={0.7}>
@@ -331,6 +334,9 @@ const PageHeader = ({ title, showHomeButton = true, titleComponent, centerCompon
                             <Ionicons name="search" size={24} color={colors.foreground} />
                         </TouchableOpacity>
                     )}
+
+                    {/* Left component */}
+                    {!isSearching && leftComponent}
 
                     {/* Page title */}
                     {!isSearching && !!title && <Text style={styles.title}>{title}</Text>}
@@ -354,7 +360,12 @@ const PageHeader = ({ title, showHomeButton = true, titleComponent, centerCompon
                         </View>
                     )}
                 </View>
-                {!isSearching && rightComponent && <View>{rightComponent}</View>}
+
+                {/* Center component */}
+                {!isSearching && centerComponent && <View style={styles.headerCenter}>{centerComponent}</View>}
+
+                {/* Right component */}
+                {!isSearching && rightComponent && <View style={styles.headerRight}>{rightComponent}</View>}
             </View>
 
             {/* Fading Overlay for Search Results */}

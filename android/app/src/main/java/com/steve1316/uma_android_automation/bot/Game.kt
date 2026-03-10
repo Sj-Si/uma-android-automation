@@ -26,21 +26,7 @@ import com.steve1316.uma_android_automation.types.BoundingBox
 import com.steve1316.uma_android_automation.types.Aptitude
 import com.steve1316.uma_android_automation.types.Mood
 
-import com.steve1316.uma_android_automation.components.DialogUtils
-import com.steve1316.uma_android_automation.components.DialogInterface
-import com.steve1316.uma_android_automation.components.ButtonHomeFullStats
-import com.steve1316.uma_android_automation.components.ButtonHomeFansInfo
-import com.steve1316.uma_android_automation.components.ButtonCraneGame
-import com.steve1316.uma_android_automation.components.ButtonCraneGameOk
-import com.steve1316.uma_android_automation.components.ButtonInfirmary
-import com.steve1316.uma_android_automation.components.ButtonOk
-import com.steve1316.uma_android_automation.components.ButtonSkip
-import com.steve1316.uma_android_automation.components.IconTazuna
-import com.steve1316.uma_android_automation.components.IconRaceDayRibbon
-import com.steve1316.uma_android_automation.components.IconGoalRibbon
-import com.steve1316.uma_android_automation.components.ButtonBack
-import com.steve1316.uma_android_automation.components.ButtonUnityCupRace
-import com.steve1316.uma_android_automation.components.ButtonCompleteCareer
+import com.steve1316.uma_android_automation.components.*
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -250,9 +236,9 @@ class Game(val myContext: Context) {
 		MessageLog.i(TAG, "\n[TEST] Now beginning basic template match test on the Home screen.")
 		MessageLog.i(TAG, "[TEST] Template match confidence setting will be overridden for the test.\n")
 		var results = mutableMapOf<String, MutableList<ScaleConfidenceResult>>(
-			"energy" to mutableListOf(),
-			"tazuna" to mutableListOf(),
-			"skill_points" to mutableListOf()
+			LabelEnergy.template.path to mutableListOf(),
+			IconTazuna.template.path to mutableListOf(),
+			LabelStatTableHeaderSkillPoints.template.path to mutableListOf()
 		)
 		results = imageUtils.startTemplateMatchingTest(results)
 		MessageLog.i(TAG, "\n[TEST] Basic template match test complete.")
@@ -262,7 +248,7 @@ class Game(val myContext: Context) {
 			if (scaleConfidenceResults.isNotEmpty()) {
 				MessageLog.i(TAG, "[TEST] All working scale/confidence combinations for $templateName:")
 				for (result in scaleConfidenceResults) {
-					MessageLog.i(TAG, "[TEST]	Scale: ${result.scale}, Confidence: ${result.confidence}")
+					MessageLog.i(TAG, "[TEST]\tScale: ${result.scale}, Confidence: ${result.confidence}")
 				}
 			} else {
 				MessageLog.w(TAG, "No working scale/confidence combinations found for $templateName")
@@ -324,7 +310,7 @@ class Game(val myContext: Context) {
 	 */
 	fun checkTrainingEventScreen(): Boolean {
 		MessageLog.i(TAG, "\nChecking if the bot is sitting on the Training Event screen.")
-		return if (imageUtils.findImage("training_event_active", tries = 1, region = imageUtils.regionMiddle).first != null) {
+		return if (IconTrainingEventHorseshoe.check(imageUtils)) {
 			MessageLog.i(TAG, "Bot is at the Training Event screen.")
 			true
 		} else {
@@ -369,7 +355,7 @@ class Game(val myContext: Context) {
 	 */
 	fun checkRacingScreen(): Boolean {
 		MessageLog.i(TAG, "\nChecking if the bot is sitting on the Racing screen.")
-		return if (imageUtils.findImage("race_change_strategy", tries = 1, region = imageUtils.regionBottomHalf).first != null) {
+		return if (ButtonChangeRunningStyle.check(imageUtils)) {
 			MessageLog.i(TAG, "Bot is at the Racing screen waiting to be skipped or done manually.")
 			true
 		} else {
@@ -488,10 +474,9 @@ class Game(val myContext: Context) {
                 if (ButtonInfirmary.click(imageUtils, sourceBitmap = sourceBitmap)) {
                     wait(dialogWaitDelay)
                     ButtonOk.click(imageUtils, region = imageUtils.regionMiddle)
-
                     wait(dialogWaitDelay)
 
-                    if (imageUtils.findImage("recover_injury_header", tries = 1, region = imageUtils.regionMiddle).first != null) {
+                    if (IconInfirmaryEventHeader.check(imageUtils)) {
                         MessageLog.i(TAG, "[INJURY] Injury detected and attempted to heal.")
                         true
                     } else {
@@ -510,25 +495,25 @@ class Game(val myContext: Context) {
         }
 	}
 
-	/**
-	 * Checks if the bot is at a "Now Loading..." screen or if the game is awaiting for a server response. This may cause significant delays in normal bot processes.
-	 *
-	 * @param suppressLogging Whether or not to suppress logging for this function. Defaults to false.
-	 * @return True if the game is still loading or is awaiting for a server response. Otherwise, false.
-	 */
-	fun checkLoading(suppressLogging: Boolean = false): Boolean {
-		if (!suppressLogging) MessageLog.i(TAG, "[LOADING] Now checking if the game is still loading...")
+    /**
+     * Checks if the bot is at a "Now Loading..." screen or if the game is awaiting for a server response. This may cause significant delays in normal bot processes.
+     *
+     * @param suppressLogging Whether or not to suppress logging for this function. Defaults to false.
+     * @return True if the game is still loading or is awaiting for a server response. Otherwise, false.
+     */
+    fun checkLoading(suppressLogging: Boolean = false): Boolean {
+        if (!suppressLogging) MessageLog.i(TAG, "[LOADING] Now checking if the game is still loading...")
         val sourceBitmap = imageUtils.getSourceBitmap()
-		return if (imageUtils.findImageWithBitmap("connecting", sourceBitmap, region = imageUtils.regionTopHalf, suppressError = true) != null) {
-			if (!suppressLogging) MessageLog.i(TAG, "[LOADING] Detected that the game is awaiting a response from the server from the \"Connecting\" text at the top of the screen. Waiting...")
-			true
-		} else if (imageUtils.findImageWithBitmap("now_loading", sourceBitmap, region = imageUtils.regionBottomHalf, suppressError = true) != null) {
-			if (!suppressLogging) MessageLog.i(TAG, "[LOADING] Detected that the game is still loading from the \"Now Loading\" text at the bottom of the screen. Waiting...")
-			true
-		} else {
-			false
-		}
-	}
+        return if (LabelConnecting.check(imageUtils, sourceBitmap = sourceBitmap)) {
+            if (!suppressLogging) MessageLog.i(TAG, "[LOADING] Detected that the game is awaiting a response from the server from the \"Connecting\" text at the top of the screen. Waiting...")
+            true
+        } else if (LabelNowLoading.check(imageUtils, sourceBitmap = sourceBitmap)) {
+            if (!suppressLogging) MessageLog.i(TAG, "[LOADING] Detected that the game is still loading from the \"Now Loading\" text at the bottom of the screen. Waiting...")
+            true
+        } else {
+            false
+        }
+    }
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -569,7 +554,7 @@ class Game(val myContext: Context) {
 	fun handleInheritanceEvent(): Boolean {
         // Stop checking after Senior Year Early Apr.
 		return if (currentDate.day <= 56) {
-			if (findAndTapImage("inheritance", tries = 1, region = imageUtils.regionBottomHalf)) {
+            if (ButtonInheritance.click(imageUtils)) { 
 				MessageLog.i(TAG, "\nClaimed an inheritance on ${currentDate}.")
                 trainee.bHasUpdatedAptitudes = false
 				true
@@ -594,7 +579,7 @@ class Game(val myContext: Context) {
 		// Skip recreation date if it's already completed (will only be used for mood recovery).
 		if (
             !recreationDateCompleted &&
-            imageUtils.findImageWithBitmap("recreation_date", sourceBitmap = sourceBitmap, region = imageUtils.regionBottomHalf) != null &&
+            IconRecreationDate.check(imageUtils, sourceBitmap = sourceBitmap) &&
             handleRecreationDate(recoverMoodIfCompleted = false)) {
 			MessageLog.i(TAG, "[ENERGY] Successfully recovered energy via recreation date.")
 			return true
@@ -602,20 +587,20 @@ class Game(val myContext: Context) {
 		
 		// Otherwise, fall back to the regular energy recovery logic.
 		return when {
-			findAndTapImage("recover_energy", sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf) -> {
-				findAndTapImage("ok", region = imageUtils.regionMiddle, suppressError = true)
+			ButtonRest.click(imageUtils, sourceBitmap = sourceBitmap) -> {
+                ButtonOk.click(imageUtils, region = imageUtils.regionMiddle)
                 // Another OK tap for the possibility of a scheduled race warning popup.
                 wait(dialogWaitDelay)
-                findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle, suppressError = true)
+                ButtonOk.click(imageUtils, region = imageUtils.regionMiddle)
                 waitForLoading()
 				MessageLog.i(TAG, "[ENERGY] Successfully recovered energy.")
 				true
 			}
-			findAndTapImage("recover_energy_summer", sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf) -> {
-				findAndTapImage("ok", region = imageUtils.regionMiddle, suppressError = true)
+			ButtonRestAndRecreation.click(imageUtils, sourceBitmap = sourceBitmap) -> {
+				ButtonOk.click(imageUtils, region = imageUtils.regionMiddle)
                 // Another OK tap for the possibility of a scheduled race warning popup.
                 wait(dialogWaitDelay)
-                findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle, suppressError = true)
+                ButtonOk.click(imageUtils, region = imageUtils.regionMiddle)
                 waitForLoading()
 				MessageLog.i(TAG, "[ENERGY] Successfully recovered energy for the Summer.")
 				true
@@ -643,37 +628,36 @@ class Game(val myContext: Context) {
 		MessageLog.i(TAG, "[MOOD] Detected mood to be ${trainee.mood}.")
 
 		// Only recover mood if its below Good mood and its not Summer.
-		return if (training.firstTrainingCheck && trainee.mood == Mood.NORMAL && imageUtils.findImageWithBitmap("recover_energy_summer", sourceBitmap, region = imageUtils.regionBottomHalf, suppressError = true) == null) {
+		return if (training.firstTrainingCheck && trainee.mood == Mood.NORMAL && !ButtonRestAndRecreation.check(imageUtils, sourceBitmap = sourceBitmap)) {
 			MessageLog.i(TAG, "[MOOD] Current mood is Normal. Not recovering mood due to firstTrainingCheck flag being active. Will need to complete a training first before being allowed to recover mood.")
 			false
-		} else if ((trainee.mood < Mood.GOOD) && imageUtils.findImageWithBitmap("recover_energy_summer", sourceBitmap, region = imageUtils.regionBottomHalf, suppressError = true) == null) {
+		} else if ((trainee.mood < Mood.GOOD) && ButtonRestAndRecreation.check(imageUtils, sourceBitmap = sourceBitmap)) {
 			MessageLog.i(TAG, "[MOOD] Current mood is not good (${trainee.mood}). Recovering mood now.")
 
             // Check if a date is available.
-            if (!recreationDateCompleted && imageUtils.findImageWithBitmap("recreation_date", sourceBitmap = sourceBitmap, region = imageUtils.regionBottomHalf) != null) {
+            if (!recreationDateCompleted && IconRecreationDate.check(imageUtils, sourceBitmap = sourceBitmap)) {
                 handleRecreationDate(recoverMoodIfCompleted = true)
             } else {
                 // Otherwise, recover mood as normal.
                 // Note that if a date was already completed, the Recreation popup will still show so it will require an additional step to recover mood.
                 recreationDateCompleted = true
-                if (!findAndTapImage("recover_mood", sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
-                    findAndTapImage("recover_energy_summer", sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)
+                if (!ButtonRecreation.click(imageUtils, sourceBitmap = sourceBitmap)) {
+                    ButtonRestAndRecreation.click(imageUtils, sourceBitmap = sourceBitmap)
                 }
 
                 // Tap OK for the possibility of a scheduled race warning popup.
                 wait(dialogWaitDelay)
-                if (findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle, suppressError = true)) {
+                if (ButtonOk.click(imageUtils, region = imageUtils.regionMiddle)) {
                     waitForLoading()
                 }
 
-                if (imageUtils.findImage("recreation_umamusume", region = imageUtils.regionMiddle, suppressError = true).first != null) {
-                    // The Recreation popup is now open so an additional step is required to recover mood.
+                // The Recreation popup is now open so an additional step is required to recover mood.
+                if (LabelRecreationUmamusume.click(imageUtils)) {
                     MessageLog.i(TAG, "[MOOD] Recreation date is already completed. Recovering mood with the Umamusume now...")
-                    findAndTapImage("recreation_umamusume", region = imageUtils.regionMiddle)
                     waitForLoading()
                 } else {
                     // Otherwise, dismiss the popup that says to confirm recreation if the user has not set it to skip the confirmation in their in-game settings.
-                    findAndTapImage("ok", region = imageUtils.regionMiddle, suppressError = true)
+                    ButtonOk.click(imageUtils, region = imageUtils.regionMiddle)
                     waitForLoading()
                 }
             }
@@ -691,28 +675,28 @@ class Game(val myContext: Context) {
      * @return True if the Recreation date event was successfully completed. False otherwise.
      */
     fun handleRecreationDate(recoverMoodIfCompleted: Boolean = false): Boolean {
-        return if (findAndTapImage("recover_mood", tries = 1, region = imageUtils.regionBottomHalf)) {
+        return if (ButtonRecreation.click(imageUtils)) {
             // Tap OK for the possibility of a scheduled race warning popup.
             wait(dialogWaitDelay)
-            findAndTapImage("ok", tries = 1, region = imageUtils.regionMiddle, suppressError = true)
+            ButtonOk.click(imageUtils, region = imageUtils.regionMiddle)
 
             MessageLog.i(TAG, "\n[RECREATION_DATE] Recreation has a possible date available.")
             wait(1.0)
             // Check if the date is already done.
-            if (imageUtils.findImage("recreation_date_complete", tries = 1, region = imageUtils.regionMiddle).first != null) {
+            if (LabelRecreationDateComplete.check(imageUtils)) {
                 MessageLog.i(TAG, "[RECREATION_DATE] Recreation date is already completed.")
                 recreationDateCompleted = true
                 if (recoverMoodIfCompleted) {
                     MessageLog.i(TAG, "[RECREATION_DATE] Mood requires recovery. Recovering mood with the Umamusume now...")
-                    findAndTapImage("recreation_umamusume", region = imageUtils.regionMiddle)
+                    LabelRecreationUmamusume.click(imageUtils)
                     waitForLoading()
                     true
                 } else {
                     MessageLog.i(TAG, "[RECREATION_DATE] Mood does not require recovery. Moving on...")
-                    findAndTapImage("cancel", region = imageUtils.regionBottomHalf)
+                    ButtonCancel.click(imageUtils)
                     true
                 }
-            } else if (findAndTapImage("recreation_dating_progress", region = imageUtils.regionMiddle)) {
+            } else if (LabelEventProgress.click(imageUtils)) {
                 waitForLoading()
                 MessageLog.i(TAG, "[RECREATION_DATE] Recreation date can be done.")
                 true
@@ -792,23 +776,19 @@ class Game(val myContext: Context) {
 
         val sourceBitmap = imageUtils.getSourceBitmap()
 
-		if (enablePopupCheck && imageUtils.findImageWithBitmap("cancel", sourceBitmap, region = imageUtils.regionBottomHalf) != null) {
+		if (enablePopupCheck && ButtonCancel.check(imageUtils, sourceBitmap = sourceBitmap)) {
 			MessageLog.i(TAG, "\n[END] Bot may have encountered a warning popup. Exiting now...")
 			notificationMessage = "Bot may have encountered a warning popup"
 			if (DiscordUtils.enableDiscordNotifications) {
 				DiscordUtils.queue.add("```diff\n- ${MessageLog.getSystemTimeString()} Bot may have encountered a warning popup. Exiting now...\n```")
 			}
 			return false
-		} else if (findAndTapImage("next", sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf)) {
+		} else if (ButtonNext.click(imageUtils, sourceBitmap = sourceBitmap)) {
 			// Now confirm the completion of a Training Goal popup.
 			MessageLog.i(TAG, "[MISC] Popup detected that needs to be dismissed with the \"Next\" button.")
 			wait(2.0)
-			findAndTapImage("next", tries = 1, region = imageUtils.regionBottomHalf)
+			ButtonNext.click(imageUtils)
 			wait(1.0)
-        } else if (imageUtils.findImageWithBitmap("race_repeat_warning", sourceBitmap, region = imageUtils.regionTopHalf) != null) {
-            MessageLog.i(TAG, "[MISC] Consecutive race warning detected on the screen so dismissing the popup.")
-            findAndTapImage("cancel", sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf)
-            wait(1.0)
         } else if (ButtonCraneGame.check(imageUtils = imageUtils, sourceBitmap = sourceBitmap)) {
             if (enableCraneGameAttempt) {
                 handleCraneGame()
@@ -822,28 +802,21 @@ class Game(val myContext: Context) {
                 return false
             }
         } else if (
-            imageUtils.findImageWithBitmap("ordinary_cuties", region = imageUtils.regionMiddle, sourceBitmap = sourceBitmap) != null &&
+            LabelOrdinaryCuties.check(imageUtils, sourceBitmap = sourceBitmap) &&
             ButtonCraneGameOk.check(imageUtils = imageUtils, sourceBitmap = sourceBitmap)
         ) {
             ButtonCraneGameOk.click(imageUtils = imageUtils, sourceBitmap = sourceBitmap)
             waitForLoading()
             MessageLog.i(TAG, "[CRANE GAME] Event exited.")
-		} else if (findAndTapImage("race_end", sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
+		} else if (ButtonNextRaceEnd.click(imageUtils, sourceBitmap = sourceBitmap)) {
 			MessageLog.i(TAG, "[MISC] Ended a leftover race.")
             // Clicking this button triggers connection to server.
             waitForLoading()
-		} else if (imageUtils.findImageWithBitmap("connection_error", sourceBitmap, region = imageUtils.regionMiddle, suppressError = true) != null) {
-			MessageLog.i(TAG, "\n[END] Bot will stop due to detecting a connection error.")
-			notificationMessage = "Bot will stop due to detecting a connection error."
-			if (DiscordUtils.enableDiscordNotifications) {
-				DiscordUtils.queue.add("```diff\n- ${MessageLog.getSystemTimeString()} Bot will stop due to detecting a connection error.\n```")
-			}
-			return false
-		} else if (imageUtils.findImageWithBitmap("race_not_enough_fans", sourceBitmap, region = imageUtils.regionMiddle, suppressError = true) != null) {
+		} else if (IconRaceNotEnoughFans.check(imageUtils, sourceBitmap = sourceBitmap)) {
 			MessageLog.i(TAG, "[MISC] There was a popup about insufficient fans.")
 			racing.encounteredRacingPopup = true
-			findAndTapImage("cancel", region = imageUtils.regionBottomHalf)
-		} else if (findAndTapImage("back", sourceBitmap = sourceBitmap, tries = 1, region = imageUtils.regionBottomHalf, suppressError = true)) {
+            ButtonCancel.click(imageUtils, sourceBitmap = sourceBitmap)
+		} else if (ButtonBack.click(imageUtils, sourceBitmap = sourceBitmap)) {
 			MessageLog.i(TAG, "[MISC] Navigating back a screen since all the other misc checks have been completed.")
 			wait(1.0)
 		} else if (ButtonSkip.click(imageUtils = imageUtils, sourceBitmap = sourceBitmap)) {

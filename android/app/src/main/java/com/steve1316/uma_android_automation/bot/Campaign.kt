@@ -416,7 +416,7 @@ open class Campaign(game: Game) : DialogHandler(game) {
                 }
 
                 // Update trainee information using parallel processing with shared screenshot.
-                val skillPointsLocation = game.imageUtils.findImageWithBitmap("skill_points", sourceBitmap, suppressError = true)
+                val skillPointsLocation = LabelStatTableHeaderSkillPoints.findImageWithBitmap(game.imageUtils, sourceBitmap = sourceBitmap)
 
                 if (!BotService.isRunning) {
                     return false
@@ -593,7 +593,7 @@ open class Campaign(game: Game) : DialogHandler(game) {
                     }
 
                     if (hasInjury) {
-                        game.findAndTapImage("ok", sourceBitmap = sourceBitmap, region = game.imageUtils.regionMiddle)
+                        ButtonOk.click(game.imageUtils, sourceBitmap = sourceBitmap, region = game.imageUtils.regionMiddle)
                         game.wait(3.0)
                         bHasCheckedDateThisTurn = false
                     } else {
@@ -719,7 +719,7 @@ open class Campaign(game: Game) : DialogHandler(game) {
                 } else {
                     MessageLog.v(TAG, "Did not detect the bot being at the following screens: Main, Training Event, Inheritance, Mandatory Race Preparation, Racing and Career End.")
                     // Tap to progress any intermediate screens.
-                    game.tap(350.0, 450.0, "ok", taps = 1)
+                    game.tap(350.0, 450.0, taps = 1)
                 }
             } catch (e: InterruptedException) {
                 var result: CampaignResult = CampaignResult.Unknown("Bot was manually stopped.")
