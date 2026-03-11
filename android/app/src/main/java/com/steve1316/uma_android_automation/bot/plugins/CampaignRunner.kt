@@ -15,7 +15,6 @@ import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 
 import com.steve1316.uma_android_automation.bot.Campaign
-import com.steve1316.uma_android_automation.bot.CampaignResult
 import com.steve1316.uma_android_automation.bot.campaigns.UnityCup
 
 import com.steve1316.uma_android_automation.utils.ScrollList
@@ -230,22 +229,7 @@ class CampaignRunner(
 
     private fun startCampaign(): Boolean {
         MessageLog.i(TAG, "[$name] Starting campaign...")
-
-        val campaignResult: CampaignResult = campaign.start()
-
-        when (campaignResult) {
-            is CampaignResult.CareerComplete -> {
-                // This should bring us back to a screen with a MenuBar.
-                if (!handlePostCampaign()) {
-                    return false
-                }
-                // Since we have a menu bar, this function will take us back to the
-                // start point for this plugin.
-                return goToStart()
-            }
-            is CampaignResult.ManuallyStopped -> throw IllegalStateException("[$name] Bot was manually stopped.")
-            else -> throw IllegalStateException("[$name] Bot failed to complete campaign for unknown reason.")
-        }
+        campaign.start()
         return false
     }
 
@@ -345,18 +329,7 @@ class CampaignRunner(
     }
 
     private fun checkCampaignInProgress(): Boolean {
-        val campaignResult: CampaignResult = campaign.start(
-            maxRuntimeMinutes = 5,
-            bShouldStopAtMainScreen = true,
-        )
-
-        return when (campaignResult) {
-            is CampaignResult.CareerComplete -> true
-            is CampaignResult.StopAtMainScreenOverride -> true
-            is CampaignResult.ManuallyStopped -> throw IllegalStateException("[$name] Bot was manually stopped.")
-            is CampaignResult.TimedOut -> false
-            is CampaignResult.Unknown -> false
-        }
+        return false
     }
 
     override fun goToStart(): Boolean {
