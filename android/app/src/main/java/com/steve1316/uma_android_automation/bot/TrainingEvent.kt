@@ -4,6 +4,7 @@ import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.automation_library.utils.MessageLog
 
 import com.steve1316.uma_android_automation.MainActivity
+import com.steve1316.uma_android_automation.bot.campaigns.Campaign
 
 import com.steve1316.uma_android_automation.components.ButtonClose
 import com.steve1316.uma_android_automation.components.ButtonNext
@@ -14,7 +15,7 @@ import net.ricecode.similarity.StringSimilarityServiceImpl
 import org.opencv.core.Point
 import org.json.JSONObject
 
-class TrainingEvent(private val game: Game) {
+class TrainingEvent(private val game: Game, private val campaign: Campaign) {
     private val TAG: String = "[${MainActivity.loggerTag}]TrainingEvent"
 
     private val trainingEventRecognizer: TrainingEventRecognizer = TrainingEventRecognizer(game, game.imageUtils)
@@ -315,10 +316,10 @@ class TrainingEvent(private val game: Game) {
      */
     fun handleTrainingEvent() {
         MessageLog.i(TAG, "\n********************")
-        MessageLog.i(TAG, "[TRAINING_EVENT] Starting Training Event process on ${game.currentDate}.")
+        MessageLog.i(TAG, "[TRAINING_EVENT] Starting Training Event process on ${campaign.date}.")
 
         // Double check if the bot is at the Main screen or not.
-        if (game.checkMainScreen()) {
+        if (campaign.checkMainScreen()) {
             MessageLog.i(TAG, "[TRAINING_EVENT] Bot is at the Main Screen. Ending the Training Event process.")
             MessageLog.i(TAG, "********************")
             return
@@ -513,7 +514,7 @@ class TrainingEvent(private val game: Game) {
                                 selectionWeight[optionSelected] += finalSkillPoints
                             } else {
                                 // Apply inflated weights to the prioritized stats based on their order.
-                                game.training.statPrioritization.forEachIndexed { index, stat ->
+                                campaign.training.statPrioritization.forEachIndexed { index, stat ->
                                     if (line.lowercase().contains(stat.name.lowercase())) {
                                         // Calculate weight bonus based on position (higher priority = higher bonus).
                                         val priorityBonus = when (index) {

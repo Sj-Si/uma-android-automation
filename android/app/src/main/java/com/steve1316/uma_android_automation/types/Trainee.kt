@@ -1,4 +1,4 @@
-package com.steve1316.uma_android_automation.bot
+package com.steve1316.uma_android_automation.types
 
 import android.graphics.Bitmap
 import android.util.Log
@@ -15,22 +15,22 @@ import com.steve1316.automation_library.utils.BotService
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
-import com.steve1316.uma_android_automation.types.StatName
+import com.steve1316.uma_android_automation.bot.Game
+
 import com.steve1316.uma_android_automation.types.Aptitude
-import com.steve1316.uma_android_automation.types.RunningStyle
-import com.steve1316.uma_android_automation.types.TrackSurface
-import com.steve1316.uma_android_automation.types.TrackDistance
-import com.steve1316.uma_android_automation.types.Mood
 import com.steve1316.uma_android_automation.types.FanCountClass
+import com.steve1316.uma_android_automation.types.Mood
+import com.steve1316.uma_android_automation.types.RunningStyle
+import com.steve1316.uma_android_automation.types.StatName
+import com.steve1316.uma_android_automation.types.TrackDistance
+import com.steve1316.uma_android_automation.types.TrackSurface
+
 import com.steve1316.uma_android_automation.components.ComponentInterface
-import com.steve1316.uma_android_automation.components.IconMoodGreat
-import com.steve1316.uma_android_automation.components.IconMoodGood
-import com.steve1316.uma_android_automation.components.IconMoodNormal
-import com.steve1316.uma_android_automation.components.IconMoodBad
 import com.steve1316.uma_android_automation.components.IconMoodAwful
-import com.steve1316.uma_android_automation.components.LabelStatDistance
-import com.steve1316.uma_android_automation.components.LabelStatTrackSurface
-import com.steve1316.uma_android_automation.components.LabelStatStyle
+import com.steve1316.uma_android_automation.components.IconMoodBad
+import com.steve1316.uma_android_automation.components.IconMoodGood
+import com.steve1316.uma_android_automation.components.IconMoodGreat
+import com.steve1316.uma_android_automation.components.IconMoodNormal
 import com.steve1316.uma_android_automation.components.LabelStatAptitudeA
 import com.steve1316.uma_android_automation.components.LabelStatAptitudeB
 import com.steve1316.uma_android_automation.components.LabelStatAptitudeC
@@ -39,6 +39,9 @@ import com.steve1316.uma_android_automation.components.LabelStatAptitudeE
 import com.steve1316.uma_android_automation.components.LabelStatAptitudeF
 import com.steve1316.uma_android_automation.components.LabelStatAptitudeG
 import com.steve1316.uma_android_automation.components.LabelStatAptitudeS
+import com.steve1316.uma_android_automation.components.LabelStatDistance
+import com.steve1316.uma_android_automation.components.LabelStatStyle
+import com.steve1316.uma_android_automation.components.LabelStatTrackSurface
 
 /** Defines a trainee (uma).
  *

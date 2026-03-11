@@ -12,6 +12,13 @@ import com.steve1316.uma_android_automation.types.DateYear
 import com.steve1316.uma_android_automation.types.RunningStyle
 import org.opencv.core.Point
 
+sealed class DialogHandlerResult {
+    data class Handled(val dialog: DialogInterface) : DialogHandlerResult()
+    data class Unhandled(val dialog: DialogInterface) : DialogHandlerResult()
+    data class Deferred(val dialog: DialogInterface) : DialogHandlerResult()
+    data object NoDialogDetected : DialogHandlerResult()
+}
+
 /**
  * Base class for handling various dialogs in the Umamusume game.
  *
@@ -24,15 +31,15 @@ import org.opencv.core.Point
  *
  * ```kotlin
  * // Basic usage
- * val (handled, dialog) = game.campaign.handleDialogs()
+ * val (handled, dialog) = game.task.handleDialogs()
  *
  * // Usage with arguments
  * val args = mapOf("overrideIgnoreConsecutiveRaceWarning" to true)
- * game.campaign.handleDialogs(args = args)
+ * game.task.handleDialogs(args = args)
  * ```
  */
 open class DialogHandler(val game: Game) {
-	private val TAG: String = "[${MainActivity.loggerTag}]DialogHandler"
+	private val TAG: String = "[${MainActivity.loggerTag}]${this::class.simpleName}"
 
 	/**
 	 * Detects and handles any dialog popups.
@@ -44,16 +51,39 @@ open class DialogHandler(val game: Game) {
 	 * exit of this function whenever we close the dialog.
 	 * This gives the dialog time to close since there is a very short
 	 * animation that plays when a dialog closes.
+     *
+     * List of valid arguments passed to the [args] parameter:
+     *  - bShouldWait
+     *      Whether we should add a delay before handling the dialog.
+     *      This is useful for when we click a button that we know opens a dialog.
+     *      So we just call [handleDialogs] immediately with this argument.
+     *  - bShouldWaitForLoading
+     *      Whether we need to wait for the game to load or connect to the server
+     *      prior to checking for dialogs.
+     *      This is useful for when we click a button that we know opens a dialog.
+     *      So we just call [handleDialogs] immediately with this argument.
+     *  - dialogNameToDefer
+     *      A single dialog name that, if detected, should not be handled here
+     *      and instead just sent back to the calling function for them to handle.
+     *  - dialogNamesToDefer
+     *      A list of dialog names that, if detected, should not be handled here
+     *      and instead just sent back to the calling function for them to handle.
+     *  - bShouldDefer
+     *      Whether we should not handle ANY dialogs that are detected and instead
+     *      just send them back to the calling function for them to handle.
 	 *
 	 * @param dialog An optional dialog to evaluate. This allows chaining
 	 * dialog handler calls for improved performance.
 	 * @param args Optional arguments mapping for dialog handling.
 	 *
-	 * @return A pair of a boolean and a nullable DialogInterface.
-	 * The boolean is true when a dialog has been handled by this function.
-	 * The DialogInterface is the detected dialog, or NULL if no dialogs were found.
+	 * @return The [DialogHandlerResult] for this operation.
+     *  - [DialogHandlerResult.Handled] if the dialog was successfully handled.
+     *  - [DialogHandlerResult.Unhandled] if the dialog wasn't handled.
+     *  - [DialogHandlerResult.Deferred] if the detected dialog isn't handled and
+     *      instead the dialog is just sent back to the calling function.
+     *  - [DialogHandlerResult.NoDialogDetected] if no dialogs were detected.
 	 */
-	open fun handleDialogs(dialog: DialogInterface? = null, args: Map<String, Any> = mapOf()): Pair<Boolean, DialogInterface?> {
+	open fun handleDialogs(dialog: DialogInterface? = null, args: Map<String, Any> = mapOf()): DialogHandlerResult {
         val bShouldWait = args["bShouldWait"] as? Boolean ?: false
         val bShouldWaitForLoading = args["bShouldWaitForLoading"] as? Boolean ?: false
         if (bShouldWait || bShouldWaitForLoading) {
@@ -61,18 +91,24 @@ open class DialogHandler(val game: Game) {
             game.wait(game.dialogWaitDelay, skipWaitingForLoading = !bShouldWaitForLoading)
         }
 
-		val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(imageUtils = game.imageUtils)
+		val dialog: DialogInterface? = dialog ?: DialogUtils.getDialog(game.imageUtils)
 		if (dialog == null) {
 			Log.d(TAG, "[DIALOG] No dialog found.")
-			return Pair(false, null)
+			return DialogHandlerResult.NoDialogDetected
 		}
 
 		MessageLog.d(TAG, "[DIALOG] Handle dialog: ${dialog.name}")
 
-        val bShouldDefer = args["bShouldDefer"] as? Boolean ?: false
+        val dialogNameToDefer: String? = args["dialogNameToDefer"] as? String ?: null
+        var dialogNamesToDefer: List<String> = args["dialogNamesToDefer"] as? List<String> ?: listOf<String>()
+        var bShouldDefer = args["bShouldDefer"] as? Boolean ?: false
+        if (dialogNamesToDefer.contains(dialog.name) || dialogNameToDefer == dialog.name) {
+            bShouldDefer = true
+        }
+
         if (bShouldDefer) {
             MessageLog.d(TAG, "[DIALOG] Dialog handling deferred to calling function.")
-            return Pair(false, dialog)
+            return DialogHandlerResult.Deferred(dialog)
         }
 
 		when (dialog.name) {
@@ -93,30 +129,15 @@ open class DialogHandler(val game: Game) {
 				}
 
 				game.connectionErrorRetryAttempts++
-				dialog.ok(imageUtils = game.imageUtils)
+				dialog.ok(game.imageUtils)
 				game.wait(0.5)
 			}
-			"display_settings" -> dialog.close(imageUtils = game.imageUtils)
-			"help_and_glossary" -> dialog.close(imageUtils = game.imageUtils)
+			"display_settings" -> dialog.close(game.imageUtils)
+			"help_and_glossary" -> dialog.close(game.imageUtils)
 			"session_error" -> {
 				throw InterruptedException("Session error. Stopping bot...")
 			}
 			// Racing Dialogs (from Racing.kt)
-			"consecutive_race_warning" -> {
-                val overrideIgnoreConsecutiveRaceWarning = args["overrideIgnoreConsecutiveRaceWarning"] as? Boolean ?: false
-				game.racing.raceRepeatWarningCheck = true
-				if (overrideIgnoreConsecutiveRaceWarning || game.racing.enableForceRacing || game.racing.ignoreConsecutiveRaceWarning) {
-					MessageLog.i(TAG, "[RACE] Consecutive race warning! Racing anyway...")
-					dialog.ok(imageUtils = game.imageUtils)
-					// This dialog requires a little extra delay since it loads the
-					// race list instead of just closing the dialog.
-					game.wait(1.0, skipWaitingForLoading = true)
-				} else {
-					MessageLog.i(TAG, "[RACE] Consecutive race warning! Aborting racing...")
-					game.racing.clearRacingRequirementFlags()
-					dialog.close(imageUtils = game.imageUtils)
-				}
-			}
             "overwrite" -> dialog.ok(game.imageUtils)
 			"race_playback" -> {
 				// Select portrait mode to prevent game from switching to landscape.
@@ -125,151 +146,40 @@ open class DialogHandler(val game: Game) {
 				Checkbox.click(game.imageUtils)
 				dialog.ok(game.imageUtils)
 			}
-			"runners" -> dialog.close(imageUtils = game.imageUtils)
+			"runners" -> dialog.close(game.imageUtils)
             "schedule_cancellation" -> dialog.close(game.imageUtils)
-            "schedule_race" -> dialog.close(imageUtils = game.imageUtils)
-			"strategy" -> {
-				if (!game.trainee.bHasUpdatedAptitudes) {
-					game.trainee.bTemporaryRunningStyleAptitudesUpdated = game.racing.updateRaceScreenRunningStyleAptitudes()
-				}
-
-                if (game.currentDate.day == 1) {
-                    MessageLog.i(TAG, "[DIALOG] strategy:: Unknown date. Using Original strategy.")
-                }
-
-				var runningStyle: RunningStyle? = null
-				val runningStyleString: String = when {
-					// Special case for when the bot has not been able to check the date
-					// i.e. when the bot starts at the race screen.
-					game.currentDate.day == 1 -> game.racing.userSelectedOriginalStrategy
-					game.currentDate.year == DateYear.JUNIOR -> game.racing.juniorYearRaceStrategy
-					else -> game.racing.userSelectedOriginalStrategy
-				}
-				when (runningStyleString.uppercase()) {
-					// Do not select a strategy. Use what is already selected.
-					"DEFAULT" -> {
-						MessageLog.i(TAG, "[DIALOG] strategy:: Using the default running style.")
-						dialog.ok(imageUtils = game.imageUtils)
-                        // Confirming this dialog triggers connection to server.
-                        game.waitForLoading()
-						// If date is unknown we want to set style next time we're at
-						// race prep screen. See note at bottom of this handler.
-						game.trainee.bHasSetRunningStyle = game.currentDate.day != 1
-						game.racing.bHasSetTemporaryRunningStyle = true
-						return Pair(true, dialog)
-					}
-					// Auto-select the optimal running style based on trainee aptitudes.
-					"AUTO" -> {
-						MessageLog.i(TAG, "[DIALOG] strategy:: Auto-selecting the trainee's optimal running style.")
-						runningStyle = game.trainee.runningStyle
-					}
-					else -> {
-						MessageLog.i(TAG, "[DIALOG] strategy:: Using user-specified running style: $runningStyleString")
-						runningStyle = RunningStyle.fromShortName(runningStyleString)
-					}
-				}
-
-				when (runningStyle) {
-					RunningStyle.FRONT_RUNNER -> ButtonRaceStrategyFront.click(imageUtils = game.imageUtils)
-					RunningStyle.PACE_CHASER -> ButtonRaceStrategyPace.click(imageUtils = game.imageUtils)
-					RunningStyle.LATE_SURGER -> ButtonRaceStrategyLate.click(imageUtils = game.imageUtils)
-					RunningStyle.END_CLOSER -> ButtonRaceStrategyEnd.click(imageUtils = game.imageUtils)
-					null -> {
-						// This indicates programmer error.
-						MessageLog.e(TAG, "[DIALOG] strategy:: Invalid running style: $runningStyle")
-						dialog.close(imageUtils = game.imageUtils)
-						game.trainee.bHasSetRunningStyle = false
-						return Pair(true, dialog)
-					}
-				}
-
-				// We only want to set this flag if the date has been checked.
-				// Otherwise, if the day is still 1, that means we probably started
-				// the bot at the racing screen. In this case, we still want to set
-				// the running style the next time we get back to the race
-				// selection screen after verifying the date.
-				if (game.currentDate.day != 1) {
-					game.trainee.bHasSetRunningStyle = true
-				}
-				game.racing.bHasSetTemporaryRunningStyle = true
-				dialog.ok(imageUtils = game.imageUtils)
-			}
-			"trophy_won" -> dialog.close(imageUtils = game.imageUtils)
-			"try_again" -> {
-				// All branches need a slight delay to allow the dialog to close
-				// since the runRaceWithRetries loop handles dialogs at the start
-				// of each iteration. Can cause problem where we handle one branch
-				// then immediately handle dialogs again and handle a second branch
-				// for the same dialog instance.
-				if (game.racing.disableRaceRetries) {
-					if (game.racing.enableFreeRaceRetry && IconOneFreePerDayTooltip.check(game.imageUtils)) {
-						MessageLog.i(TAG, "[RACE] Failed mandatory race. Using daily free race retry...")
-						game.racing.raceRetries--
-						dialog.ok(game.imageUtils)
-						game.wait(0.5)
-						return Pair(true, dialog)
-					}
-					if (game.racing.enableCompleteCareerOnFailure) {
-						MessageLog.i(TAG, "[RACE] Failed a mandatory race and no retries remaining. Completing career...")
-						// Manually set retries to -1 to break the race retry loop.
-						game.racing.raceRetries = -1
-						dialog.close(game.imageUtils)
-						game.wait(0.5)
-						return Pair(true, dialog)
-					}
-					MessageLog.i(TAG, "\n[END] Stopping the bot due to failing a mandatory race.")
-					MessageLog.i(TAG, "********************")
-					game.notificationMessage = "Stopping the bot due to failing a mandatory race."
-					if (DiscordUtils.enableDiscordNotifications) {
-						DiscordUtils.queue.add("```diff\n- ${MessageLog.getSystemTimeString()} Stopping the bot due to failing a mandatory race.\n```")
-					}
-					throw IllegalStateException()
-				}
-				game.racing.raceRetries--
-				dialog.ok(game.imageUtils)
-			}
-			"unlock_requirements" -> dialog.close(imageUtils = game.imageUtils)
-			// Campaign Dialogs (from Campaign.kt)
-			"agenda_details" -> dialog.close(imageUtils = game.imageUtils)
-			"bonus_umamusume_details" -> dialog.close(imageUtils = game.imageUtils)
-			"career" -> dialog.close(imageUtils = game.imageUtils)
-			"career_event_details" -> dialog.close(imageUtils = game.imageUtils)
-			"career_profile" -> dialog.close(imageUtils = game.imageUtils)
-			"choices" -> dialog.close(imageUtils = game.imageUtils)
+            "schedule_race" -> dialog.close(game.imageUtils)
+			
+			"trophy_won" -> dialog.close(game.imageUtils)
+			"unlock_requirements" -> dialog.close(game.imageUtils)
+			"agenda_details" -> dialog.close(game.imageUtils)
+			"bonus_umamusume_details" -> dialog.close(game.imageUtils)
+			"career" -> dialog.close(game.imageUtils)
+			"career_event_details" -> dialog.close(game.imageUtils)
+			"career_profile" -> dialog.close(game.imageUtils)
+			"choices" -> dialog.close(game.imageUtils)
 			"concert_skip_confirmation" -> {
 				// Click the checkbox to prevent this popup in the future.
-				Checkbox.click(imageUtils = game.imageUtils)
-				dialog.ok(imageUtils = game.imageUtils)
+				Checkbox.click(game.imageUtils)
+				dialog.ok(game.imageUtils)
 			}
-			"epithets" -> dialog.close(imageUtils = game.imageUtils)
-			"fans" -> dialog.close(imageUtils = game.imageUtils)
-			"featured_cards" -> dialog.close(imageUtils = game.imageUtils)
-			"give_up" -> dialog.close(imageUtils = game.imageUtils)
-			"goal_not_reached" -> {
-				// We are handling the logic for when to race on our own.
-				// Thus we just close this warning.
-				game.racing.encounteredRacingPopup = true
-				dialog.close(imageUtils = game.imageUtils)
-			}
-			"goals" -> dialog.close(imageUtils = game.imageUtils)
+			"epithets" -> dialog.close(game.imageUtils)
+			"fans" -> dialog.close(game.imageUtils)
+			"featured_cards" -> dialog.close(game.imageUtils)
+			"give_up" -> dialog.close(game.imageUtils)
+			"goals" -> dialog.close(game.imageUtils)
 			"infirmary" -> {
-				Checkbox.click(imageUtils = game.imageUtils)
-				dialog.ok(imageUtils = game.imageUtils)
+				Checkbox.click(game.imageUtils)
+				dialog.ok(game.imageUtils)
 			}
-			"insufficient_fans" -> {
-				// We are handling the logic for when to race on our own.
-				// Thus we just close this warning.
-				game.racing.encounteredRacingPopup = true
-				dialog.close(imageUtils = game.imageUtils)
-			}
-			"log" -> dialog.close(imageUtils = game.imageUtils)
-			"menu" -> dialog.close(imageUtils = game.imageUtils)
-			"mood_effect" -> dialog.close(imageUtils = game.imageUtils)
-			"my_agendas" -> dialog.close(imageUtils = game.imageUtils)
-			"no_retries" -> dialog.ok(imageUtils = game.imageUtils)
-			"options" -> dialog.close(imageUtils = game.imageUtils)
-			"perks" -> dialog.close(imageUtils = game.imageUtils)
-			"placing" -> dialog.close(imageUtils = game.imageUtils)
+			"log" -> dialog.close(game.imageUtils)
+			"menu" -> dialog.close(game.imageUtils)
+			"mood_effect" -> dialog.close(game.imageUtils)
+			"my_agendas" -> dialog.close(game.imageUtils)
+			"no_retries" -> dialog.ok(game.imageUtils)
+			"options" -> dialog.close(game.imageUtils)
+			"perks" -> dialog.close(game.imageUtils)
+			"placing" -> dialog.close(game.imageUtils)
 			"purchase_alarm_clock" -> {
 				throw InterruptedException("Ran out of alarm clocks. Stopping bot...")
 			}
@@ -281,7 +191,7 @@ open class DialogHandler(val game: Game) {
 					h = game.imageUtils.relHeight(460),
 				)
 				val optionLocations: ArrayList<Point> = IconHorseshoe.findAll(
-					imageUtils = game.imageUtils,
+					game.imageUtils,
 					region = bbox.toIntArray(),
 					confidence = 0.0,
 				)
@@ -292,123 +202,40 @@ open class DialogHandler(val game: Game) {
 				} else {
 					MessageLog.d(TAG, "[DIALOG] quick_mode_settings: Using image OCR method.")
 					// Fallback to image detection.
-					RadioCareerQuickShortenAllEvents.click(imageUtils = game.imageUtils)
+					RadioCareerQuickShortenAllEvents.click(game.imageUtils)
 				}
 				
-				dialog.ok(imageUtils = game.imageUtils)
+				dialog.ok(game.imageUtils)
 			}
 			"race_details" -> {
-				dialog.ok(imageUtils = game.imageUtils)
+				dialog.ok(game.imageUtils)
 			}
 			"race_recommendations" -> {
-				ButtonRaceRecommendationsCenterStage.click(imageUtils = game.imageUtils)
-				Checkbox.click(imageUtils = game.imageUtils)
-				dialog.ok(imageUtils = game.imageUtils)
+				ButtonRaceRecommendationsCenterStage.click(game.imageUtils)
+				Checkbox.click(game.imageUtils)
+				dialog.ok(game.imageUtils)
 			}
 			"recreation" -> {
-				Checkbox.click(imageUtils = game.imageUtils)
-				dialog.ok(imageUtils = game.imageUtils)
+				Checkbox.click(game.imageUtils)
+				dialog.ok(game.imageUtils)
 			}
 			"rest" -> {
-				Checkbox.click(imageUtils = game.imageUtils)
-				dialog.ok(imageUtils = game.imageUtils)
+				Checkbox.click(game.imageUtils)
+				dialog.ok(game.imageUtils)
 			}
 			"rest_and_recreation" -> {
 				// Does not have a checkbox unlike the other rest/rec/etc.
-				dialog.ok(imageUtils = game.imageUtils)
+				dialog.ok(game.imageUtils)
 			}
-			"scheduled_race_available" -> {
-				MessageLog.i(TAG, "[INFO] There is a scheduled race today. Racing it now...")
-				dialog.ok(imageUtils = game.imageUtils)
-				if (!game.racing.handleRaceEvents(isScheduledRace = true) && game.campaign.handleRaceEventFallback()) {
-					MessageLog.i(TAG, "\n[END] Stopping the bot due to failing to handle a scheduled race.")
-					MessageLog.i(TAG, "********************")
-					game.notificationMessage = "Stopping the bot due to failing to handle a scheduled race."
-					if (DiscordUtils.enableDiscordNotifications) {
-						DiscordUtils.queue.add("```diff\n- ${MessageLog.getSystemTimeString()} Stopping the bot due to failing to handle a scheduled race.\n```")
-					}
-					throw IllegalStateException()
-				}
-			}
-			"scheduled_races" -> dialog.close(imageUtils = game.imageUtils)
-			"schedule_settings" -> dialog.close(imageUtils = game.imageUtils)
-			"skill_details" -> dialog.close(imageUtils = game.imageUtils)
-			"song_acquired" -> dialog.close(imageUtils = game.imageUtils)
-			"spark_details" -> dialog.close(imageUtils = game.imageUtils)
-			"sparks" -> dialog.close(imageUtils = game.imageUtils)
-			"team_info" -> dialog.close(imageUtils = game.imageUtils)
-			"umamusume_class" -> {
-				val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
-				val templateBitmap: Bitmap? = game.imageUtils.getBitmaps(LabelUmamusumeClassFans.template.path).second
-				if (templateBitmap == null) {
-					MessageLog.e(TAG, "[DIALOG] umamusume_class: Could not get template bitmap for LabelUmamusumeClassFans: ${LabelUmamusumeClassFans.template.path}.")
-					dialog.close(imageUtils = game.imageUtils)
-					return Pair(true, dialog)
-				}
-				val point: Point? = LabelUmamusumeClassFans.find(imageUtils = game.imageUtils).first
-				if (point == null) {
-					MessageLog.w(TAG, "[DIALOG] umamusume_class: Could not find LabelUmamusumeClassFans.")
-					dialog.close(imageUtils = game.imageUtils)
-					return Pair(true, dialog)
-				}
-
-				// Add a small 8px buffer to vertical component.
-				val bbox = BoundingBox(
-					x = game.imageUtils.relX(0.0, (point.x + (templateBitmap.width / 2)).toInt()),
-					y = game.imageUtils.relY(0.0, (point.y - (templateBitmap.height / 2) - 4).toInt()),
-					w = game.imageUtils.relWidth(300),
-					h = game.imageUtils.relHeight(templateBitmap.height + 4),
-				)
-
-				val croppedBitmap = game.imageUtils.createSafeBitmap(
-					bitmap,
-					bbox.x,
-					bbox.y,
-					bbox.w,
-					bbox.h,
-					"dialog::umamusume_class: Cropped bitmap.",
-				)
-				if (croppedBitmap == null) {
-					MessageLog.e(TAG, "[DIALOG] umamusume_class: Failed to crop bitmap.")
-					dialog.close(imageUtils = game.imageUtils)
-					return Pair(true, dialog)
-				}
-				val fans = game.imageUtils.getUmamusumeClassDialogFanCount(croppedBitmap)
-				if (fans != null) {
-					game.trainee.fans = fans
-					game.campaign.bNeedToCheckFans = false
-					MessageLog.d(TAG, "[DIALOG] umamusume_class: Updated fan count: ${game.trainee.fans}")
-				} else {
-					MessageLog.w(TAG, "[DIALOG] umamusume_class: getUmamusumeClassDialogFanCount returned NULL.")
-				}
-				
-				dialog.close(imageUtils = game.imageUtils)
-
-				// Print the trainee info with the updated fan count.
-				game.trainee.logInfo()
-				game.trainee.logDetailedPlayerInfo()
-			}
-			"umamusume_details" -> {
-				val prevTrackSurface = game.trainee.trackSurface
-				val prevTrackDistance = game.trainee.trackDistance
-				val prevRunningStyle = game.trainee.runningStyle
-				game.trainee.updateAptitudes(imageUtils = game.imageUtils)
-				game.trainee.bTemporaryRunningStyleAptitudesUpdated = false
-
-				// Read the trainee's name once per run while the dialog is still open.
-				if (game.trainee.name.isEmpty()) {
-					game.trainee.readName(imageUtils = game.imageUtils)
-				}
-
-				if (game.trainee.runningStyle != prevRunningStyle) {
-					// Reset this flag since our preferred running style has changed.
-					game.trainee.bHasSetRunningStyle = false
-				}
-
-				dialog.close(imageUtils = game.imageUtils)
-			}
-			"unity_cup_available" -> dialog.close(imageUtils = game.imageUtils)
-			"unmet_requirements" -> dialog.close(imageUtils = game.imageUtils)
+			"scheduled_races" -> dialog.close(game.imageUtils)
+			"schedule_settings" -> dialog.close(game.imageUtils)
+			"skill_details" -> dialog.close(game.imageUtils)
+			"song_acquired" -> dialog.close(game.imageUtils)
+			"spark_details" -> dialog.close(game.imageUtils)
+			"sparks" -> dialog.close(game.imageUtils)
+			"team_info" -> dialog.close(game.imageUtils)
+			"unity_cup_available" -> dialog.close(game.imageUtils)
+			"unmet_requirements" -> dialog.close(game.imageUtils)
 			// Skill List Dialogs (from SkillList.kt)
 			"skill_list_confirmation" -> {
 				dialog.ok(game.imageUtils)
@@ -420,11 +247,11 @@ open class DialogHandler(val game: Game) {
 			"skills_learned" -> dialog.close(game.imageUtils)
 			else -> {
 				Log.w(TAG, "[DIALOG] Unknown dialog \"${dialog.name}\" detected so it will not be handled.")
-				return Pair(false, dialog)
+				return DialogHandlerResult.Unhandled(dialog)
 			}
 		}
 
 		game.wait(0.5)
-		return Pair(true, dialog)
+		return DialogHandlerResult.Handled(dialog)
 	}
 }

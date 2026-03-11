@@ -14,7 +14,7 @@ import com.steve1316.uma_android_automation.bot.Training.Companion.calculateRawT
 import com.steve1316.uma_android_automation.bot.Training.TrainingConfig
 import com.steve1316.uma_android_automation.bot.Training.TrainingOption
 import com.steve1316.uma_android_automation.utils.CustomImageUtils.BarFillResult
-import com.steve1316.uma_android_automation.utils.GameDate
+import com.steve1316.uma_android_automation.types.GameDate
 import com.steve1316.uma_android_automation.types.StatName
 import com.steve1316.uma_android_automation.types.DateYear
 import com.steve1316.uma_android_automation.types.DateMonth

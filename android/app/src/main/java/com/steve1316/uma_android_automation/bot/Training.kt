@@ -3,6 +3,7 @@ package com.steve1316.uma_android_automation.bot
 import android.util.Log
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.automation_library.utils.SettingsHelper
+import com.steve1316.uma_android_automation.bot.campaigns.Campaign
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
 import com.steve1316.uma_android_automation.types.StatName
 import com.steve1316.uma_android_automation.types.Aptitude
@@ -11,7 +12,7 @@ import com.steve1316.uma_android_automation.types.TrackSurface
 import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.Mood
 import com.steve1316.uma_android_automation.types.DateYear
-import com.steve1316.uma_android_automation.utils.GameDate
+import com.steve1316.uma_android_automation.types.GameDate
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.utils.BotService
 import com.steve1316.automation_library.utils.MessageLog
@@ -43,7 +44,7 @@ import kotlin.intArrayOf
 import kotlin.math.pow
 import org.opencv.core.Point
 
-class Training(private val game: Game) {
+class Training(private val game: Game, private val campaign: Campaign) {
 	/**
 	 * Class to store analysis results for a training during parallel processing.
 	 * Uses mutable properties so threads can update them.
@@ -624,11 +625,11 @@ class Training(private val game: Game) {
 	 */
 	fun handleTraining() {
 		MessageLog.i(TAG, "\n********************")
-		MessageLog.i(TAG, "[TRAINING] Starting Training process on ${game.currentDate}.")
+		MessageLog.i(TAG, "[TRAINING] Starting Training process on ${campaign.date}.")
         val startTime = System.currentTimeMillis()
 
 		// Enter the Training screen.
-		if (ButtonTraining.click(imageUtils = game.imageUtils)) {
+		if (ButtonTraining.click(game.imageUtils)) {
             // Upon going to the training screen, there is a short animation
             // on the training header icon. We need to make sure this is finished
             // before we can properly begin analyzing the screen.
@@ -640,39 +641,39 @@ class Training(private val game: Game) {
 			if (trainingMap.isEmpty()) {
 				// Check if we should force Wit training during the Finale instead of recovering energy.
 				// Always force Wit on turn 75 since recovering energy on the very last turn is completely useless.
-				if ((trainWitDuringFinale && game.currentDate.day > 72) || game.currentDate.day == 75) {
-					if (game.currentDate.day == 75) {
+				if ((trainWitDuringFinale && campaign.date.day > 72) || campaign.date.day == 75) {
+					if (campaign.date.day == 75) {
 						MessageLog.i(TAG, "[TRAINING] It is the final turn. Forcing Wit training instead of recovering energy since resting provides zero benefit now.")
 					} else {
 						MessageLog.i(TAG, "[TRAINING] There is not enough energy for training to be done but the setting to train Wit during the Finale is enabled. Forcing Wit training...")
 					}
 					// Directly attempt to tap Wit training.
-					if (ButtonTrainingWit.click(imageUtils = game.imageUtils, taps = 3)) {
+					if (ButtonTrainingWit.click(game.imageUtils, taps = 3)) {
                         game.waitForLoading()
 						MessageLog.i(TAG, "[TRAINING] Successfully forced Wit training during the Finale instead of recovering energy.")
 						firstTrainingCheck = false
 					} else {
 						MessageLog.w(TAG, "[WARNING] Could not find Wit training button. Falling back to recovering energy...")
-						ButtonBack.click(imageUtils = game.imageUtils)
+						ButtonBack.click(game.imageUtils)
 						game.wait(1.0)
-						if (game.checkMainScreen()) {
-							game.recoverEnergy()
+						if (campaign.checkMainScreen()) {
+							campaign.recoverEnergy()
 						} else {
 							MessageLog.w(TAG, "[WARNING] Could not head back to the Main screen in order to recover energy.")
 						}
 					}
 				} else {
 					MessageLog.i(TAG, "[TRAINING] Backing out of Training and returning on the Main screen.")
-					ButtonBack.click(imageUtils = game.imageUtils)
+					ButtonBack.click(game.imageUtils)
 					game.wait(1.0)
 
-					if (game.checkMainScreen()) {
+					if (campaign.checkMainScreen()) {
 						if (restrictedTrainingNames.size == StatName.entries.size || (restrictedTrainingNames.size + blacklist.size) >= StatName.entries.size) {
 							MessageLog.i(TAG, "[TRAINING] Will recover energy due to all available trainings being restricted or blacklisted.")
 						} else {
 							MessageLog.i(TAG, "[TRAINING] Will recover energy due to either failure chance was high enough to do so or no failure chances were detected via OCR.")
 						}
-						game.recoverEnergy()
+						campaign.recoverEnergy()
 					} else {
 						MessageLog.w(TAG, "[WARNING] Could not head back to the Main screen in order to recover energy.")
 					}
@@ -770,7 +771,7 @@ class Training(private val game: Game) {
         }
         val isWithinRegularThreshold = failureChance <= maximumFailureChance
         val isWithinRiskyThreshold = enableRiskyTraining && failureChance <= riskyTrainingMaxFailureChance
-        val isFinals = game.checkFinals()
+        val isFinals = campaign.checkFinals()
         if (test || isWithinRegularThreshold || isWithinRiskyThreshold || isFinals) {
             if (!test) {
                 if (isFinals) {
@@ -809,7 +810,7 @@ class Training(private val game: Game) {
                 // Keep iterating until the current training is found.
                 if (singleTraining) {
                     val iconTrainingHeader = iconTrainingHeaders[statName]!!
-                    if (!iconTrainingHeader.check(imageUtils = game.imageUtils)) {
+                    if (!iconTrainingHeader.check(game.imageUtils)) {
                         continue
                     }
                     MessageLog.i(TAG, "[TRAINING] The $statName training is currently selected on the screen.")
@@ -830,8 +831,8 @@ class Training(private val game: Game) {
 
                 // Get bitmaps and locations before starting threads to make them safe for parallel processing.
                 val sourceBitmap = game.imageUtils.getSourceBitmap()
-                val skillPointsLocation = LabelStatTableHeaderSkillPoints.find(imageUtils = game.imageUtils).first
-                val failureChanceLocation = LabelTrainingFailureChance.find(imageUtils = game.imageUtils).first
+                val skillPointsLocation = LabelStatTableHeaderSkillPoints.find(game.imageUtils).first
+                val failureChanceLocation = LabelTrainingFailureChance.find(game.imageUtils).first
 
                 // Record start time for elapsed time measurement.
                 val startTime = System.currentTimeMillis()
@@ -1170,10 +1171,10 @@ class Training(private val game: Game) {
 
 		// Build a TrainingConfig using the current game state for use with companion object scoring functions.
 		val trainingConfig = TrainingConfig(
-			currentStats = game.trainee.stats.asMap(),
+			currentStats = campaign.trainee.stats.asMap(),
 			statPrioritization = statPrioritization,
-			statTargets = game.trainee.getStatTargetsByDistance(),
-			currentDate = game.currentDate,
+			statTargets = campaign.trainee.getStatTargetsByDistance(),
+			currentDate = campaign.date,
 			scenario = game.scenario,
 			enableRainbowTrainingBonus = enableRainbowTrainingBonus,
 			focusOnSparkStatTarget = focusOnSparkStatTarget,
@@ -1192,13 +1193,13 @@ class Training(private val game: Game) {
 		val skippedScores: Map<TrainingOption, Double>
 		val best: TrainingOption?
 
-		if (game.scenario == "Unity Cup" && game.currentDate.year < DateYear.SENIOR) {
+		if (game.scenario == "Unity Cup" && campaign.date.year < DateYear.SENIOR) {
 			// Unity Cup (Year < 3): Use Spirit Explosion Gauge priority system.
 			scoringMode = "Unity Cup (Spirit Gauge)"
 			trainingScores = trainingMap.values.associateWith { scoreUnityCupTraining(trainingConfig, it) }
 			skippedScores = skippedTrainingMap.values.associateWith { scoreUnityCupTraining(trainingConfig, it) }
 			best = trainingScores.maxByOrNull { it.value }?.key
-		} else if (game.currentDate.bIsPreDebut || game.currentDate.year == DateYear.JUNIOR) {
+		} else if (campaign.date.bIsPreDebut || campaign.date.year == DateYear.JUNIOR) {
 			// Junior Year: Focus on building relationship bars.
 			scoringMode = "Friendship (Pre-Debut/Junior)"
 			trainingScores = trainingMap.values.associateWith { scoreFriendshipTraining(it) }
@@ -1232,7 +1233,7 @@ class Training(private val game: Game) {
 			// Check if this training is a rainbow training that exceeds the stat cap buffer.
 			val training = trainingMap[trainingSelected]
 			if (training != null && training.numRainbow > 0) {
-				val currentStat = game.trainee.stats.asMap()[trainingSelected] ?: 0
+				val currentStat = campaign.trainee.stats.asMap()[trainingSelected] ?: 0
 				val potentialStat = currentStat + (training.statGains[trainingSelected] ?: 0)
 				val effectiveStatCap = currentStatCap - 100
 				
@@ -1286,7 +1287,7 @@ class Training(private val game: Game) {
 
 		// Show scoring context.
 		sb.appendLine("Scoring Mode: $scoringMode")
-		sb.appendLine("Current Date: ${game.currentDate}")
+		sb.appendLine("Current Date: ${campaign.date}")
 
 		// Show current stats.
 		val currentStats = config.currentStats
@@ -1294,7 +1295,7 @@ class Training(private val game: Game) {
 
 		// Show stat targets for context.
 		val targets = config.statTargets
-		val preferredDistance = game.trainee.trackDistance
+		val preferredDistance = campaign.trainee.trackDistance
 		sb.appendLine("Stat Targets ($preferredDistance): Speed=${targets[StatName.SPEED]}, Stam=${targets[StatName.STAMINA]}, Pow=${targets[StatName.POWER]}, Guts=${targets[StatName.GUTS]}, Wit=${targets[StatName.WIT]}")
 
 		// Compute completion percentages for each stat.
@@ -1452,7 +1453,7 @@ class Training(private val game: Game) {
 	 */
 	private fun appendTrainingDetails(sb: StringBuilder, blacklistedStats: List<StatName?> = emptyList(), selected: TrainingOption? = null) {
 		if (trainingMap.isEmpty() && skippedTrainingMap.isEmpty()) {
-			if (trainWitDuringFinale && game.currentDate.day > 72) {
+			if (trainWitDuringFinale && campaign.date.day > 72) {
 				sb.appendLine("Energy recovery needed. No analysis performed. Bot will force Wit training during Finale.")
 			} else {
 				sb.appendLine("Energy recovery needed. No analysis performed.")
@@ -1554,7 +1555,7 @@ class Training(private val game: Game) {
 	 * @param result The training analysis result object to process and potentially modify.
 	 */
 	private fun applyContextualStatGainBoost(result: TrainingAnalysisResult) {
-		val currentStat = game.trainee.stats.asMap()[result.name] ?: 0
+		val currentStat = campaign.trainee.stats.asMap()[result.name] ?: 0
 		val effectiveStatCap = currentStatCap - 20
 		
 		val newStatGains = result.statGains.toMutableMap()
@@ -1657,7 +1658,7 @@ class Training(private val game: Game) {
 
 		// Edge case: Low stat gains with relationship bars in Senior Year.
 		val currentMainStatGain = newStatGains[result.name] ?: 0
-		if (game.currentDate.year == DateYear.SENIOR && currentMainStatGain <= 9 && result.relationshipBars.isNotEmpty()) {
+		if (campaign.date.year == DateYear.SENIOR && currentMainStatGain <= 9 && result.relationshipBars.isNotEmpty()) {
 			val boostAmount = result.relationshipBars.size * 5
 			newStatGains[result.name] = currentMainStatGain + boostAmount
 			

@@ -1,4 +1,4 @@
-package com.steve1316.uma_android_automation.bot
+package com.steve1316.uma_android_automation.types
 
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -9,18 +9,21 @@ import org.opencv.core.Point
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.automation_library.utils.MessageLog
 
+import com.steve1316.uma_android_automation.bot.Game
+import com.steve1316.uma_android_automation.bot.campaigns.Campaign
+
 import com.steve1316.uma_android_automation.utils.DoublyLinkedList
 import com.steve1316.uma_android_automation.utils.DoublyLinkedListNode
 
 import com.steve1316.uma_android_automation.components.ButtonSkillUp
 
+import com.steve1316.uma_android_automation.types.Aptitude
 import com.steve1316.uma_android_automation.types.BoundingBox
+import com.steve1316.uma_android_automation.types.RunningStyle
 import com.steve1316.uma_android_automation.types.SkillData
 import com.steve1316.uma_android_automation.types.SkillType
-import com.steve1316.uma_android_automation.types.RunningStyle
 import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.TrackSurface
-import com.steve1316.uma_android_automation.types.Aptitude
 
 /** Represents a single skill entry in a skill list.
  *
@@ -28,6 +31,7 @@ import com.steve1316.uma_android_automation.types.Aptitude
  * upgrade and downgraded versions.
  *
  * @param game Reference to the bot's Game instance.
+ * @param campaign Reference to the current Campaign instance.
  * @param skillData The SkillData instance containing static skill information.
  * @param bIsObtained Whether this entry has been purchased.
  * @param bIsVirtual Whether this entry is considered a virtual entry in the skill list.
@@ -61,6 +65,7 @@ import com.steve1316.uma_android_automation.types.Aptitude
  */
 class SkillListEntry(
     private val game: Game,
+    private val campaign: Campaign,
     val skillData: SkillData,
     var bIsObtained: Boolean = false,
     var bIsVirtual: Boolean = false,
@@ -219,7 +224,7 @@ class SkillListEntry(
      */
     private fun getRunningStyleAptitudeEvaluationModifier(): Double? {
         val runningStyle: RunningStyle = runningStyle ?: return null
-        val aptitude: Aptitude = game.trainee.checkRunningStyleAptitude(runningStyle)
+        val aptitude: Aptitude = campaign.trainee.checkRunningStyleAptitude(runningStyle)
         return EVALUATION_POINT_APTITUDE_RATIO_MAP[aptitude]
     }
 
@@ -231,7 +236,7 @@ class SkillListEntry(
      */
     private fun getTrackDistanceAptitudeEvaluationModifier(): Double? {
         val trackDistance: TrackDistance = trackDistance ?: return null
-        val aptitude: Aptitude = game.trainee.checkTrackDistanceAptitude(trackDistance)
+        val aptitude: Aptitude = campaign.trainee.checkTrackDistanceAptitude(trackDistance)
         return EVALUATION_POINT_APTITUDE_RATIO_MAP[aptitude]
     }
 
@@ -243,7 +248,7 @@ class SkillListEntry(
      */
     private fun getTrackSurfaceAptitudeEvaluationModifier(): Double? {
         val trackSurface: TrackSurface = trackSurface ?: return null
-        val aptitude: Aptitude = game.trainee.checkTrackSurfaceAptitude(trackSurface)
+        val aptitude: Aptitude = campaign.trainee.checkTrackSurfaceAptitude(trackSurface)
         return EVALUATION_POINT_APTITUDE_RATIO_MAP[aptitude]
     }
 

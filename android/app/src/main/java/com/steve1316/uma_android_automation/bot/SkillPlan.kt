@@ -9,13 +9,15 @@ import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.automation_library.utils.MessageLog
 
 import com.steve1316.uma_android_automation.MainActivity
-import com.steve1316.uma_android_automation.bot.SkillList
+import com.steve1316.uma_android_automation.bot.campaigns.Campaign
 
+import com.steve1316.uma_android_automation.types.Aptitude
 import com.steve1316.uma_android_automation.types.RunningStyle
+import com.steve1316.uma_android_automation.types.SkillCommunityTier
+import com.steve1316.uma_android_automation.types.SkillList
+import com.steve1316.uma_android_automation.types.SkillListEntry
 import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.TrackSurface
-import com.steve1316.uma_android_automation.types.Aptitude
-import com.steve1316.uma_android_automation.types.SkillCommunityTier
 
 private const val USE_MOCK_DATA: Boolean = false
 private const val MOCK_SKILL_POINTS: Int = 1495
@@ -25,7 +27,7 @@ private const val MOCK_SKILL_POINTS: Int = 1495
  *
  * @param game A reference to the Game instance.
  */
-class SkillPlan (private val game: Game) {
+class SkillPlan (private val game: Game, private val campaign: Campaign) {
     private val TAG: String = "[${MainActivity.loggerTag}]SkillPlan"
 
     // Get user settings for skill plans.
@@ -362,14 +364,14 @@ class SkillPlan (private val game: Game) {
         // Get user specified running style.
         var preferredRunningStyle: RunningStyle? = when (skillSettingRunningStyleString.lowercase()) {
             "no_preference" -> null
-            "inherit" -> RunningStyle.fromShortName(racingSettingRunningStyleString) ?: game.trainee.runningStyle
+            "inherit" -> RunningStyle.fromShortName(racingSettingRunningStyleString) ?: campaign.trainee.runningStyle
             else -> RunningStyle.fromName(skillSettingRunningStyleString)
         }
 
         // Get user specified track distance.
         var preferredTrackDistance: TrackDistance? = when (skillSettingTrackDistanceString.lowercase()) {
             "no_preference" -> null
-            "inherit" -> TrackDistance.fromName(trainingSettingTrackDistanceString) ?: game.trainee.trackDistance
+            "inherit" -> TrackDistance.fromName(trainingSettingTrackDistanceString) ?: campaign.trainee.trackDistance
             else -> TrackDistance.fromName(skillSettingTrackDistanceString)
         }
 
@@ -680,7 +682,7 @@ class SkillPlan (private val game: Game) {
     fun start(skillPlanName: String? = null): Boolean {
         val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
 
-        val skillList = SkillList(game)
+        val skillList = SkillList(game, campaign)
 
         // Verify that we are at the skill list screen.
         val bIsCareerComplete: Boolean = skillList.checkCareerCompleteSkillListScreen(bitmap)
@@ -723,7 +725,7 @@ class SkillPlan (private val game: Game) {
         // If we haven't acquired them yet, then we need to force check them.
         // This can happen if we start the bot at the skill list screen
         // or at the end of a career.
-        if (!USE_MOCK_DATA && !game.trainee.bHasUpdatedAptitudes) {
+        if (!USE_MOCK_DATA && !campaign.trainee.bHasUpdatedAptitudes) {
             skillList.checkStats()
         }
 

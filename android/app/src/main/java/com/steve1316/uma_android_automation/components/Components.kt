@@ -11,10 +11,11 @@ import android.graphics.Bitmap
 import androidx.core.graphics.createBitmap
 import org.opencv.core.Point
 
-import com.steve1316.automation_library.utils.MyAccessibilityService
-import com.steve1316.uma_android_automation.utils.CustomImageUtils
-
 import com.steve1316.automation_library.data.SharedData
+import com.steve1316.automation_library.utils.MyAccessibilityService
+
+import com.steve1316.uma_android_automation.bot.DialogHandlerResult
+import com.steve1316.uma_android_automation.utils.CustomImageUtils
 
 /** Defines various screen regions.
  *
@@ -407,7 +408,7 @@ interface ButtonInterface : ComponentInterface {
         tries: Int = 1,
         taps: Int = 1,
         confidence: Double? = null,
-        handleDialogs: ((dialog: DialogInterface?, args: Map<String, Any>) -> Pair<Boolean, DialogInterface?>)? = null,
+        handleDialogs: ((dialog: DialogInterface?, args: Map<String, Any>) -> DialogHandlerResult)? = null,
         bTriggersLoading: Boolean = false,
     ): Boolean {
         val point = if (sourceBitmap == null) {

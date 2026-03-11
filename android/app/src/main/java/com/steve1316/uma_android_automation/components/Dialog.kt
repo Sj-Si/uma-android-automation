@@ -12,14 +12,14 @@
  * Example usage:
  * 
  * // Call the centralized handler through the campaign or game.
- * val (bDialogHandled, dialog) = game.campaign.handleDialogs()
+ * val result: DialogHandlerResult = campaign.handleDialogs()
  *
  * // Or pass arguments via the map.
- * game.campaign.handleDialogs(args = mapOf("overrideIgnoreConsecutiveRaceWarning" to true))
+ * campaign.handleDialogs(args = mapOf("overrideIgnoreConsecutiveRaceWarning" to true))
  *
  * // Example of how logic is implemented within a DialogHandler:
- * open fun handleDialogs(dialog: DialogInterface? = null, args: Map<String, Any> = mapOf()): Pair<Boolean, DialogInterface?> {
- *     val dialog = dialog ?: DialogUtils.getDialog(game.imageUtils) ?: return Pair(false, null)
+ * open fun handleDialogs(dialog: DialogInterface? = null, args: Map<String, Any> = mapOf()): DialogHandlerResult {
+ *     val dialog = dialog ?: DialogUtils.getDialog(game.imageUtils) ?: return DialogHandlerResult.NoDialogDetected
  *     when (dialog.name) {
  *         "open_soon" -> {
  *             game.notificationMessage = "open_soon"
@@ -33,9 +33,10 @@
  *         else -> {
  *             MessageLog.i(TAG, "\n[DIALOG] ${dialog.name}")
  *             dialog.close(imageUtils=game.imageUtils)
+ *             return DialogHandlerResult.Unhandled(dialog)
  *         }
  *     }
- *     return Pair(true, dialog)
+ *     return DialogHandlerResult.Handled(dialog)
  * }
  */
 
