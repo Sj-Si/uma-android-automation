@@ -124,7 +124,7 @@ abstract class Task(game: Game) : DialogHandler(game) {
             "The task timed out after $maxRuntimeMinutes minutes.",
         )
 
-        val timeoutMs: Long = 2000L//(maxRuntimeMinutes * (60 * 1000)).toLong()
+        val timeoutMs: Long = (maxRuntimeMinutes * (60 * 1000)).toLong()
         val startTime: Long = System.currentTimeMillis()
         while (System.currentTimeMillis() - startTime < timeoutMs) {
             try {
