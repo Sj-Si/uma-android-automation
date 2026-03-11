@@ -7,6 +7,7 @@ import org.opencv.core.Point
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
+import com.steve1316.automation_library.utils.DiscordUtils
 
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
@@ -17,7 +18,7 @@ import com.steve1316.uma_android_automation.bot.TaskResultCode
 
 import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.PluginFactory
-import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
+import com.steve1316.uma_android_automation.bot.DialogHandlerResult
 
 import com.steve1316.uma_android_automation.components.*
 
@@ -26,31 +27,26 @@ class Plugins(game: Game) : Task(game) {
     val pluginsSetting: List<String> = SettingsHelper.getStringArraySetting("plugins", "enabledPlugins")
         .map { it.replace("\\s+".toRegex(), "") }
 
-    fun pluginDialogHandler(dialog: DialogInterface? = null, args: Map<String, Any> = mapOf()): DialogHandlerResult {
-        val (bWasDialogHandled, dialog) = handleDialogs(dialog, args)
-
-        if (dialog == null) {
-            return DialogHandlerResult.NoDialogDetected
+    override fun handleDialogs(dialog: DialogInterface?, args: Map<String, Any>): DialogHandlerResult {
+        val result: DialogHandlerResult = super.handleDialogs(dialog, args)
+        if (result !is DialogHandlerResult.Unhandled) {
+            return result
         }
 
-        if (bWasDialogHandled) {
-            return DialogHandlerResult.Handled(dialog)
-        }
-
-        when (dialog.name) {
+        when (result.dialog.name) {
             "date_changed" -> {
-                dialog.close(game.imageUtils)
+                result.dialog.close(game.imageUtils)
                 handleTitleMenu()
             }
-            "notices" -> dialog.close(game.imageUtils)
+            "notices" -> result.dialog.close(game.imageUtils)
             "open_soon" -> {
-                dialog.close(game.imageUtils)
+                result.dialog.close(game.imageUtils)
             }
-            "story_unlocked" -> dialog.close(game.imageUtils)
-            else -> return DialogHandlerResult.Unhandled(dialog)
+            "story_unlocked" -> result.dialog.close(game.imageUtils)
+            else -> return DialogHandlerResult.Unhandled(result.dialog)
         }
         game.wait(0.5, skipWaitingForLoading = true)
-        return DialogHandlerResult.Handled(dialog)
+        return DialogHandlerResult.Handled(result.dialog)
     }
 
     private fun selectLegendRace(bitmap: Bitmap? = null): Boolean {
@@ -80,7 +76,7 @@ class Plugins(game: Game) : Task(game) {
         while (System.currentTimeMillis() - startTime < timeoutMs) {
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
             when {
-                pluginDialogHandler() is DialogHandlerResult.Handled -> {}
+                handleDialogs() is DialogHandlerResult.Handled -> {}
                 // If we see the ButtonHomeSpecialMissions button, then we're at the home page.
                 // Since we're at home page, we're done.
                 ButtonHomeSpecialMissions.check(game.imageUtils, sourceBitmap = bitmap) -> return true
@@ -94,22 +90,33 @@ class Plugins(game: Game) : Task(game) {
         return false
     }
 
-	override fun start(maxRuntimeMinutes: Int = 5 * 90): TaskResult {
+    override fun process(): TaskResult? {
+        return null
+    }
+
+	override fun start(maxRuntimeMinutes: Int): TaskResult {
 		MessageLog.i(TAG, "[PLUGINS] Starting process for handling plugins...")
 
-        val startTime: Long = System.currentTimeMillis()
+        val maxRuntimeMinutes: Int = maxRuntimeMinutes.coerceAtLeast(60 * 5)
 
-        var overallResult: TaskResult = TaskResult.Error(
-            TaskResultCode.TASK_RESULT_TIMED_OUT,
-            "The task timed out after $maxRuntimeMinutes minutes.",
+        val startTime: Long = System.currentTimeMillis()
+        val timeoutMs: Long = (maxRuntimeMinutes * (60 * 1000)).toLong()
+
+        var overallResult: TaskResult = TaskResult.Success(
+            TaskResultCode.TASK_RESULT_COMPLETE,
+            "[PLUGINS] Task completed successfully.",
         )
         val results: MutableList<TaskResult> = mutableListOf()
         for (pluginName in pluginsSetting) {
             if (System.currentTimeMillis() - startTime > timeoutMs) {
+                overallResult = TaskResult.Error(
+                    TaskResultCode.TASK_RESULT_TIMED_OUT,
+                    "[PLUGINS] Timed out after $maxRuntimeMinutes minutes.",
+                )
                 break
             }
 
-            val plugin: Plugin? = PluginFactory.create(pluginName, game, dialogHandler = ::pluginDialogHandler)
+            val plugin: Plugin? = PluginFactory.create(pluginName, game, dialogHandler = ::handleDialogs)
             if (plugin == null) {
                 continue
             }
@@ -123,6 +130,10 @@ class Plugins(game: Game) : Task(game) {
                 )
             } else {
                 MessageLog.e(TAG, "[PLUGINS] [${plugin.name}] Failed.")
+                overallResult = TaskResult.Success(
+                    TaskResultCode.TASK_RESULT_COMPLETE,
+                    "[PLUGINS] Task completed with errors.",
+                )
                 TaskResult.Error(
                     TaskResultCode.TASK_RESULT_UNHANDLED_EXCEPTION,
                     "[PLUGINS] [${plugin.name}] Failed.",
@@ -133,7 +144,7 @@ class Plugins(game: Game) : Task(game) {
         }
 
         val numSuccess: Int = results.count { it is TaskResult.Success }
-        val numFailed: int = results.size - numSuccess
+        val numFailed: Int = results.size - numSuccess
 
         var logMessage: String = "Plugins tasks completed: $numSuccess success / $numFailed failed"
         var discordMessage: String = "Plugins tasks completed: $numSuccess success / $numFailed failed"
@@ -145,7 +156,7 @@ class Plugins(game: Game) : Task(game) {
         }
         game.notificationMessage = logMessage
 
-        if (result is TaskResult.Success) {
+        if (overallResult is TaskResult.Success) {
             MessageLog.i(TAG, logMessage)
         } else {
             MessageLog.e(TAG, logMessage)
@@ -157,6 +168,6 @@ class Plugins(game: Game) : Task(game) {
             game.wait(1.0, skipWaitingForLoading = true)
         }
 
-        return result
+        return overallResult
 	}
 }

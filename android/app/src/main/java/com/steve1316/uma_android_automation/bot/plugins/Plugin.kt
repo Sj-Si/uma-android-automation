@@ -12,9 +12,12 @@ import android.graphics.Bitmap
 
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
+import com.steve1316.automation_library.utils.DiscordUtils
 
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
+import com.steve1316.uma_android_automation.bot.DialogHandler
+import com.steve1316.uma_android_automation.bot.DialogHandlerResult
 
 import com.steve1316.uma_android_automation.components.BaseComponentInterface
 import com.steve1316.uma_android_automation.components.ButtonClose
@@ -36,27 +39,15 @@ import com.steve1316.uma_android_automation.bot.plugins.Presents
 import com.steve1316.uma_android_automation.bot.plugins.SpecialMissions
 import com.steve1316.uma_android_automation.bot.plugins.TeamTrials
 
-sealed class DialogHandlerResult {
-    data class Handled(val dialog: DialogInterface) : DialogHandlerResult()
-    data class Unhandled(val dialog: DialogInterface) : DialogHandlerResult()
-    data class Deferred(val dialog: DialogInterface) : DialogHandlerResult()
-    data object NoDialogDetected : DialogHandlerResult()
-    data object TaskClearToastDetected: DialogHandlerResult()
-    data class Error(val message: String) : DialogHandlerResult()
-}
+typealias DialogHandlerCallback = (DialogInterface?, Map<String, Any>) -> DialogHandlerResult
 
-typealias DialogHandlerCallback = (DialogInterface?) -> DialogHandlerResult
-
-/** A class abstraction for all plugins.
- *
- * Should be instantiated within a try/catch since we use "require" in init.
- */
+/** A class abstraction for all plugins. */
 abstract class Plugin(
-    protected val game: Game,
+    game: Game,
     protected val menuBar: MenuBar,
     protected val maxRuntimeMinutes: Int = 30,
     protected val commonDialogHandler: DialogHandlerCallback? = null,
-) {
+) : DialogHandler(game) {
     abstract val TAG: String
 
     val name: String = this::class.simpleName!!
@@ -92,11 +83,6 @@ abstract class Plugin(
             is DialogHandlerResult.Deferred -> {}
             // If no dialog detected, we can just continue with this function.
             is DialogHandlerResult.NoDialogDetected -> {}
-            // If a toast blocked the dialog and we are here, then we timed out while waiting
-            // for the toast to go away, just continue with the function and hope for the best.
-            // Rather do this than throw an error and completely stop operation.
-            is DialogHandlerResult.TaskClearToastDetected -> {}
-            is DialogHandlerResult.Error -> throw IllegalStateException("Dialog handler produced an error: ${dialogResult.message}")
         }
 
         val page: PageInterface? = checkPage()
@@ -143,13 +129,11 @@ abstract class Plugin(
      *  - Handled: If the dialog was fully handled.
      *  - Unhandled: If a dialog was detected but not handled by this function.
      *  - NoDialogDetected: If no dialog was detected.
-     *  - TaskClearToastDetected: If a toast is detected at the top of the screen,
-     *      which could blocked the dialog's title bar.
      *  - Error: If an error occurred during dialog detection/handling.
      */
-    protected open fun handleDialogs(dialog: DialogInterface? = null, args: Map<String, Any> = mapOf()): DialogHandlerResult {
+    open override fun handleDialogs(dialog: DialogInterface?, args: Map<String, Any>): DialogHandlerResult {
         if (commonDialogHandler != null) {
-            val commonResult: DialogHandlerResult = commonDialogHandler(dialog)
+            val commonResult: DialogHandlerResult = commonDialogHandler(dialog, args)
             if (commonResult is DialogHandlerResult.Handled) {
                 MessageLog.d(TAG, "[$name][DIALOG] Common dialog handler handled a dialog.")
                 return commonResult
@@ -473,8 +457,8 @@ abstract class Plugin(
         }
 
         // Now run the plugin until it is complete or times out.
-        val timeoutMs: Int = maxRuntimeMinutes * 60000
-        val startTime = System.currentTimeMillis()
+        val timeoutMs: Long = (maxRuntimeMinutes * (60 * 1000)).toLong()
+        val startTime: Long = System.currentTimeMillis()
         while (!bIsComplete && System.currentTimeMillis() - startTime < timeoutMs) {
             progress()
         }

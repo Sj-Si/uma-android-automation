@@ -12,9 +12,10 @@ import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.PluginFactory
 import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerCallback
-import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
+import com.steve1316.uma_android_automation.bot.DialogHandlerResult
 
-import com.steve1316.uma_android_automation.bot.Campaign
+import com.steve1316.uma_android_automation.bot.campaigns.Campaign
+import com.steve1316.uma_android_automation.bot.campaigns.UraFinale
 import com.steve1316.uma_android_automation.bot.campaigns.UnityCup
 
 import com.steve1316.uma_android_automation.utils.ScrollList
@@ -76,7 +77,7 @@ class CampaignRunner(
     }
 
     val campaign: Campaign = when (scenario) {
-        Scenario.URA_FINALE -> Campaign(game)
+        Scenario.URA_FINALE -> UraFinale(game)
         Scenario.UNITY_CUP -> UnityCup(game)
         else -> throw InterruptedException("Invalid scenario selected: $scenario")
     }
