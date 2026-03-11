@@ -819,8 +819,8 @@ const TrainingEventSettings = () => {
                                             {allEvents.length === 0
                                                 ? "No events available. Please select characters and/or support cards in the sections below to see their events."
                                                 : filteredEvents.length === 0 && (Object.keys(characterEventOverrides || {}).length > 0 || Object.keys(supportEventOverrides || {}).length > 0)
-                                                ? "All available events have been overridden. Remove an override to add it again."
-                                                : "No events match your search. Try a different search term."}
+                                                  ? "All available events have been overridden. Remove an override to add it again."
+                                                  : "No events match your search. Try a different search term."}
                                         </Text>
                                     </View>
                                 }

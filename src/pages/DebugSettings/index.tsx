@@ -476,7 +476,6 @@ const DebugSettings = () => {
                                 description="Disables normal bot operations and starts the Training screen OCR test. Only on the Training screen and tests detecting various components on the screen."
                                 style={{ marginTop: 10 }}
                             />
-
                         </View>
                     </View>
                 </ScrollView>

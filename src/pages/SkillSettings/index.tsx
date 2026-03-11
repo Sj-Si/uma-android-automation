@@ -11,7 +11,7 @@ import CustomTitle from "../../components/CustomTitle"
 import PageHeader from "../../components/PageHeader"
 import { BotStateContext, defaultSettings } from "../../context/BotStateContext"
 import { SearchPageProvider } from "../../context/SearchPageContext"
-import { skillPlanSettingsPages } from "../SkillPlanSettings"
+import { skillPlanSettingsPages } from "../SkillPlanSettings/config"
 import InfoContainer from "../../components/InfoContainer"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 

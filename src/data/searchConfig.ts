@@ -348,21 +348,22 @@ const searchConfig: SearchOption[] = [
     {
         id: "minimum-quality-threshold",
         title: "Minimum Quality Threshold",
-        description: "The core \"Quality Floor\" for a race today. If the best race available right now scores below this value, the bot will choose to wait for a future opportunity instead (even if the future looks worse).",
+        description:
+            'The core "Quality Floor" for a race today. If the best race available right now scores below this value, the bot will choose to wait for a future opportunity instead (even if the future looks worse).',
         page: "RacingPlanSettings",
         parentId: "enable-racing-plan",
     },
     {
         id: "time-decay-factor",
         title: "Time Decay Factor",
-        description: "A multiplier applied to future race scores to account for the risk of waiting. Lower values make the bot more \"impatient\" by discounting future rewards more heavily.",
+        description: 'A multiplier applied to future race scores to account for the risk of waiting. Lower values make the bot more "impatient" by discounting future rewards more heavily.',
         page: "RacingPlanSettings",
         parentId: "enable-racing-plan",
     },
     {
         id: "improvement-threshold",
         title: "Improvement Threshold",
-        description: "The \"Surplus Value\" required to justify waiting. The bot will only wait if a discounted future race scores at least this many points higher than the best race today.",
+        description: 'The "Surplus Value" required to justify waiting. The bot will only wait if a discounted future race scores at least this many points higher than the best race today.',
         page: "RacingPlanSettings",
         parentId: "enable-racing-plan",
     },

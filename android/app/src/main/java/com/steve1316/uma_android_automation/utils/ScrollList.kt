@@ -566,7 +566,7 @@ class ScrollList private constructor(
         val x0: Int = ((startLoc?.x ?: (bboxList.x + (bboxList.w / 2)))).toInt()
         val y0: Int = ((startLoc?.y ?: (bboxList.y + (bboxList.h / 2)))).toInt()
         // Add some extra height since scrolling isn't accurate.
-        val y1: Int = (bboxList.y - (entryHeight * 1.5)).toInt().coerceAtLeast(0)
+        val y1: Int = (bboxList.y - entryHeight).toInt().coerceAtLeast(0)
         game.gestureUtils.swipe(
             x0.toFloat(),
             y0.toFloat(),

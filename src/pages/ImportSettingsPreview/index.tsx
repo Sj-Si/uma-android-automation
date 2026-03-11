@@ -37,13 +37,16 @@ const ImportSettingsPreview = () => {
 
     // Group changes by category and return an object with the category as the key and the changes as the value.
     const groupedChanges = useMemo(() => {
-        return changes.reduce((acc, change) => {
-            if (!acc[change.category]) {
-                acc[change.category] = []
-            }
-            acc[change.category].push(change)
-            return acc
-        }, {} as Record<string, SettingsChange[]>)
+        return changes.reduce(
+            (acc, change) => {
+                if (!acc[change.category]) {
+                    acc[change.category] = []
+                }
+                acc[change.category].push(change)
+                return acc
+            },
+            {} as Record<string, SettingsChange[]>
+        )
     }, [changes])
 
     const styles = useMemo(

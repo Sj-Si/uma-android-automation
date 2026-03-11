@@ -201,8 +201,8 @@ const EventLogVisualizer: React.FC = () => {
                                 </View>
                             </WarningContainer>
                             <Text style={styles.empty}>
-                                Select one or more .txt logs named like "TraineeName_date.txt" or "log @ date.txt" to visualize per-day actions. Files are sorted by filename. Gaps between days are shown.{" "}
-                                {"\n\n"}
+                                Select one or more .txt logs named like "TraineeName_date.txt" or "log @ date.txt" to visualize per-day actions. Files are sorted by filename. Gaps between days are
+                                shown. {"\n\n"}
                                 Note: Recent Android versions heavily restrict access to the app data folder where logs are stored. Use the "Open Data Directory" button above to locate the logs, then
                                 move the files you want to use out of /Android/data/ to a public folder like /Download/ before selecting them here.
                             </Text>

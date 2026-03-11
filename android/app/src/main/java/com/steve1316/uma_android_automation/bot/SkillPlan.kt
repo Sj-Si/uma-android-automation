@@ -612,7 +612,7 @@ class SkillPlan (private val game: Game) {
         for ((name, price) in result) {
             MessageLog.d(TAG, "\t$name: $price")
         }
-        MessageLog.d(TAG, "\n\tTOTAL: ${result.values.sum()} / ${if (USE_MOCK_DATA) MOCK_SKILL_POINTS else skillList.skillPoints} pts")
+        MessageLog.d(TAG, "\n\tTOTAL: ${result.values.sum()} / ${if (USE_MOCK_DATA) MOCK_SKILL_POINTS else skillList.skillPoints} pts with ${if (USE_MOCK_DATA) MOCK_SKILL_POINTS else skillList.skillPoints - result.values.sum()} left over pts")
         MessageLog.d(TAG, "===========================================")
 
         return result.toMap()

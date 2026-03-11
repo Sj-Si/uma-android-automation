@@ -1,17 +1,50 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.1.1</latestVersion>
+    <latestVersion>5.2.0</latestVersion>
     <url>https://github.com/steve1316/uma-android-automation/releases</url>
     <releaseNotes>
-v5.1.1 - Changelog
+v5.2.0 - Changelog
 
 New
 ---
-- Update `Automation Library` to version `2.4.6` to have the app remember the floating overlay button location from now on.
+- Add a new option to the `Settings` page to set a date to stop the app at.
+- Add new options to the `Debug Settings` page to enable the `Remote Log Viewer`. This allows users to view the logs from their browser on separate devices in real-time. Requires both devices to be on the same Wi-Fi network to work.
+- The drawer now has the app icon in it as well as a footer with a pressable link to the GitHub repo.
+- Add a checkbox to the `Skill Plan Settings` pages to filter out the unselected skills.
+- Add logic to determine whether an in-game button is disabled or not.
+- Add `Team Carrot` as an option in the `Training Event Settings` page for Unity Cup Team Selection.
+- Add a new option in the `Debug Settings` page to start a OCR detection test for the trainee's name from the aptitude dialog.
+- Add missing options in the `Debug Settings` page for the `Main Screen` and `Training Screen` tests.
+- Add edge case handling of artificial boost of side-effect gains for Guts training.
+- Add more selection reasons at the end of training analysis.
+- Log trainings that needed corrections at the end of training analysis with asterisks.
+- Add more edge case handling for the training stat gain corrections.
+
+Adjustments
+---
+- Update the game data up to Admire Vega 2026-03-04.
+- Update `Automation Library` version to 2.5.0.
+- Adjust the starting Discord message that is sent to display the link to the `Remote Log Viewer` as clickable when it is enabled.
+- Curb the output of loading log messages.
+- Adjust the conditions of when the smart racing plan is checked so it races more often.
+- Set the smart racing parameters to new default values so it races more often.
+- Image asset cleanup and use them as components instead.
+- Shorten the scroll distance when scrolling down as skills are being scanned when purchasing skills.
+- Log the leftover skill points after skill plan execution.
+- Log all skills scanned when purchasing skills.
+- Always enforce Wit training on the final turn 75.
 
 Fixed
 ---
-- Fix possible edge case for race skips not being initiated.
+- Fix bugs related to scrolling lists.
+- Fix rare bug that causes infinite loops due to the app running too fast.
+- Fix regression where running style was not being reset anymore after Junior Year.
+- Fix bug where the app is unable to send the final Discord message when the run ends due to it finishing too fast.
+- Fix several edge cases involving the Race Preparation screen.
+- Fix bug where SQLite settings were not syncing.
+- Fix bug where the app goes too fast and miss clicking on the Skills button at Career End.
+- Fix using the wrong mapping to check for side-effect stat gains during training analysis.
+- Fix require cycle involving the `SkillPlanSettings.tsx` and `BotStateContext.tsx`.
     </releaseNotes>
   </update>
 </AppUpdater>

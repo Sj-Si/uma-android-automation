@@ -35,9 +35,12 @@ This project is purely for educational purposes to learn about Android automatio
 -   [x] Advanced OpenCV template matching for real-time gamestate awareness.
 -   [x] Tesseract OCR integrated with rapid fuzzy string matching.
 -   [x] Modern user interface built using React Native, Typescript and Expo for full configurability.
--   [x] Settings to customize preferences and stat prioritizations for Training Events.
--   [x] Import/Export customizable skill point buying plans and training configurations.
--   [x] Runs extra races to farm fans when enabled in the settings.
+-   [x] Remote Log Viewer to monitor real-time automation progress from any browser on the same network.
+-   [x] Screen recording for debugging to easily capture and review issues.
+-   [x] Import/export settings as JSON, alongside customizable skill point buying plans and training configurations.
+-   [x] Smart racing plan that dynamically schedules extra races based on current stats and fan requirements.
+-   [x] Training Event customization per event for fine-grained control over choices.
+-   [x] Load and manage profiles for the Training Settings to easily swap between different builds.
 -   [x] A multitude of settings to configure including setting preferred stat targets per distance.
 
 # Instructions
@@ -112,3 +115,4 @@ This project is separated into a React Native frontend configured via Expo and a
 9. [React Native - Used as the frontend](https://reactnative.dev/)
 10. [Expo - Modern modular frontend](https://expo.dev/)
 11. [SQLite - Local database via expo-sqlite](https://docs.expo.dev/versions/latest/sdk/sqlite/)
+12. [Ktor - For the Remote Log Viewer](https://ktor.io/)

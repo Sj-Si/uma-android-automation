@@ -121,6 +121,12 @@ class StartModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
                 }
             }
 
+            // Initialize the SettingsHelper's connection to the SQLite database.
+            // This is required to correctly fetch the flag for enabling the Remote Log Viewer.
+            if (!SettingsHelper.isAvailable()) {
+                SettingsHelper.initialize(context)
+            }
+
             // Start the remote log stream server if enabled in settings.
             val enableRemoteLogViewer = SettingsHelper.getBooleanSetting("debug", "enableRemoteLogViewer", false)
             Log.d(TAG, "Able to start Remote Log Viewer in start(): $enableRemoteLogViewer")

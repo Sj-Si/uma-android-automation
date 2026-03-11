@@ -570,6 +570,12 @@ class SkillList (private val game: Game) {
             return null
         }
 
+        // Log each detected skill entry for debugging.
+        MessageLog.d(TAG, "[SKILLS] Detected: \"${skillListEntry.name}\" | " +
+            "price: ${skillListEntry.price} (screen: ${skillListEntry.screenPrice}) | " +
+            "obtained: ${skillListEntry.bIsObtained} | " +
+            "virtual: ${skillListEntry.bIsVirtual}")
+
         // Finally, translate the localPoint to screen space before we return it.
         val point = Point(
             localPoint.x + entry.bbox.x,
@@ -608,6 +614,15 @@ class SkillList (private val game: Game) {
             val res: Pair<SkillListEntry, Point>? = onScrollListEntry(entry)
             if (onEntry != null && res != null) onEntry(this, res.first, res.second) else false
         }
+
+        // Log a summary of all detected skill entries for debugging.
+        MessageLog.d(TAG, "[SKILLS] ===== Scan Complete: ${entries.size} total entries =====")
+        for ((name, entry) in entries) {
+            if (!entry.bIsVirtual) {
+                MessageLog.d(TAG, "[SKILLS] Final: $entry")
+            }
+        }
+        Log.d(TAG, "[SKILLS] ================================================")
 
         return entries
     }

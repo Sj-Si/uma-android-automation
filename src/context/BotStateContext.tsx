@@ -1,7 +1,7 @@
 import { createContext, useState, useMemo, useCallback } from "react"
 import { startTiming } from "../lib/performanceLogger"
 import racesData from "../data/races.json"
-import { skillPlanSettingsPages } from "../pages/SkillPlanSettings"
+import { skillPlanSettingsPages } from "../pages/SkillPlanSettings/config"
 import { pluginConfigs } from "../pages/PluginsSettings"
 
 /**
@@ -245,16 +245,19 @@ export const defaultSettings: Settings = {
         preferredRunningStyle: "inherit",
         preferredTrackDistance: "inherit",
         preferredTrackSurface: "no_preference",
-        plans: Object.keys(skillPlanSettingsPages).reduce((acc, curr) => {
-            acc[curr] = {
-                enabled: false,
-                strategy: "default",
-                enableBuyInheritedUniqueSkills: false,
-                enableBuyNegativeSkills: false,
-                plan: "",
-            }
-            return acc
-        }, {} as Record<string, SkillPlanSettingsConfig>),
+        plans: Object.keys(skillPlanSettingsPages).reduce(
+            (acc, curr) => {
+                acc[curr] = {
+                    enabled: false,
+                    strategy: "default",
+                    enableBuyInheritedUniqueSkills: false,
+                    enableBuyNegativeSkills: false,
+                    plan: "",
+                }
+                return acc
+            },
+            {} as Record<string, SkillPlanSettingsConfig>
+        ),
     },
     plugins: {
         // All enabled plugin names as a list.

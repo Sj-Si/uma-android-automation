@@ -7,7 +7,7 @@ import { Avatar, AvatarImage } from "../ui/avatar"
 import { markNavigationStart } from "../../lib/performanceLogger"
 import { useTheme } from "../../context/ThemeContext"
 import { BotStateContext } from "../../context/BotStateContext"
-import { skillPlanSettingsPages } from "../../pages/SkillPlanSettings"
+import { skillPlanSettingsPages } from "../../pages/SkillPlanSettings/config"
 
 interface MenuItem {
     /** The route name used for navigation. */
@@ -504,26 +504,26 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
     return (
         <>
             <DrawerContentScrollView {...props} style={styles.container} contentContainerStyle={{ flexGrow: 1 }}>
-            <View style={styles.header}>
-                <View style={styles.headerTextContainer}>
-                    <Text style={styles.headerTitle}>Uma Android Automation</Text>
-                    <Text style={styles.headerSubtitle}>{bsc.appVersion}</Text>
+                <View style={styles.header}>
+                    <View style={styles.headerTextContainer}>
+                        <Text style={styles.headerTitle}>Uma Android Automation</Text>
+                        <Text style={styles.headerSubtitle}>{bsc.appVersion}</Text>
+                    </View>
+                    <Avatar alt="UAA" style={{ width: 72, height: 72 }}>
+                        <AvatarImage source={require("../../assets/app_icon.png")} />
+                    </Avatar>
                 </View>
-                <Avatar alt="UAA" style={{ width: 72, height: 72 }}>
-                    <AvatarImage source={require("../../assets/app_icon.png")} />
-                </Avatar>
+                <View style={styles.menuContainer}>{menuItems.map((item) => renderMenuItem(item, 0))}</View>
+            </DrawerContentScrollView>
+            <View style={styles.footer}>
+                <TouchableOpacity onPress={() => Linking.openURL("https://github.com/steve1316/uma-android-automation")} activeOpacity={0.7}>
+                    <View style={styles.footerButton}>
+                        <Ionicons name="logo-github" size={32} color={colors.primary} style={{ marginRight: 8 }} />
+                        <Text style={styles.footerText}>Go to GitHub</Text>
+                    </View>
+                </TouchableOpacity>
             </View>
-            <View style={styles.menuContainer}>{menuItems.map((item) => renderMenuItem(item, 0))}</View>
-        </DrawerContentScrollView>
-        <View style={styles.footer}>
-            <TouchableOpacity onPress={() => Linking.openURL("https://github.com/steve1316/uma-android-automation")} activeOpacity={0.7}>
-                <View style={styles.footerButton}>
-                    <Ionicons name="logo-github" size={32} color={colors.primary} style={{ marginRight: 8 }} />
-                    <Text style={styles.footerText}>Go to GitHub</Text>
-                </View>
-            </TouchableOpacity>
-        </View>
-    </>
+        </>
     )
 }
 

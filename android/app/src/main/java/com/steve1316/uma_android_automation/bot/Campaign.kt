@@ -703,6 +703,7 @@ open class Campaign(game: Game) : DialogHandler(game) {
                 } else if (game.checkEndScreen()) {
                     // Stop when the bot has reached the screen where it details the overall result of the run.
                     if (game.skillPlan.skillPlans["careerComplete"]?.bIsEnabled ?: false) {
+                        game.wait(0.5)
                         ButtonCareerEndSkills.click(game.imageUtils)
                         game.wait(1.0)
                         if (!handleSkillListScreen()) {

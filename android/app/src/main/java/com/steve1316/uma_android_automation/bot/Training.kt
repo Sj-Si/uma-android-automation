@@ -55,6 +55,7 @@ class Training(private val game: Game) {
 	) {
 		var statGains: Map<StatName, Int> = mapOf()
 		var statGainRowValues: Map<StatName, List<Int>> = emptyMap()
+		var correctedStats: List<StatName> = emptyList()
 		var failureChance: Int = -1
 		var relationshipBars: ArrayList<CustomImageUtils.BarFillResult> = arrayListOf()
 		var numRainbow: Int = 0
@@ -66,6 +67,7 @@ class Training(private val game: Game) {
 	data class TrainingOption(
 		val name: StatName,
 		val statGains: Map<StatName, Int>,
+		val correctedStats: List<StatName> = emptyList(),
 		val failureChance: Int,
 		val relationshipBars: ArrayList<CustomImageUtils.BarFillResult>,
 		val numRainbow: Int,
@@ -82,6 +84,7 @@ class Training(private val game: Game) {
 			if (failureChance != other.failureChance) return false
 			if (name != other.name) return false
 			if (!statGains.equals(other.statGains)) return false
+			if (correctedStats != other.correctedStats) return false
 			if (relationshipBars != other.relationshipBars) return false
 			if (numRainbow != other.numRainbow) return false
 			if (numSpiritGaugesCanFill != other.numSpiritGaugesCanFill) return false
@@ -95,6 +98,7 @@ class Training(private val game: Game) {
 			var result = failureChance
 			result = 31 * result + name.hashCode()
 			result = 31 * result + statGains.entries.hashCode()
+			result = 31 * result + correctedStats.hashCode()
 			result = 31 * result + relationshipBars.hashCode()
 			result = 31 * result + numRainbow
 			result = 31 * result + numSpiritGaugesCanFill
@@ -635,8 +639,13 @@ class Training(private val game: Game) {
 
 			if (trainingMap.isEmpty()) {
 				// Check if we should force Wit training during the Finale instead of recovering energy.
-				if (trainWitDuringFinale && game.currentDate.day > 72) {
-					MessageLog.i(TAG, "[TRAINING] There is not enough energy for training to be done but the setting to train Wit during the Finale is enabled. Forcing Wit training...")
+				// Always force Wit on turn 75 since recovering energy on the very last turn is completely useless.
+				if ((trainWitDuringFinale && game.currentDate.day > 72) || game.currentDate.day == 75) {
+					if (game.currentDate.day == 75) {
+						MessageLog.i(TAG, "[TRAINING] It is the final turn. Forcing Wit training instead of recovering energy since resting provides zero benefit now.")
+					} else {
+						MessageLog.i(TAG, "[TRAINING] There is not enough energy for training to be done but the setting to train Wit during the Finale is enabled. Forcing Wit training...")
+					}
 					// Directly attempt to tap Wit training.
 					if (ButtonTrainingWit.click(imageUtils = game.imageUtils, taps = 3)) {
                         game.waitForLoading()
@@ -870,15 +879,18 @@ class Training(private val game: Game) {
                             val statGainResult = game.imageUtils.determineStatGainFromTraining(statName, sourceBitmap, skillPointsLocation)
                             result.statGains = statGainResult.statGains
                             result.statGainRowValues = statGainResult.rowValuesMap
+                            result.correctedStats = statGainResult.correctedStats
                         } else {
                             MessageLog.w(TAG, "[TRAINING] Skill points location was not found during OCR. Skipping stat gain detection for $statName.")
                             result.statGains = StatName.entries.associateWith { 0 }.toMap()
                             result.statGainRowValues = emptyMap()
+                            result.correctedStats = emptyList()
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "[ERROR] Error in determineStatGainFromTraining: ${e.stackTraceToString()}")
                         result.statGains = StatName.entries.associateWith { 0 }.toMap()
                         result.statGainRowValues = emptyMap()
+                        result.correctedStats = emptyList()
                     } finally {
                         latch.countDown()
                         val elapsedTime = System.currentTimeMillis() - startTimeStatGains
@@ -976,6 +988,9 @@ class Training(private val game: Game) {
                         MessageLog.i(TAG, "All 5 stat regions processed for $statName training. Results: ${result.statGains.toSortedMap(compareBy { it.ordinal }).toString()}")
                     }
 
+                    applyContextualStatGainBoost(result)
+                    MessageLog.i(TAG, "Contextually boosted results: ${result.statGains.toSortedMap(compareBy { it.ordinal }).toString()}")
+
                     // Determine which failure chance threshold to use.
                     val effectiveFailureChance = if (enableRiskyTraining) {
                         riskyTrainingMaxFailureChance
@@ -1008,6 +1023,7 @@ class Training(private val game: Game) {
                     val newTraining = TrainingOption(
                         name = result.name,
                         statGains = result.statGains,
+                        correctedStats = result.correctedStats,
                         failureChance = result.failureChance,
                         relationshipBars = result.relationshipBars,
                         numRainbow = result.numRainbow,
@@ -1056,6 +1072,11 @@ class Training(private val game: Game) {
                     return
                 }
 
+                // Apply secondary stat gain boosts based on context for all results.
+                for (result in analysisResults) {
+                    applyContextualStatGainBoost(result)
+                }
+
                 // Process results and output logs in training order.
                 for (result in analysisResults) {
                     // Check if risky training logic should apply based on main stat gain.
@@ -1078,6 +1099,7 @@ class Training(private val game: Game) {
                         val skippedTraining = TrainingOption(
                             name = result.name,
                             statGains = result.statGains,
+                            correctedStats = result.correctedStats,
                             failureChance = result.failureChance,
                             relationshipBars = result.relationshipBars,
                             numRainbow = result.numRainbow,
@@ -1092,6 +1114,7 @@ class Training(private val game: Game) {
                     val newTraining = TrainingOption(
                         name = result.name,
                         statGains = result.statGains,
+                        correctedStats = result.correctedStats,
                         failureChance = result.failureChance,
                         relationshipBars = result.relationshipBars,
                         numRainbow = result.numRainbow,
@@ -1393,6 +1416,27 @@ class Training(private val game: Game) {
 			keyFactors.forEach { factor ->
 				sb.appendLine("Key factor: $factor")
 			}
+		} else if (scores.isNotEmpty() || skippedScores.isNotEmpty()) {
+			sb.appendLine("")
+			sb.appendLine("--- Selection Explanation ---")
+			val numSkipped = skippedScores.size
+			val numBlacklisted = config.blacklist.filterNotNull().size
+			val reasons = mutableListOf<String>()
+			if (numSkipped > 0) reasons.add("$numSkipped skipped due to high failure chance")
+			if (numBlacklisted > 0) reasons.add("$numBlacklisted blacklisted")
+			if (restrictedTrainingNames.isNotEmpty()) reasons.add("${restrictedTrainingNames.size} restricted")
+			
+			if (reasons.isNotEmpty()) {
+				sb.appendLine("No training was selected (${reasons.joinToString(", ")}).")
+			} else {
+				sb.appendLine("No training was selected.")
+			}
+		}
+
+		// Only show the manual stat correction notice if there were actually any corrections.
+		val anyCorrections = scores.keys.any { it.correctedStats.isNotEmpty() } || skippedScores.keys.any { it.correctedStats.isNotEmpty() }
+		if (anyCorrections) {
+			sb.appendLine("* means manual stat correction")
 		}
 
 		sb.appendLine("================================================")
@@ -1407,6 +1451,15 @@ class Training(private val game: Game) {
 	 * @param selected The selected training option to mark with an indicator, or null if none selected.
 	 */
 	private fun appendTrainingDetails(sb: StringBuilder, blacklistedStats: List<StatName?> = emptyList(), selected: TrainingOption? = null) {
+		if (trainingMap.isEmpty() && skippedTrainingMap.isEmpty()) {
+			if (trainWitDuringFinale && game.currentDate.day > 72) {
+				sb.appendLine("Energy recovery needed. No analysis performed. Bot will force Wit training during Finale.")
+			} else {
+				sb.appendLine("Energy recovery needed. No analysis performed.")
+			}
+			return
+		}
+
 		val blacklistedStatNames = blacklistedStats.filterNotNull()
 
 		// Iterate over all stats in order (Speed, Stamina, Power, Guts, Wit).
@@ -1443,7 +1496,17 @@ class Training(private val game: Game) {
 	private fun appendSingleTrainingDetails(sb: StringBuilder, name: StatName, training: TrainingOption, selected: TrainingOption? = null) {
 		// Build the basic training info line with optional selected indicator.
 		val selectedIndicator = if (training == selected) " <---- SELECTED" else ""
-		val basicInfo = "$name Training: stats=${training.statGains.toSortedMap(compareBy { it.ordinal }).toString()}, fail=${training.failureChance}%, rainbows=${training.numRainbow}$selectedIndicator"
+		
+		// Create a formatted string for stat gains, appending an asterisk to any corrected stats.
+		val formattedStatGains = training.statGains.toSortedMap(compareBy { it.ordinal }).map { (stat, gain) ->
+			if (stat in training.correctedStats) {
+				"$stat=$gain*"
+			} else {
+				"$stat=$gain"
+			}
+		}.joinToString(", ", "{", "}")
+		
+		val basicInfo = "$name Training: stats=$formattedStatGains, fail=${training.failureChance}%, rainbows=${training.numRainbow}$selectedIndicator"
 		sb.appendLine(basicInfo)
 
 		// Print relationship bars if any.
@@ -1474,7 +1537,167 @@ class Training(private val game: Game) {
 		val sb = StringBuilder()
 		sb.appendLine("\n========== Training Analysis Results ==========")
 		appendTrainingDetails(sb, emptyList())
+		
+		val anyCorrections = trainingMap.values.any { it.correctedStats.isNotEmpty() } || skippedTrainingMap.values.any { it.correctedStats.isNotEmpty() }
+		if (anyCorrections) {
+			sb.appendLine("* means manual stat correction")
+		}
+		
 		sb.appendLine("================================================")
 		MessageLog.i(TAG, sb.toString())
+	}
+
+	/**
+	 * Applies artificial boost to main stat gains when they appear lower than side-effect stats 
+	 * due to OCR failure, utilizing contextual data like relationship bars and the year.
+	 *
+	 * @param result The training analysis result object to process and potentially modify.
+	 */
+	private fun applyContextualStatGainBoost(result: TrainingAnalysisResult) {
+		val currentStat = game.trainee.stats.asMap()[result.name] ?: 0
+		val effectiveStatCap = currentStatCap - 20
+		
+		val newStatGains = result.statGains.toMutableMap()
+		val sideEffectStats = newStatGains.keys.filter { it != result.name }
+		val maxSideEffectGain = sideEffectStats.maxOfOrNull { newStatGains[it] ?: 0 } ?: 0
+		val mainStatGain = newStatGains[result.name] ?: 0
+
+		var boosted = false
+
+		// Edge case: Specific manual correction for GUTS training where POWER gain should be greater than SPEED gain.
+		if (result.name == StatName.GUTS) {
+			val speedGain = newStatGains[StatName.SPEED] ?: 0
+			var powerGain = newStatGains[StatName.POWER] ?: 0
+			
+			if (powerGain < speedGain) {
+				val originalPowerGain = powerGain
+				while (powerGain <= speedGain) {
+					powerGain += 10
+				}
+				newStatGains[StatName.POWER] = powerGain
+				
+				val newCorrectedStats = result.correctedStats.toMutableList()
+				if (!newCorrectedStats.contains(StatName.POWER)) {
+					newCorrectedStats.add(StatName.POWER)
+					result.correctedStats = newCorrectedStats
+				}
+				
+				if (game.imageUtils.debugMode) {
+					MessageLog.i(TAG, "[DEBUG] Contextual boost: Artificially increased POWER stat gain for GUTS training from $originalPowerGain to $powerGain to be greater than SPEED gain ($speedGain).")
+				} else {
+					Log.d(TAG, "[DEBUG] Contextual boost: Artificially increased POWER stat gain for GUTS training from $originalPowerGain to $powerGain to be greater than SPEED gain ($speedGain).")
+				}
+				boosted = true
+			}
+		}
+
+		// Expected side effects mapping.
+		val affectedStatsMap = mapOf(
+			StatName.SPEED to listOf(StatName.POWER),
+			StatName.STAMINA to listOf(StatName.GUTS),
+			StatName.POWER to listOf(StatName.STAMINA),
+			StatName.GUTS to listOf(StatName.SPEED, StatName.POWER),
+			StatName.WIT to listOf(StatName.SPEED)
+		)
+		val expectedSideEffects = affectedStatsMap[result.name] ?: emptyList()
+
+		// Check if any expected side-effect stat has a higher or equal gain than the main stat (but only if main stat > 0 to not overlap with the edge case below).
+		if (mainStatGain > 0 && mainStatGain in 1..maxSideEffectGain) {
+			val originalGain = mainStatGain
+			newStatGains[result.name] = maxSideEffectGain + 10
+			
+			val newCorrectedStats = result.correctedStats.toMutableList()
+			if (!newCorrectedStats.contains(result.name)) {
+				newCorrectedStats.add(result.name)
+				result.correctedStats = newCorrectedStats
+			}
+			
+			MessageLog.d(TAG, "[DEBUG] Artificially increased ${result.name} stat gain from $originalGain to ${newStatGains[result.name]} due to possible OCR failure. Side-effect stats had higher or equal gains: $sideEffectStats")
+			boosted = true
+		}
+
+		// If the expected side-effect stat gains were zeroes, boost them to half of the main stat gain.
+		val boostedMainStatGain = newStatGains[result.name] ?: 0
+		for (statName in expectedSideEffects) {
+			if ((newStatGains[statName] ?: 0) == 0 && boostedMainStatGain > 0) {
+				newStatGains[statName] = boostedMainStatGain / 2
+				
+				val newCorrectedStats = result.correctedStats.toMutableList()
+				if (!newCorrectedStats.contains(statName)) {
+					newCorrectedStats.add(statName)
+					result.correctedStats = newCorrectedStats
+				}
+				
+				MessageLog.d(TAG, "[DEBUG] Artificially increased $statName side-effect stat gain to ${newStatGains[statName]} because it was 0 due to possible OCR failure. Based on half of boosted ${result.name} = $boostedMainStatGain.")
+				boosted = true
+			}
+		}
+
+		// Edge case: Main stat is 0 but side effect is > 0, and not near stat cap.
+		if (mainStatGain == 0 && maxSideEffectGain > 0 && currentStat < effectiveStatCap) {
+			var newMainGain = mainStatGain
+			while (newMainGain <= maxSideEffectGain) {
+				newMainGain += 10
+			}
+			newStatGains[result.name] = newMainGain
+			
+			val newCorrectedStats = result.correctedStats.toMutableList()
+			if (!newCorrectedStats.contains(result.name)) {
+				newCorrectedStats.add(result.name)
+				result.correctedStats = newCorrectedStats
+			}
+			
+			if (game.imageUtils.debugMode) {
+				MessageLog.i(TAG, "[DEBUG] Contextual boost: Artificially increased ${result.name} stat gain from $mainStatGain to $newMainGain because it was 0, max side effect was $maxSideEffectGain, and current stat $currentStat is not near cap.")
+			} else {
+				Log.d(TAG, "[DEBUG] Contextual boost: Artificially increased ${result.name} stat gain from $mainStatGain to $newMainGain because it was 0, max side effect was $maxSideEffectGain, and current stat $currentStat is not near cap.")
+			}
+			boosted = true
+		}
+
+		// Edge case: Low stat gains with relationship bars in Senior Year.
+		val currentMainStatGain = newStatGains[result.name] ?: 0
+		if (game.currentDate.year == DateYear.SENIOR && currentMainStatGain <= 9 && result.relationshipBars.isNotEmpty()) {
+			val boostAmount = result.relationshipBars.size * 5
+			newStatGains[result.name] = currentMainStatGain + boostAmount
+			
+			val newCorrectedStats = result.correctedStats.toMutableList()
+			if (!newCorrectedStats.contains(result.name)) {
+				newCorrectedStats.add(result.name)
+				result.correctedStats = newCorrectedStats
+			}
+			
+			if (game.imageUtils.debugMode) {
+				MessageLog.i(TAG, "[DEBUG] Contextual boost: Artificially increased ${result.name} stat gain from $currentMainStatGain to ${newStatGains[result.name]} due to having ${result.relationshipBars.size} relationship bars in Senior Year.")
+			} else {
+				Log.d(TAG, "[DEBUG] Contextual boost: Artificially increased ${result.name} stat gain from $currentMainStatGain to ${newStatGains[result.name]} due to having ${result.relationshipBars.size} relationship bars in Senior Year.")
+			}
+			boosted = true
+		}
+
+		// Edge case: Side effect is < 9 and difference with main effect is > 20.
+		for (sideEffect in expectedSideEffects) {
+			val sideGain = newStatGains[sideEffect] ?: 0
+			if (sideGain < 9 && (mainStatGain - sideGain) > 20) {
+				newStatGains[sideEffect] = sideGain + 10
+				
+				val newCorrectedStats = result.correctedStats.toMutableList()
+				if (!newCorrectedStats.contains(sideEffect)) {
+					newCorrectedStats.add(sideEffect)
+					result.correctedStats = newCorrectedStats
+				}
+				
+				if (game.imageUtils.debugMode) {
+					MessageLog.i(TAG, "[DEBUG] Contextual boost: Artificially increased $sideEffect side-effect stat gain from $sideGain to ${newStatGains[sideEffect]} due to being less than 9 and having >20 difference with main stat gain of $mainStatGain.")
+				} else {
+					Log.d(TAG, "[DEBUG] Contextual boost: Artificially increased $sideEffect side-effect stat gain from $sideGain to ${newStatGains[sideEffect]} due to being less than 9 and having >20 difference with main stat gain of $mainStatGain.")
+				}
+				boosted = true
+			}
+		}
+
+		if (boosted) {
+			result.statGains = newStatGains
+		}
 	}
 }
