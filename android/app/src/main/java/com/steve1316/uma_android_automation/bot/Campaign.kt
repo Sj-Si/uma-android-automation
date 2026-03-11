@@ -21,14 +21,6 @@ import org.opencv.core.Point
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-sealed class CampaignResult {
-    data object CareerComplete : CampaignResult()
-    data object ManuallyStopped : CampaignResult()
-    data object StopAtMainScreenOverride : CampaignResult()
-    data object TimedOut : CampaignResult()
-    data class Unknown(val message: String) : CampaignResult()
-}
-
 /**
  * Base campaign class that contains all shared logic for campaign automation.
  * Campaign-specific logic should be implemented in subclasses by overriding the appropriate methods.
@@ -377,20 +369,11 @@ open class Campaign(game: Game) : DialogHandler(game) {
      * should take when at the main screen. It handles date changes, aptitude/fan updates,
      * race detection, mood recovery, and training.
      *
-     * @param bShouldStopAtMainScreen Whether the function should exit early upon
-     * detecting the main screen. Returns true if main screen is detected.
-     *
      * @return True if the main screen was detected and handled, false otherwise.
-     * If [bShouldStopAtMainScreen] is true, then we return true if the main screen
-     * is detected, otherwise we return false.
      */
-    fun handleMainScreen(bShouldStopAtMainScreen: Boolean = false): Boolean {
+    fun handleMainScreen(): Boolean {
         if (!game.checkMainScreen()) {
             return false
-        }
-
-        if (bShouldStopAtMainScreen) {
-            return true
         }
 
         // Perform first-time setup of loading the user's race agenda if needed.
@@ -664,29 +647,16 @@ open class Campaign(game: Game) : DialogHandler(game) {
 
 	/**
 	 * Main automation loop that handles all shared logic.
-     *
-     * @param maxRuntimeMinutes The maximum time that this function can run before it
-     * times out and returns from the function.
-     * @param bShouldStopAtMainScreen Whether the bot should stop as soon as it detects
-     * the main screen. This is useful for recovering the bot to the main screen when
-     * we don't want to actually run through the entire campaign. When used in
-     * conjunction with [maxRuntimeMinutes], this allows us to relatively quickly check
-     * if the bot is mid-campaign.
 	 */
-	open fun start(maxRuntimeMinutes: Int = 60, bShouldStopAtMainScreen: Boolean = false): CampaignResult {
-        val timeoutMs: Int = maxRuntimeMinutes * 60000
-		val startTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
+	open fun start() {
+		while (true) {
             try {
                 // We always check for dialogs first.
                 if (game.tryHandleAllDialogs()) {
                     continue
                 }
 
-                if (handleMainScreen(bShouldStopAtMainScreen = bShouldStopAtMainScreen)) {
-                    if (bShouldStopAtMainScreen) {
-                        return CampaignResult.StopAtMainScreenOverride
-                    }
+                if (handleMainScreen()) {
                     continue
                 } else if (game.checkTrainingEventScreen()) {
                     // If the bot is at the Training Event screen, that means there are selectable options for rewards.
@@ -723,7 +693,6 @@ open class Campaign(game: Game) : DialogHandler(game) {
                     game.tap(350.0, 450.0, taps = 1)
                 }
             } catch (e: InterruptedException) {
-                var result: CampaignResult = CampaignResult.Unknown("Bot was manually stopped.")
                 val stopReason = e.message ?: "Bot was manually stopped."
                 game.notificationMessage = "Campaign main loop exiting: $stopReason"
                 // Send Discord notification with the stop reason.
@@ -734,20 +703,15 @@ open class Campaign(game: Game) : DialogHandler(game) {
                 }
                 if (stopReason.contains("Bot had reached end of run") == true) {
                     MessageLog.i(TAG, "Campaign main loop exiting: $stopReason")
-                    result = CampaignResult.CareerComplete
                 } else {
                     MessageLog.e(TAG, "Campaign main loop exiting: $stopReason")
-                    result = CampaignResult.Unknown(stopReason)
                 }
 
                 if (DiscordUtils.enableDiscordNotifications) {
                     game.wait(1.0, skipWaitingForLoading = true)
                 }
-                return result
+                break
             }
 		}
-
-        MessageLog.e(TAG, "The bot timed out while attempting to complete the campaign.")
-        return CampaignResult.TimedOut
 	}
 }
