@@ -118,7 +118,7 @@ abstract class Task(game: Game) : DialogHandler(game) {
      *
      * @return The [TaskResult] result of this task's main loop.
      */
-    fun start(maxRuntimeMinutes: Int = 90): TaskResult {
+    open fun start(maxRuntimeMinutes: Int = 90): TaskResult {
         var result: TaskResult = TaskResult.Error(
             TaskResultCode.TASK_RESULT_TIMED_OUT,
             "The task timed out after $maxRuntimeMinutes minutes.",
