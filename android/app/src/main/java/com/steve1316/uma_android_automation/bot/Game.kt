@@ -7,7 +7,7 @@ import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Task
 import com.steve1316.uma_android_automation.bot.campaigns.Campaign
 import com.steve1316.uma_android_automation.bot.campaigns.UnityCup
-import com.steve1316.uma_android_automation.bot.campaigns.Plugins
+import com.steve1316.uma_android_automation.bot.Plugins
 import com.steve1316.uma_android_automation.bot.campaigns.UraFinale
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
 import com.steve1316.automation_library.utils.BotService

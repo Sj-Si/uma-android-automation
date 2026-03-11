@@ -1,4 +1,4 @@
-package com.steve1316.uma_android_automation.bot.campaigns
+package com.steve1316.uma_android_automation.bot
 
 import android.graphics.Bitmap
 
@@ -10,7 +10,10 @@ import com.steve1316.automation_library.utils.SettingsHelper
 
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
-import com.steve1316.uma_android_automation.bot.Campaign
+import com.steve1316.uma_android_automation.bot.campaigns.Campaign
+import com.steve1316.uma_android_automation.bot.Task
+import com.steve1316.uma_android_automation.bot.TaskResult
+import com.steve1316.uma_android_automation.bot.TaskResultCode
 
 import com.steve1316.uma_android_automation.bot.plugins.Plugin
 import com.steve1316.uma_android_automation.bot.plugins.PluginFactory
@@ -18,9 +21,7 @@ import com.steve1316.uma_android_automation.bot.plugins.DialogHandlerResult
 
 import com.steve1316.uma_android_automation.components.*
 
-class Plugins(game: Game) : Campaign(game) {
-    override val TAG: String = "[${MainActivity.loggerTag}]Plugins"
-
+class Plugins(game: Game) : Task(game) {
     // The ordered list of plugins from the settings.
     val pluginsSetting: List<String> = SettingsHelper.getStringArraySetting("plugins", "enabledPlugins")
         .map { it.replace("\\s+".toRegex(), "") }
@@ -93,21 +94,69 @@ class Plugins(game: Game) : Campaign(game) {
         return false
     }
 
-	override fun start() {
-		MessageLog.i(TAG, "[PLUGINS] Starting process for handling plugins.")
+	override fun start(maxRuntimeMinutes: Int = 5 * 90): TaskResult {
+		MessageLog.i(TAG, "[PLUGINS] Starting process for handling plugins...")
 
+        val startTime: Long = System.currentTimeMillis()
+
+        var overallResult: TaskResult = TaskResult.Error(
+            TaskResultCode.TASK_RESULT_TIMED_OUT,
+            "The task timed out after $maxRuntimeMinutes minutes.",
+        )
+        val results: MutableList<TaskResult> = mutableListOf()
         for (pluginName in pluginsSetting) {
+            if (System.currentTimeMillis() - startTime > timeoutMs) {
+                break
+            }
+
             val plugin: Plugin? = PluginFactory.create(pluginName, game, dialogHandler = ::pluginDialogHandler)
             if (plugin == null) {
                 continue
             }
 
-            val result: Boolean = plugin.start()
-            if (result) {
+            val pluginResult: Boolean = plugin.start()
+            val result: TaskResult = if (pluginResult) {
                 MessageLog.i(TAG, "[PLUGINS] [${plugin.name}] Completed successfully.")
+                TaskResult.Success(
+                    TaskResultCode.TASK_RESULT_COMPLETE,
+                    "[PLUGINS] [${plugin.name}] Completed successfully.",
+                )
             } else {
-                MessageLog.w(TAG, "[PLUGINS] [${plugin.name}] Failed.")
+                MessageLog.e(TAG, "[PLUGINS] [${plugin.name}] Failed.")
+                TaskResult.Error(
+                    TaskResultCode.TASK_RESULT_UNHANDLED_EXCEPTION,
+                    "[PLUGINS] [${plugin.name}] Failed.",
+                )
             }
+
+            results.add(result)
         }
+
+        val numSuccess: Int = results.count { it is TaskResult.Success }
+        val numFailed: int = results.size - numSuccess
+
+        var logMessage: String = "Plugins tasks completed: $numSuccess success / $numFailed failed"
+        var discordMessage: String = "Plugins tasks completed: $numSuccess success / $numFailed failed"
+        for (result in results) {
+            val msgBase: String = "${result.javaClass.simpleName} (${result.code}): ${result.message}"
+            val diffChar: String = if (result is TaskResult.Success) "+" else "-"
+            logMessage += "\n\t$msgBase"
+            discordMessage += "\n\t$diffChar $msgBase"
+        }
+        game.notificationMessage = logMessage
+
+        if (result is TaskResult.Success) {
+            MessageLog.i(TAG, logMessage)
+        } else {
+            MessageLog.e(TAG, logMessage)
+        }
+
+        if (DiscordUtils.enableDiscordNotifications) {
+            DiscordUtils.queue.add("```diff\n[${MessageLog.getSystemTimeString()}] $discordMessage\n```")
+            // Wait to make sure Discord webhook message queue gets fully processed.
+            game.wait(1.0, skipWaitingForLoading = true)
+        }
+
+        return result
 	}
 }
