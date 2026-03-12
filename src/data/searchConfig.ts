@@ -17,12 +17,6 @@ const searchConfig: SearchOption[] = [
     // Settings (SettingsMain)
     // ============================================================
     {
-        id: "settings-scenario-picker",
-        title: "Scenario",
-        description: "Choose a scenario that will dictate the bot's logic and behavior.",
-        page: "SettingsMain",
-    },
-    {
         id: "settings-popup-check",
         title: "Enable Popup Check",
         description: "Enables check for warning popups like lack of fans or lack of trophies gained. Stops the bot if detected for the user to deal with them manually.",

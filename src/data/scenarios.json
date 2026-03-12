@@ -10,6 +10,11 @@
         "disabled": false
     },
     {
+        "value": "Trackblazer",
+        "label": "Trackblazer",
+        "disabled": true
+    },
+    {
         "value": "Plugins",
         "label": "Plugins",
         "disabled": false

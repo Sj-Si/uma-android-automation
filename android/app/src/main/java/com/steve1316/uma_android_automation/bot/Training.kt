@@ -3,7 +3,7 @@ package com.steve1316.uma_android_automation.bot
 import android.util.Log
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.automation_library.utils.SettingsHelper
-import com.steve1316.uma_android_automation.bot.campaigns.Campaign
+import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
 import com.steve1316.uma_android_automation.types.StatName
 import com.steve1316.uma_android_automation.types.Aptitude
@@ -125,7 +125,6 @@ class Training(private val game: Game, private val campaign: Campaign) {
 		val focusOnSparkStatTarget: List<StatName>,
 		val blacklist: List<StatName?> = emptyList(),
 		val disableTrainingOnMaxedStat: Boolean = false,
-		val currentStatCap: Int = 1200,
 		val trainingOptions: List<TrainingOption>,
 		val skillHintsPerLocation: Map<StatName, Int> = StatName.entries.associateWith { 0 },
 		val enablePrioritizeSkillHints: Boolean = false,
@@ -146,7 +145,6 @@ class Training(private val game: Game, private val campaign: Campaign) {
 			if (focusOnSparkStatTarget != other.focusOnSparkStatTarget) return false
 			if (blacklist != other.blacklist) return false
 			if (disableTrainingOnMaxedStat != other.disableTrainingOnMaxedStat) return false
-			if (currentStatCap != other.currentStatCap) return false
 			if (trainingOptions != other.trainingOptions) return false
 			if (!skillHintsPerLocation.equals(other.skillHintsPerLocation)) return false
 			if (enablePrioritizeSkillHints != other.enablePrioritizeSkillHints) return false
@@ -165,7 +163,6 @@ class Training(private val game: Game, private val campaign: Campaign) {
 			result = 31 * result + focusOnSparkStatTarget.hashCode()
 			result = 31 * result + blacklist.hashCode()
 			result = 31 * result + disableTrainingOnMaxedStat.hashCode()
-			result = 31 * result + currentStatCap
 			result = 31 * result + trainingOptions.hashCode()
 			result = 31 * result + skillHintsPerLocation.hashCode()
 			result = 31 * result + enablePrioritizeSkillHints.hashCode()
@@ -176,6 +173,23 @@ class Training(private val game: Game, private val campaign: Campaign) {
 
 	companion object {
 		private val TAG: String = "[${MainActivity.loggerTag}]Training"
+
+		fun getScenarioStatCap(scenario: String, statName: StatName): Int {
+			return when (scenario) {
+				"Trackblazer" -> when (statName) {
+					StatName.SPEED -> 1200
+					StatName.STAMINA -> 1900
+					StatName.POWER -> 1200
+					StatName.GUTS -> 1200
+					StatName.WIT -> 1500
+				}
+				else -> 1200
+			}
+		}
+
+		fun getCurrentStatCap(statName: StatName, config: TrainingConfig): Int {
+			return getScenarioStatCap(config.scenario, statName)
+		}
 
 		/**
 		 * Scores the training option based on friendship bar progress.
@@ -499,10 +513,11 @@ class Training(private val game: Game, private val campaign: Campaign) {
 
             val currentStat: Int = config.currentStats.getOrDefault(training.name, 0)
             val potentialStat: Int = currentStat + training.statGains.getOrElse(training.name) { 0 }
-            val effectiveStatCap = config.currentStatCap - 100
+            val statCap = getCurrentStatCap(training.name, config)
+            val effectiveStatCap = statCap - 100
 
 			// Don't score for stats that are close to the absolute cap.
-			if (currentStat >= config.currentStatCap) {
+			if (currentStat >= statCap) {
 				return 0.0
 			}
 
@@ -589,10 +604,10 @@ class Training(private val game: Game, private val campaign: Campaign) {
 	private val riskyTrainingMaxFailureChance: Int = SettingsHelper.getIntSetting("training", "riskyTrainingMaxFailureChance")
 	private val trainWitDuringFinale: Boolean = SettingsHelper.getBooleanSetting("training", "trainWitDuringFinale")
 	private val enablePrioritizeSkillHints: Boolean = SettingsHelper.getBooleanSetting("training", "enablePrioritizeSkillHints")
-	private val manualStatCap: Int = SettingsHelper.getIntSetting("training", "manualStatCap")
 	var firstTrainingCheck = true
-	private val currentStatCap: Int
-		get() = if (disableTrainingOnMaxedStat) manualStatCap else 1200
+	private fun getCurrentStatCap(statName: StatName): Int {
+		return getScenarioStatCap(game.scenario, statName)
+	}
 
 	////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
@@ -1180,7 +1195,6 @@ class Training(private val game: Game, private val campaign: Campaign) {
 			focusOnSparkStatTarget = focusOnSparkStatTarget,
 			blacklist = blacklist,
 			disableTrainingOnMaxedStat = disableTrainingOnMaxedStat,
-			currentStatCap = currentStatCap,
 			trainingOptions = trainingMap.values.toList(),
 			skillHintsPerLocation = skillHintsPerLocation,
 			enablePrioritizeSkillHints = enablePrioritizeSkillHints,
@@ -1235,7 +1249,8 @@ class Training(private val game: Game, private val campaign: Campaign) {
 			if (training != null && training.numRainbow > 0) {
 				val currentStat = campaign.trainee.stats.asMap()[trainingSelected] ?: 0
 				val potentialStat = currentStat + (training.statGains[trainingSelected] ?: 0)
-				val effectiveStatCap = currentStatCap - 100
+				val statCap = getCurrentStatCap(trainingSelected)
+				val effectiveStatCap = statCap - 100
 				
 				if ((currentStat >= effectiveStatCap || potentialStat >= effectiveStatCap) && trainingSelected !in statsTrainedOverBuffer) {
 					MessageLog.i(TAG, "[TRAINING] [${trainingSelected}] One-time stat cap buffer allowance used for this stat.")
@@ -1556,7 +1571,7 @@ class Training(private val game: Game, private val campaign: Campaign) {
 	 */
 	private fun applyContextualStatGainBoost(result: TrainingAnalysisResult) {
 		val currentStat = campaign.trainee.stats.asMap()[result.name] ?: 0
-		val effectiveStatCap = currentStatCap - 20
+		val effectiveStatCap = getCurrentStatCap(result.name) - 20
 		
 		val newStatGains = result.statGains.toMutableMap()
 		val sideEffectStats = newStatGains.keys.filter { it != result.name }

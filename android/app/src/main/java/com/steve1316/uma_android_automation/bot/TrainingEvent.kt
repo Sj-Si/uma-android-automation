@@ -4,7 +4,7 @@ import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.automation_library.utils.MessageLog
 
 import com.steve1316.uma_android_automation.MainActivity
-import com.steve1316.uma_android_automation.bot.campaigns.Campaign
+import com.steve1316.uma_android_automation.bot.Campaign
 
 import com.steve1316.uma_android_automation.components.ButtonClose
 import com.steve1316.uma_android_automation.components.ButtonNext

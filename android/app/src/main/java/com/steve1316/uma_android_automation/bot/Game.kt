@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 import android.util.Log
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Task
-import com.steve1316.uma_android_automation.bot.campaigns.Campaign
+import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.bot.campaigns.UnityCup
 import com.steve1316.uma_android_automation.bot.Plugins
 import com.steve1316.uma_android_automation.bot.campaigns.UraFinale

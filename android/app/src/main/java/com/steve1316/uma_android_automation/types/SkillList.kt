@@ -11,7 +11,7 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.uma_android_automation.bot.DialogHandlerResult
 import com.steve1316.uma_android_automation.bot.Game
-import com.steve1316.uma_android_automation.bot.campaigns.Campaign
+import com.steve1316.uma_android_automation.bot.Campaign
 
 import com.steve1316.uma_android_automation.types.BoundingBox
 import com.steve1316.uma_android_automation.types.RunningStyle

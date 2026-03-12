@@ -19,8 +19,11 @@ import kotlinx.coroutines.channels.Channel
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.CopyOnWriteArraySet
+import java.util.regex.Pattern
 
 /**
  * Embedded WebSocket server that streams MessageLog entries in real-time
@@ -57,6 +60,54 @@ object LogStreamServer {
 
 	// Maximum number of messages to retain in the history buffer.
 	private val maxBufferSize = 15000
+
+	// Pattern for matching logs: "00:12:34.567 [DEBUG] message content".
+	private val logPattern = Pattern.compile("^(\\n?)([\\d]{2}:[\\d]{2}:[\\d]{2}\\.[\\d]{3})\\s*\\[(VERBOSE|DEBUG|INFO|WARN|ERROR)\\]\\s*(.*)", Pattern.DOTALL)
+
+	// Regex patterns for structured detail extraction.
+	private val actionTrainingPattern = Pattern.compile("\\[TRAINING\\] Now starting process to execute training")
+	private val actionRacePattern = Pattern.compile("\\[RACE\\] Racing process for .*? Race is completed")
+	private val actionMoodPattern = Pattern.compile("Recovering mood now", Pattern.CASE_INSENSITIVE)
+	private val actionEnergyPattern = Pattern.compile("\\[ENERGY\\] Successfully recovered energy")
+	private val actionInjuryPattern = Pattern.compile("\\[INJURY\\] Injury detected and attempted to heal")
+	private val traineeDetailedPattern = Pattern.compile("\\[TRAINEE_DETAILED\\] ([^:]+): (.*)")
+	private val dateNewPattern = Pattern.compile("\\[DATE\\] New date: (.*?) \\(Turn (\\d+)\\)", Pattern.CASE_INSENSITIVE)
+
+	/**
+	 * Represents a parsed log entry for structured transmission.
+	 *
+	 * @property newline Leading newline if present.
+	 * @property timestamp Extracted HH:mm:ss.SSS timestamp.
+	 * @property level Log level (DEBUG, INFO, WARN, ERROR, VERBOSE).
+	 * @property text The actual log message content.
+	 * @property action Identified bot action (training, race, injury, mood).
+	 * @property trainee Trainee detailed info (category and raw data).
+	 * @property dateInfo Extracted date and turn information.
+	 */
+	private data class LogEntry(
+		val newline: String,
+		val timestamp: String,
+		val level: String,
+		val text: String,
+		val action: String? = null,
+		val trainee: JSONObject? = null,
+		val dateInfo: JSONObject? = null
+	) {
+		/**
+		 * Converts the log entry into a JSON object for WebSocket transmission.
+		 */
+		fun toJSON(): JSONObject {
+			return JSONObject().apply {
+				put("newline", newline)
+				put("timestamp", timestamp)
+				put("level", level)
+				put("message", text)
+				action?.let { put("action", it) }
+				trainee?.let { put("trainee", it) }
+				dateInfo?.let { put("dateInfo", it) }
+			}
+		}
+	}
 
 	// Sealed class representing different log actions to ensure sequential processing.
 	private sealed class LogAction {
@@ -268,6 +319,7 @@ object LogStreamServer {
 	 * or restricted on newer Android versions.
 	 *
 	 * @param context The application context.
+	 *
 	 * @return The device's local IP address or "0.0.0.0" if unavailable.
 	 */
 	fun getDeviceIpAddress(context: Context): String {
@@ -377,6 +429,8 @@ object LogStreamServer {
 	/**
 	 * Performs history synchronization for a new client session.
 	 * Called by the background worker to ensure no live logs are sent before history is done.
+	 *
+	 * @param session The active WebSocket server session.
 	 */
 	private suspend fun handleNewClientAction(session: DefaultWebSocketServerSession) {
 		try {
@@ -384,10 +438,12 @@ object LogStreamServer {
 				messageBuffer.toList() // Send chronological (oldest to newest)
 			}
 
-			val batched = historyToSync.chunked(200)
-			for (batch in batched) {
-				val combined = "HISTORY_BATCH:" + batch.joinToString("---LOG_SEPARATOR---")
-				session.send(Frame.Text(combined))
+			if (historyToSync.isNotEmpty()) {
+				val jsonArray = JSONArray()
+				for (msg in historyToSync) {
+					jsonArray.put(parseLogToJSON(msg))
+				}
+				session.send(Frame.Text("HB:$jsonArray"))
 			}
 			session.send(Frame.Text("HISTORY_DONE"))
 
@@ -397,6 +453,133 @@ object LogStreamServer {
 		} catch (e: Exception) {
 			Log.e(TAG, "Failed to sync history for new client: ${e.message}")
 		}
+	}
+
+	/**
+	 * Parses a raw log string into a JSON object.
+	 *
+	 * @param message The raw log message to parse.
+	 *
+	 * @return A JSONObject containing the parsed log data.
+	 */
+	private fun parseLogToJSON(message: String): JSONObject {
+		val matcher = logPattern.matcher(message)
+		return if (matcher.find()) {
+			val newline = matcher.group(1) ?: ""
+			val timestamp = matcher.group(2) ?: ""
+			val level = matcher.group(3) ?: "DEBUG"
+			val text = matcher.group(4) ?: ""
+
+			// Extract high-level details for dashboard updates.
+			val action = detectAction(text)
+			val trainee = parseTraineeInfo(text)
+			val dateInfo = if (text.contains("[DATE]") ||
+				text.contains("New date:", ignoreCase = true) ||
+				text.contains("Turn", ignoreCase = true)
+			) {
+				parseDateInfo(text)
+			} else null
+
+			LogEntry(newline, timestamp, level, text, action, trainee, dateInfo).toJSON()
+		} else {
+			// Fallback: detect level and treat entire message as text.
+			val level = when {
+				message.contains("[ERROR]") -> "ERROR"
+				message.contains("[WARN]") -> "WARN"
+				message.contains("[INFO]") -> "INFO"
+				message.contains("[VERBOSE]") -> "VERBOSE"
+				else -> "DEBUG"
+			}
+			LogEntry("", "", level, message).toJSON()
+		}
+	}
+
+	/**
+	 * Detects common bot actions for session counters.
+	 *
+	 * @param text The log message text to check.
+	 *
+	 * @return The action name if detected, otherwise NULL.
+	 */
+	private fun detectAction(text: String): String? {
+		return when {
+			actionTrainingPattern.matcher(text).find() -> "training"
+			actionRacePattern.matcher(text).find() -> "race"
+			actionMoodPattern.matcher(text).find() -> "mood"
+			actionEnergyPattern.matcher(text).find() -> "energy"
+			actionInjuryPattern.matcher(text).find() -> "injury"
+			else -> null
+		}
+	}
+
+	/**
+	 * Parses trainee detailed info for the dashboard.
+	 *
+	 * @param text The log message text to check.
+	 *
+	 * @return A JSONObject containing the trainee details if detected, otherwise NULL.
+	 */
+	private fun parseTraineeInfo(text: String): JSONObject? {
+		val matcher = traineeDetailedPattern.matcher(text)
+		return if (matcher.find()) {
+			JSONObject().apply {
+				put("category", matcher.group(1))
+				put("data", matcher.group(2))
+			}
+		} else null
+	}
+
+	/**
+	 * Parses date and turn information for the dashboard.
+	 *
+	 * @param text The log message text to check.
+	 *
+	 * @return A JSONObject containing the date and turn if detected, otherwise NULL.
+	 */
+	private fun parseDateInfo(text: String): JSONObject? {
+		val matcher = dateNewPattern.matcher(text)
+		return if (matcher.find()) {
+			val date = matcher.group(1)?.trim() ?: ""
+			val turn = matcher.group(2) ?: ""
+
+			JSONObject().apply {
+				put("date", date)
+				put("turn", turn)
+			}
+		} else {
+			// Fallback: If no "[DATE] New date:" prefix but contains "(Turn X)", try extracting just the turn.
+			val turnOnlyPattern = Pattern.compile("\\(Turn (\\d+)\\)", Pattern.CASE_INSENSITIVE)
+			val turnMatcher = turnOnlyPattern.matcher(text)
+			if (turnMatcher.find()) {
+				JSONObject().apply {
+					put("turn", turnMatcher.group(1))
+				}
+			} else null
+		}
+	}
+
+	/**
+	 * Converts a turn number to a descriptive date string.
+	 *
+	 * @param day The turn number (day) to convert.
+	 *
+	 * @return The descriptive date string.
+	 */
+	private fun dateFromDay(day: Int): String {
+		val d = day - 1
+		val y = d / 24
+		val m = (d % 24) / 2
+		val p = d % 2
+
+		val years = listOf("Junior Year", "Classic Year", "Senior Year")
+		val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+		val phases = listOf("Early", "Late")
+
+		val yearStr = years.getOrElse(y) { "" }
+		val monthStr = months.getOrElse(m) { "" }
+		val phaseStr = phases.getOrElse(p) { "" }
+
+		return "$yearStr $phaseStr $monthStr"
 	}
 
 	/**
@@ -410,6 +593,7 @@ object LogStreamServer {
 
 	/**
 	 * Handles a clear action by clearing the history buffer and notifying all clients.
+	 *
 	 * Called by the background worker.
 	 */
 	private suspend fun handleClearAction() {
@@ -446,6 +630,8 @@ object LogStreamServer {
 
 	/**
 	 * Enqueues a log message for sequential processing.
+	 *
+	 * @param message The log message to broadcast.
 	 */
 	private fun broadcast(message: String) {
 		if (!isRunning) return
@@ -458,7 +644,10 @@ object LogStreamServer {
 
 	/**
 	 * Processes a broadcast action by updating the buffer and sending to all active clients.
+	 *
 	 * Called by the background worker.
+	 *
+	 * @param message The log message to broadcast.
 	 */
 	private suspend fun handleBroadcastAction(message: String) {
 		if (isMuted) return
@@ -480,10 +669,11 @@ object LogStreamServer {
 		// Skip transmission if no clients.
 		if (clients.isEmpty()) return
 
-		// Broadcast to all active clients.
+		// Broadcast as JSON to all active clients.
+		val jsonResponse = parseLogToJSON(message).toString()
 		for (client in clients) {
 			try {
-				client.send(Frame.Text(message))
+				client.send(Frame.Text(jsonResponse))
 			} catch (e: Exception) {
 				clients.remove(client)
 			}

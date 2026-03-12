@@ -639,7 +639,7 @@
                 display: flex;
                 flex-direction: row;
                 justify-content: space-between;
-                align-items: center;
+                align-items: stretch;
                 gap: 16px;
                 flex-shrink: 0;
             }
@@ -686,6 +686,10 @@
                 padding: 6px 12px;
                 border-radius: var(--radius);
                 border: 1px solid var(--border-color);
+            }
+
+            .stats-container.session-stats {
+                border-color: rgba(155, 109, 255, 0.3);
             }
 
             .stat-box {
@@ -794,10 +798,10 @@
                     padding: 10px 12px;
                 }
                 .dashboard {
-                    padding: 6px 10px;
+                    padding: 8px 10px;
                     flex-direction: row;
                     gap: 8px;
-                    align-items: center;
+                    align-items: stretch;
                     justify-content: space-between;
                 }
                 .dashboard-info {
@@ -937,25 +941,48 @@
                 </div>
                 <div class="dashboard-row">
                     <div class="stats-container">
-                        <div class="stat-box">
+                        <div class="stat-box" title="Speed">
                             <div class="stat-label">SPD</div>
                             <div id="statSpeed" class="stat-value">-</div>
                         </div>
-                        <div class="stat-box">
+                        <div class="stat-box" title="Stamina">
                             <div class="stat-label">STA</div>
                             <div id="statStamina" class="stat-value">-</div>
                         </div>
-                        <div class="stat-box">
+                        <div class="stat-box" title="Power">
                             <div class="stat-label">POW</div>
                             <div id="statPower" class="stat-value">-</div>
                         </div>
-                        <div class="stat-box">
+                        <div class="stat-box" title="Guts">
                             <div class="stat-label">GUT</div>
                             <div id="statGuts" class="stat-value">-</div>
                         </div>
-                        <div class="stat-box">
+                        <div class="stat-box" title="Wit">
                             <div class="stat-label">WIT</div>
                             <div id="statWit" class="stat-value">-</div>
+                        </div>
+                    </div>
+                    <!-- Session Action Counters -->
+                    <div class="stats-container session-stats">
+                        <div class="stat-box" title="Training">
+                            <div class="stat-label">TRN</div>
+                            <div id="countTraining" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-box" title="Racing">
+                            <div class="stat-label">RCE</div>
+                            <div id="countRace" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-box" title="Injury Recovery">
+                            <div class="stat-label">INJ</div>
+                            <div id="countInjury" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-box" title="Mood Recovery">
+                            <div class="stat-label">MOD</div>
+                            <div id="countMood" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-box" title="Energy Recovery">
+                            <div class="stat-label">ENG</div>
+                            <div id="countEnergy" class="stat-value">0</div>
                         </div>
                     </div>
                 </div>
@@ -1135,26 +1162,30 @@
                     } else if (event.data === "CMD:CLEAR") {
                         // Received a signal from the server to clear the display for a new run.
                         clearDisplay()
-                    } else if (event.data.startsWith("HISTORY_BATCH:")) {
-                        var msgs = event.data.substring(14).split("---LOG_SEPARATOR---")
-                        if (isSyncing) {
-                            syncingBuffer.push.apply(syncingBuffer, msgs)
-                        } else {
-                            appendBatchMessages(msgs)
-                        }
-                    } else if (event.data.startsWith("BATCH:")) {
-                        var msgs = event.data.substring(6).split("---LOG_SEPARATOR---")
-                        if (isSyncing) {
-                            syncingBuffer.push.apply(syncingBuffer, msgs)
-                        } else {
-                            appendBatchMessages(msgs)
+                    } else if (event.data.startsWith("HB:")) {
+                        // Received a batch of historical logs as a JSON array.
+                        try {
+                            var msgs = JSON.parse(event.data.substring(3))
+                            if (isSyncing) {
+                                syncingBuffer.push.apply(syncingBuffer, msgs)
+                            } else {
+                                appendBatchMessages(msgs)
+                            }
+                        } catch (e) {
+                            console.error("Error parsing history batch:", e)
                         }
                     } else {
-                        // Process individual log messages.
-                        if (isSyncing) {
-                            syncingBuffer.push(event.data)
-                        } else {
-                            appendLogMessage(event.data)
+                        // Process individual log messages or unknown formats.
+                        try {
+                            var data = JSON.parse(event.data)
+                            if (isSyncing) {
+                                syncingBuffer.push(data)
+                            } else {
+                                appendLogMessage(data)
+                            }
+                        } catch (e) {
+                            // Fallback for non-JSON messages if any.
+                            console.warn("Received non-JSON message:", event.data)
                         }
                     }
                 }
@@ -1207,52 +1238,15 @@
             }
 
             // ==============================================
-            // Log Message Handling
+            // Log Entry Creation
             // ==============================================
 
             /**
-             * Identifies the log severity level based on the message content.
-             * @param {string} message - The raw log message text.
-             * @returns {string} The identified log level (DEBUG, INFO, WARN, ERROR, VERBOSE).
-             */
-            function detectLevel(message) {
-                if (message.indexOf("[ERROR]") !== -1) return "ERROR"
-                if (message.indexOf("[WARN]") !== -1) return "WARN"
-                if (message.indexOf("[INFO]") !== -1) return "INFO"
-                if (message.indexOf("[VERBOSE]") !== -1) return "VERBOSE"
-                return "DEBUG"
-            }
-
-            /**
-             * Parses a raw log string into its component parts for structured display.
-             * @param {string} message - The raw log message string.
-             * @returns {object} An object containing the parsed timestamp, level, and text.
-             */
-            function parseMessage(message) {
-                // Match patterns like "00:12:34.567 [DEBUG] rest of message".
-                // Using \s* after timestamp to handle cases where the space might be missing.
-                var match = message.match(/^(\n?)([\d]{2}:[\d]{2}:[\d]{2}\.[\d]{3})\s*(\[(?:VERBOSE|DEBUG|INFO|WARN|ERROR)\])\s*(.*)/s)
-                if (match) {
-                    return {
-                        newline: match[1],
-                        timestamp: match[2],
-                        levelTag: match[3],
-                        level: match[3].replace(/[\[\]]/g, ""),
-                        text: match[4],
-                    }
-                }
-
-                // Fallback: detect level and treat entire message as text.
-                var level = detectLevel(message)
-                return { newline: "", timestamp: "", levelTag: "", level: level, text: message }
-            }
-
-            /**
              * Processes and appends a single log message to the log container.
-             * @param {string} rawMessage - The raw log message string received from the server.
+             * @param {object} parsed - The pre-parsed log object from the server.
              */
-            function appendLogMessage(rawMessage) {
-                if (!rawMessage) return
+            function appendLogMessage(parsed) {
+                if (!parsed) return
                 messageCount++
 
                 // Hide empty state on first message.
@@ -1260,18 +1254,17 @@
                     emptyState.style.display = "none"
                 }
 
-                var parsed = parseMessage(rawMessage)
-                allMessages.push({ raw: rawMessage, parsed: parsed })
+                allMessages.push({ parsed: parsed })
 
                 // Handle special messages for dashboard updates immediately for individual messages.
                 processSpecialLogs(parsed)
 
-                var entry = createLogEntry(rawMessage, parsed)
+                var entry = createLogEntry(parsed)
                 
                 // Add to message cache for fast filtering.
                 messageCache.push({
                     el: entry,
-                    text: rawMessage.toLowerCase(),
+                    text: parsed.message.toLowerCase(),
                     level: parsed.level
                 })
 
@@ -1289,17 +1282,12 @@
 
             /**
              * Efficiently append a batch of log messages using a DocumentFragment and atomic dashboard updates.
-             * @param {Array<string>} rawMessages Array of raw log message strings.
+             * @param {Array<object>} parsedMessages Array of pre-parsed log objects.
              */
-            function appendBatchMessages(rawMessages) {
-                if (!rawMessages || rawMessages.length === 0) return
+            function appendBatchMessages(parsedMessages) {
+                if (!parsedMessages || parsedMessages.length === 0) return
 
-                var validMessages = rawMessages.filter(function (m) {
-                    return m
-                })
-                if (validMessages.length === 0) return
-
-                messageCount += validMessages.length
+                messageCount += parsedMessages.length
 
                 if (emptyState) {
                     emptyState.style.display = "none"
@@ -1313,23 +1301,29 @@
                     date: null,
                     turn: null,
                     stats: {},
-                    apts: {}
+                    apts: {},
+                    actions: {
+                        training: 0,
+                        race: 0,
+                        injury: 0,
+                        mood: 0,
+                        energy: 0
+                    }
                 }
 
-                validMessages.forEach(function (rawMessage) {
+                parsedMessages.forEach(function (parsed) {
                     try {
-                        var parsed = parseMessage(rawMessage)
-                        allMessages.push({ raw: rawMessage, parsed: parsed })
+                        allMessages.push({ parsed: parsed })
                         
                         // Collect updates into the batch state object.
                         processSpecialLogs(parsed, batchState)
                         
-                        var entry = createLogEntry(rawMessage, parsed)
+                        var entry = createLogEntry(parsed)
                         
                         // Add to message cache for fast filtering.
                         messageCache.push({
                             el: entry,
-                            text: rawMessage.toLowerCase(),
+                            text: parsed.message.toLowerCase(),
                             level: parsed.level
                         })
 
@@ -1338,7 +1332,7 @@
                         }
                         fragment.appendChild(entry)
                     } catch (e) {
-                        console.error("Error processing log in batch:", e, rawMessage)
+                        console.error("Error processing log in batch:", e, parsed)
                     }
                 })
 
@@ -1363,7 +1357,14 @@
                     date: null,
                     turn: null,
                     stats: {},
-                    apts: {}
+                    apts: {},
+                    actions: {
+                        training: 0,
+                        race: 0,
+                        injury: 0,
+                        mood: 0,
+                        energy: 0
+                    }
                 }
                 
                 // allMessages is guaranteed to be in chronological order at this point.
@@ -1380,23 +1381,25 @@
 
             /**
              * Creates a DOM element representation of a log entry.
-             * @param {string} rawMessage - The original unparsed log message.
-             * @param {object} parsed - The parsed message components.
+             * @param {object} parsed - The pre-parsed log entry object from the server.
              * @returns {HTMLElement} The constructed log entry element.
              */
-            function createLogEntry(rawMessage, parsed) {
+            function createLogEntry(parsed) {
                 var entry = document.createElement("div")
                 entry.className = "log-entry level-" + parsed.level.toLowerCase()
                 entry.dataset.level = parsed.level
 
                 var html = ""
+                if (parsed.newline) {
+                    html += parsed.newline
+                }
                 if (parsed.timestamp) {
-                    html += '<span class="log-timestamp">' + escapeHtml(parsed.timestamp) + "</span>"
+                    html += '<span class="log-timestamp">' + escapeHtml(parsed.timestamp) + "</span> "
                 }
-                if (parsed.levelTag) {
-                    html += '<span class="level-tag">' + escapeHtml(parsed.levelTag) + "</span>"
+                if (parsed.level) {
+                    html += '<span class="level-tag">[' + escapeHtml(parsed.level) + "]</span> "
                 }
-                html += '<span class="log-text">' + escapeHtml(parsed.text) + "</span>"
+                html += '<span class="log-text">' + escapeHtml(parsed.message) + "</span>"
 
                 entry.innerHTML = html
 
@@ -1404,7 +1407,7 @@
                 if (!activeFilters.has(parsed.level)) {
                     entry.classList.add("hidden")
                 }
-                if (searchQuery && !rawMessage.toLowerCase().includes(searchQuery)) {
+                if (searchQuery && !parsed.message.toLowerCase().includes(searchQuery)) {
                     entry.classList.add("hidden")
                 }
                 return entry
@@ -1505,7 +1508,11 @@
             function copyAllLogs() {
                 var text = allMessages
                     .map(function (m) {
-                        return m.raw
+                        var line = ""
+                        if (m.parsed.timestamp) line += m.parsed.timestamp + " "
+                        if (m.parsed.level) line += "[" + m.parsed.level + "] "
+                        line += m.parsed.message
+                        return m.parsed.newline + line
                     })
                     .join("\n")
                 navigator.clipboard.writeText(text).then(function () {
@@ -1536,8 +1543,40 @@
                 visibleMessageCount = 0
                 updateMessageCountDisplay()
 
+                // Reset dashboard counters.
+                document.getElementById("countTraining").textContent = "0"
+                document.getElementById("countRace").textContent = "0"
+                document.getElementById("countInjury").textContent = "0"
+                document.getElementById("countMood").textContent = "0"
+                document.getElementById("countEnergy").textContent = "0"
+
                 // Reset the trainee name display.
                 document.getElementById("dashboardName").textContent = "-"
+
+                // Reset dashboard info.
+                document.getElementById("dashboardDate").textContent = "-"
+                document.getElementById("dashboardTurn").textContent = "-"
+
+                // Reset stats.
+                const stats = ["statSpeed", "statStamina", "statPower", "statGuts", "statWit"]
+                stats.forEach(id => {
+                    const el = document.getElementById(id)
+                    if (el) el.textContent = "-"
+                })
+
+                // Reset aptitudes.
+                const apts = [
+                    "aptTurf", "aptDirt",
+                    "aptSprint", "aptMile", "aptMedium", "aptLong",
+                    "aptFront", "aptPace", "aptLate", "aptEnd"
+                ]
+                apts.forEach(id => {
+                    const el = document.getElementById(id)
+                    if (el) {
+                        el.textContent = "-"
+                        el.className = "grade-badge grade-G"
+                    }
+                })
 
                 // Show empty state again.
                 if (emptyState) {
@@ -1641,8 +1680,91 @@
             })
 
             // ==============================================
-            // Dashboard
+            // Dashboard & UI Helpers
             // ==============================================
+
+            /**
+             * Processes logs for special dashboard updates.
+             * @param {object} parsed - The pre-parsed log object from the server.
+             * @param {object} stateTarget - Optional state object to update instead of the DOM.
+             */
+            function processSpecialLogs(parsed, stateTarget = null) {
+                // Use pre-parsed structured data if available for maximum performance.
+                handleActionCounters(parsed, stateTarget)
+                handleTraineeUpdates(parsed, stateTarget)
+                handleDateUpdates(parsed, stateTarget)
+            }
+
+            /**
+             * Handles action counter updates using pre-parsed 'action' field.
+             */
+            function handleActionCounters(parsed, stateTarget) {
+                const action = parsed.action
+                if (!action) return
+
+                if (stateTarget) {
+                    stateTarget.actions[action]++
+                } else {
+                    const elId = {
+                        training: "countTraining",
+                        race: "countRace",
+                        injury: "countInjury",
+                        mood: "countMood",
+                        energy: "countEnergy"
+                    }[action]
+                    if (elId) {
+                        const el = document.getElementById(elId)
+                        el.textContent = parseInt(el.textContent || "0") + 1
+                    }
+                }
+            }
+
+            /**
+             * Handles trainee stat/aptitude updates using pre-parsed 'trainee' object.
+             */
+            function handleTraineeUpdates(parsed, stateTarget) {
+                const trainee = parsed.trainee
+                if (!trainee) return
+
+                const category = trainee.category
+                const data = trainee.data
+
+                if (stateTarget) {
+                    if (category === "Name") {
+                        stateTarget.name = data.trim()
+                    } else if (category === "Stats") {
+                        const stats = data.split(", ")
+                        stats.forEach((s) => {
+                            const [key, val] = s.split("=")
+                            stateTarget.stats[key] = val
+                        })
+                    } else {
+                        const apts = data.split(", ")
+                        apts.forEach((a) => {
+                            const [name, grade] = a.split("=")
+                            stateTarget.apts[name] = grade
+                        })
+                    }
+                } else {
+                    updateDashboard(category, data)
+                }
+            }
+
+            /**
+             * Handles date and turn updates using pre-parsed 'dateInfo' object.
+             */
+            function handleDateUpdates(parsed, stateTarget) {
+                const info = parsed.dateInfo
+                if (!info) return
+
+                if (stateTarget) {
+                    if (info.turn) stateTarget.turn = info.turn
+                    if (info.date) stateTarget.date = idToTitleCase(info.date)
+                } else {
+                    if (info.turn) document.getElementById("dashboardTurn").textContent = info.turn
+                    if (info.date) document.getElementById("dashboardDate").textContent = idToTitleCase(info.date)
+                }
+            }
 
             /**
              * Converts a turn number to a descriptive date string.
@@ -1658,118 +1780,6 @@
                 const phases = ["Early", "Late"]
 
                 return `${years[y]} ${phases[p]} ${months[m]}`
-            }
-
-            /**
-             * Processes logs for special dashboard updates.
-             * @param {object} parsed - The parsed log object.
-             * @param {object} stateTarget - Optional state object to update instead of the DOM.
-             */
-            function processSpecialLogs(parsed, stateTarget = null) {
-                const text = parsed.text
-
-                // Detect and extract Turn information.
-                const turnMatch = text.match(/(?:\(|Turn\s*)(\d+)\)?/i)
-                const turnsRemainingMatch = text.match(/Detected day for extra racing: (\d+)/i)
-
-                const dashboardDateEl = document.getElementById("dashboardDate")
-                const dashboardTurnEl = document.getElementById("dashboardTurn")
-
-                // Handle absolute turn numbers: "(Turn 48)" or "Turn 48".
-                if (turnMatch && (text.includes("[DATE]") || text.includes("fromDateString"))) {
-                    if (stateTarget) {
-                        stateTarget.turn = turnMatch[1]
-                    } else {
-                        dashboardTurnEl.textContent = turnMatch[1]
-                    }
-                }
-                // Handle "turns remaining" logs: ONLY during Pre-Debut.
-                // These logs represent turns left until the next goal.
-                else if (turnsRemainingMatch) {
-                    // Check if we are in Pre-Debut.
-                    let isPreDebut = false
-                    if (stateTarget && stateTarget.date) {
-                        isPreDebut = stateTarget.date.toLowerCase().includes("pre-debut")
-                    } else if (dashboardDateEl) {
-                        isPreDebut = dashboardDateEl.textContent.toLowerCase().includes("pre-debut")
-                    }
-
-                    if (isPreDebut) {
-                        const turnsRemaining = parseInt(turnsRemainingMatch[1])
-                        // Pre-Debut has 12 turns. Turn = 12 - turnsRemaining.
-                        const absoluteTurn = Math.max(1, 12 - turnsRemaining)
-                        
-                        if (stateTarget) {
-                            stateTarget.turn = absoluteTurn
-                            stateTarget.date = idToTitleCase(dateFromDay(absoluteTurn))
-                        } else {
-                            dashboardTurnEl.textContent = absoluteTurn
-                            dashboardDateEl.textContent = idToTitleCase(dateFromDay(absoluteTurn))
-                        }
-                    }
-                }
-
-                // Parse clean date.
-                if (text.includes("fromDateString:: Detected")) {
-                    const dateMatch = text.match(/fromDateString:: Detected (.*?) (?:\(Turn|\d)/)
-                    if (dateMatch) {
-                        const dateStr = dateMatch[1].trim().replace(/^FINALS\s+/i, "Finale ")
-                        if (stateTarget) {
-                            stateTarget.date = idToTitleCase(dateStr)
-                        } else {
-                            dashboardDateEl.textContent = idToTitleCase(dateStr)
-                        }
-                    }
-                }
-                // Handle "Detected date: ..." logs.
-                else if (text.includes("Detected date:")) {
-                    const dateMatch = text.match(/Detected date:\s*(.*?)(\s*\(Turn|$)/i)
-                    if (dateMatch) {
-                        let dateStr = dateMatch[1].trim().replace(/^FINALS\s+/i, "Finale ")
-
-                        // If in Pre-Debut, calculate a more descriptive date from the current turn.
-                        let currentTurn = "-"
-                        if (stateTarget && stateTarget.turn) {
-                            currentTurn = stateTarget.turn.toString()
-                        } else {
-                            currentTurn = dashboardTurnEl.textContent
-                        }
-
-                        if (dateStr.toLowerCase().includes("pre-debut") && currentTurn !== "-") {
-                            const day = parseInt(currentTurn)
-                            if (!isNaN(day) && day > 0) {
-                                dateStr = dateFromDay(day)
-                            }
-                        }
-
-                        if (stateTarget) {
-                            stateTarget.date = idToTitleCase(dateStr)
-                        } else {
-                            dashboardDateEl.textContent = idToTitleCase(dateStr)
-                        }
-                    }
-                }
-                // Fallback for generic [DATE] logs.
-                else if (text.includes("[DATE]") && !text.includes("getFinalsDay")) {
-                    // Match generic date skipping "New date:" and requiring "(Turn X)".
-                    const dateMatch = text.match(/\[DATE\]\s*(?:New date:\s*)?(.*?)(\s*\(Turn\s*\d+\))/i)
-                    if (dateMatch) {
-                        const dateStr = dateMatch[1].trim().replace(/^FINALS\s+/i, "Finale ")
-                        if (stateTarget) {
-                            stateTarget.date = idToTitleCase(dateStr)
-                        } else {
-                            dashboardDateEl.textContent = idToTitleCase(dateStr)
-                        }
-                    }
-                }
-
-                // Parse detailed trainee info: "[TRAINEE_DETAILED] Stats: Spd=764, Sta=910, Pow=679, Gut=355, Wit=280".
-                if (text.includes("[TRAINEE_DETAILED]")) {
-                    const typeMatch = text.match(/\[TRAINEE_DETAILED\]\s*([^:]+):\s*(.*)/)
-                    if (typeMatch) {
-                        updateDashboard(typeMatch[1], typeMatch[2], stateTarget)
-                    }
-                }
             }
 
             /**
@@ -1804,6 +1814,15 @@
                         el.textContent = grade
                         el.className = "grade-badge grade-" + (grade || "G")
                     }
+                }
+                
+                // Batch update action counters.
+                if (state.actions) {
+                    document.getElementById("countTraining").textContent = state.actions.training
+                    document.getElementById("countRace").textContent = state.actions.race
+                    document.getElementById("countMood").textContent = state.actions.mood
+                    document.getElementById("countEnergy").textContent = state.actions.energy
+                    document.getElementById("countInjury").textContent = state.actions.injury
                 }
             }
 
@@ -1919,8 +1938,15 @@
                     })
                     .catch((err) => {
                         console.error("Download error:", err)
-                        // Fallback to local buffer if the server endpoint fails.
-                        const content = allMessages.map((m) => m.raw).join("\n")
+                        // Fallback: reconstruct raw log lines from pre-parsed objects.
+                        const content = allMessages.map((m) => {
+                            var line = ""
+                            if (m.parsed.newline) line += m.parsed.newline
+                            if (m.parsed.timestamp) line += m.parsed.timestamp + " "
+                            if (m.parsed.level) line += "[" + m.parsed.level + "] "
+                            line += m.parsed.message
+                            return line
+                        }).join("\n")
                         const blob = new Blob([content], { type: "text/plain" })
                         const url = URL.createObjectURL(blob)
                         const a = document.createElement("a")

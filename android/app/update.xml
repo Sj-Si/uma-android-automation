@@ -1,50 +1,31 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.2.0</latestVersion>
+    <latestVersion>5.2.1</latestVersion>
     <url>https://github.com/steve1316/uma-android-automation/releases</url>
     <releaseNotes>
-v5.2.0 - Changelog
+v5.2.1 - Changelog
+
+> Most likely the last update before Trackblazer begins. Give like a week or two for app support.
 
 New
 ---
-- Add a new option to the `Settings` page to set a date to stop the app at.
-- Add new options to the `Debug Settings` page to enable the `Remote Log Viewer`. This allows users to view the logs from their browser on separate devices in real-time. Requires both devices to be on the same Wi-Fi network to work.
-- The drawer now has the app icon in it as well as a footer with a pressable link to the GitHub repo.
-- Add a checkbox to the `Skill Plan Settings` pages to filter out the unselected skills.
-- Add logic to determine whether an in-game button is disabled or not.
-- Add `Team Carrot` as an option in the `Training Event Settings` page for Unity Cup Team Selection.
-- Add a new option in the `Debug Settings` page to start a OCR detection test for the trainee's name from the aptitude dialog.
-- Add missing options in the `Debug Settings` page for the `Main Screen` and `Training Screen` tests.
-- Add edge case handling of artificial boost of side-effect gains for Guts training.
-- Add more selection reasons at the end of training analysis.
-- Log trainings that needed corrections at the end of training analysis with asterisks.
-- Add more edge case handling for the training stat gain corrections.
+- Add a action counter to the `Remote Log Viewer` to keep track of how many times training occurred, racing, energy recovery, etc.
+- The app will now perform a final aptitude and stat update at the end of the career.
+- Add `Trackblazer` as a disabled option to the Start button selector on the `Home` page. No code in place to support `Trackblazer` so it will stay disabled for the time being.
 
 Adjustments
 ---
-- Update the game data up to Admire Vega 2026-03-04.
-- Update `Automation Library` version to 2.5.0.
-- Adjust the starting Discord message that is sent to display the link to the `Remote Log Viewer` as clickable when it is enabled.
-- Curb the output of loading log messages.
-- Adjust the conditions of when the smart racing plan is checked so it races more often.
-- Set the smart racing parameters to new default values so it races more often.
-- Image asset cleanup and use them as components instead.
-- Shorten the scroll distance when scrolling down as skills are being scanned when purchasing skills.
-- Log the leftover skill points after skill plan execution.
-- Log all skills scanned when purchasing skills.
-- Always enforce Wit training on the final turn 75.
+- Adjust alignment of the `Remote Log Viewer` dashboard on mobile.
+- Remove the scenario selector option from the `Settings` page as it is now redundant with the button on the `Home` page.
+- Implement server-side log parsing and broadcast JSON objects to the `Remote Log Viewer`.
+- Remove message batching when broadcasting to the `Remote Log Viewer`.
+- When a new run begins, the dashboard will now be cleared properly for the `Remote Log Viewer`.
+- Remove the manual stat cap option from the `Training Settings` page in favor of hardcoded caps defined per scenario.
 
 Fixed
 ---
-- Fix bugs related to scrolling lists.
-- Fix rare bug that causes infinite loops due to the app running too fast.
-- Fix regression where running style was not being reset anymore after Junior Year.
-- Fix bug where the app is unable to send the final Discord message when the run ends due to it finishing too fast.
-- Fix several edge cases involving the Race Preparation screen.
-- Fix bug where SQLite settings were not syncing.
-- Fix bug where the app goes too fast and miss clicking on the Skills button at Career End.
-- Fix using the wrong mapping to check for side-effect stat gains during training analysis.
-- Fix require cycle involving the `SkillPlanSettings.tsx` and `BotStateContext.tsx`.
+- Fix the stat value not being able to correct itself if it was misread.
+- Fix bug with date and action parsing for the `Remote Log Viewer`.
     </releaseNotes>
   </update>
 </AppUpdater>

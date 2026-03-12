@@ -77,7 +77,6 @@ const TrainingSettings = () => {
     const {
         maximumFailureChance,
         disableTrainingOnMaxedStat,
-        manualStatCap,
         enableRainbowTrainingBonus,
         preferredDistanceOverride,
         mustRestBeforeSummer,
@@ -504,22 +503,6 @@ const TrainingSettings = () => {
                                 description="When enabled, training will be skipped for stats that have reached their maximum value."
                                 className="my-2"
                                 searchId="disable-training-on-maxed-stats"
-                            />
-                            <CustomSlider
-                                value={manualStatCap || defaultSettings.training.manualStatCap}
-                                placeholder={defaultSettings.training.manualStatCap}
-                                onValueChange={(value) => updateTrainingSetting("manualStatCap", value)}
-                                min={1000}
-                                max={2000}
-                                step={10}
-                                label="Manual Stat Cap"
-                                labelUnit=""
-                                showValue={true}
-                                showLabels={true}
-                                description="Set a custom stat cap for all stats. Training will be skipped when any stat reaches this value (if 'Disable Training on Maxed Stats' is enabled)."
-                                searchId="manual-stat-cap"
-                                searchCondition={disableTrainingOnMaxedStat}
-                                parentId="disable-training-on-maxed-stats"
                             />
                         </View>
 

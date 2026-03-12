@@ -1,4 +1,3 @@
-import scenarios from "../../data/scenarios.json"
 import { useMemo, useContext, useEffect, useState, useRef, useCallback } from "react"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import { BotStateContext } from "../../context/BotStateContext"
@@ -122,29 +121,6 @@ const Settings = () => {
         },
         [bsc]
     )
-
-    const renderCampaignPicker = () => {
-        return (
-            <View>
-                <CustomSelect
-                    searchId="settings-scenario-picker"
-                    label="Scenario"
-                    description="Choose a scenario that will dictate the bot's logic and behavior."
-                    placeholder="Select a Scenario"
-                    width="100%"
-                    groupLabel="Scenarios"
-                    options={scenarios}
-                    value={bsc.settings.general.scenario}
-                    onValueChange={(value) => {
-                        const newScenario = value || ""
-                        bsc.setSettings({ ...bsc.settings, general: { ...bsc.settings.general, scenario: newScenario } })
-                        bsc.setReadyStatus(newScenario !== "")
-                    }}
-                />
-                {!bsc.settings.general.scenario && <WarningContainer>⚠️ A scenario must be selected before starting the bot.</WarningContainer>}
-            </View>
-        )
-    }
 
     const renderTrainingLink = () => {
         return (
@@ -462,7 +438,6 @@ const Settings = () => {
             <SearchPageProvider page="SettingsMain" scrollViewRef={scrollViewRef}>
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
-                        {renderCampaignPicker()}
                         {renderTrainingLink()}
                         {renderTrainingEventLink()}
                         {renderOCRLink()}

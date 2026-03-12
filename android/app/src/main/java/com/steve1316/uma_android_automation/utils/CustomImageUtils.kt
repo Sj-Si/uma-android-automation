@@ -923,36 +923,67 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 	}
 
 	/**
-	 * Reads a single stat value on the Main screen. Parameters are optional to allow for thread-safe operations.
+	 * Reads a single stat value on the Main screen or Aptitude dialog. Parameters are optional to allow for thread-safe operations.
 	 *
 	 * @param statName The stat to read.
 	 * @param sourceBitmap Bitmap of the source image separately taken. Defaults to null.
 	 * @param skillPointsLocation Point location of the skill points template image separately taken. Defaults to null.
+	 * @param isAptitudeDialog Optional flag to indicate that we are reading stats from the aptitude dialog.
 	 * @return The integer value of the stat, or -1 if not found.
 	 */
-	fun determineSingleStatValue(statName: StatName, sourceBitmap: Bitmap? = null, skillPointsLocation: Point? = null): Int {
-		val (finalSkillPointsLocation, finalSourceBitmap) = if (sourceBitmap == null && skillPointsLocation == null) {
-			LabelStatTableHeaderSkillPoints.find(this)
+	fun determineSingleStatValue(statName: StatName, sourceBitmap: Bitmap? = null, skillPointsLocation: Point? = null, isAptitudeDialog: Boolean = false): Int {
+		val (finalLocation, finalSourceBitmap) = if (sourceBitmap == null && skillPointsLocation == null) {
+			if (isAptitudeDialog) {
+				LabelStatTrackSurface.find(this)
+			} else {
+				LabelStatTableHeaderSkillPoints.find(this)
+			}
 		} else {
 			Pair(skillPointsLocation, sourceBitmap)
 		}
 
-		if (finalSkillPointsLocation == null || finalSourceBitmap == null) {
+		if (finalLocation == null || finalSourceBitmap == null) {
 			MessageLog.e(TAG, "Could not start the process of detecting stat value for $statName.")
 			return -1
 		}
 
-		// Each stat is evenly spaced at 170 pixel intervals starting at offset -862.
+		// Each stat is evenly spaced at 170 pixel intervals starting at offset -862 for the main screen.
+		// For the aptitude dialog, each stat is spaced at 200 pixel intervals starting at offset 10 from LabelStatTrackSurface top-left.
 		val index = statName.ordinal
-		val offsetX = -862 + (index * 170)
+		val offsetX: Int
+		val offsetY: Int
+		val width: Int
+		val height: Int
+
+		if (isAptitudeDialog) {
+			// Get the template bitmap to find its top-left corner from the center point.
+			val templateBitmap = LabelStatTrackSurface.template.getBitmap(this)
+			if (templateBitmap == null) {
+				MessageLog.e(TAG, "Could not get template bitmap for LabelStatTrackSurface.")
+				return -1
+			}
+
+			val halfW = templateBitmap.width / 2
+			val halfH = templateBitmap.height / 2
+
+			offsetX = -halfW + 10 + (index * 200)
+			offsetY = -halfH - 110
+			width = 105
+			height = 40
+		} else {
+			offsetX = -862 + (index * 170)
+			offsetY = 25
+			width = 98
+			height = 42
+		}
 
 		// Perform OCR with no thresholding (stats are on solid background).
 		val text = performOCROnRegion(
 			finalSourceBitmap,
-			relX(finalSkillPointsLocation.x, offsetX),
-			relY(finalSkillPointsLocation.y, 25),
-			relWidth(98),
-			relHeight(42),
+			relX(finalLocation.x, offsetX),
+			relY(finalLocation.y, offsetY),
+			relWidth(width),
+			relHeight(height),
 			useThreshold = false,
 			useGrayscale = true,
 			scale = 1.0,
@@ -977,34 +1008,64 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 	}
 
 	/**
-	 * Reads the 5 stat values on the Main screen. Parameters are optional to allow for thread-safe operations.
+	 * Reads the 5 stat values on the Main screen or Aptitude dialog. Parameters are optional to allow for thread-safe operations.
 	 *
 	 * @param sourceBitmap Bitmap of the source image separately taken. Defaults to null.
 	 * @param skillPointsLocation Point location of the skill points template image separately taken. Defaults to null.
+	 * @param isAptitudeDialog Optional flag to indicate that we are reading stats from the aptitude dialog.
 	 * @return The mapping of all 5 stats names to their respective integer values.
 	 */
-	fun determineStatValues(sourceBitmap: Bitmap? = null, skillPointsLocation: Point? = null): Map<StatName, Int> {
-		val (finalSkillPointsLocation, finalSourceBitmap) = if (sourceBitmap == null && skillPointsLocation == null) {
-			LabelStatTableHeaderSkillPoints.find(this)
+	fun determineStatValues(sourceBitmap: Bitmap? = null, skillPointsLocation: Point? = null, isAptitudeDialog: Boolean = false): Map<StatName, Int> {
+		val (finalLocation, finalSourceBitmap) = if (sourceBitmap == null && skillPointsLocation == null) {
+			if (isAptitudeDialog) {
+				LabelStatTrackSurface.find(this)
+			} else {
+				LabelStatTableHeaderSkillPoints.find(this)
+			}
 		} else {
 			Pair(skillPointsLocation, sourceBitmap)
 		}
     
         val result: MutableMap<StatName, Int> = mutableMapOf()
 
-		if (finalSkillPointsLocation != null && finalSourceBitmap != null) {
+		if (finalLocation != null && finalSourceBitmap != null) {
 			// Process all stats at once using the mapping.
 			StatName.values().forEachIndexed { index, statName ->
-				// Each stat is evenly spaced at 170 pixel intervals starting at offset -862.
-				val offsetX = -862 + (index * 170)
+				// Each stat is evenly spaced.
+				val offsetX: Int
+				val offsetY: Int
+				val width: Int
+				val height: Int
+
+				if (isAptitudeDialog) {
+					// Get the template bitmap to find its top-left corner from the center point.
+					val templateBitmap = LabelStatTrackSurface.template.getBitmap(this)
+					if (templateBitmap == null) {
+						MessageLog.e(TAG, "Could not get template bitmap for LabelStatTrackSurface.")
+						return@forEachIndexed
+					}
+
+					val halfW = templateBitmap.width / 2
+					val halfH = templateBitmap.height / 2
+
+					offsetX = -halfW + 10 + (index * 200)
+					offsetY = -halfH - 110
+					width = 105
+					height = 40
+				} else {
+					offsetX = -862 + (index * 170)
+					offsetY = 25
+					width = 98
+					height = 42
+				}
 
 				// Perform OCR with no thresholding (stats are on solid background).
 				val text = performOCROnRegion(
 					finalSourceBitmap,
-					relX(finalSkillPointsLocation.x, offsetX),
-					relY(finalSkillPointsLocation.y, 25),
-					relWidth(98),
-					relHeight(42),
+					relX(finalLocation.x, offsetX),
+					relY(finalLocation.y, offsetY),
+					relWidth(width),
+					relHeight(height),
 					useThreshold = false,
 					useGrayscale = true,
 					scale = 1.0,

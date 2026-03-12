@@ -153,7 +153,6 @@ const ProfileCreationModal: React.FC<ProfileCreationModalProps> = ({ visible, on
         settings.push(`Prioritization: ${currentTrainingSettings.statPrioritization.length > 0 ? currentTrainingSettings.statPrioritization.join(", ") : "None"}`)
         settings.push(`Max Failure Chance: ${currentTrainingSettings.maximumFailureChance}%`)
         settings.push(`Disable on Maxed: ${currentTrainingSettings.disableTrainingOnMaxedStat ? "Yes" : "No"}`)
-        settings.push(`Manual Stat Cap: ${currentTrainingSettings.manualStatCap}`)
         settings.push(`Focus on Sparks: ${currentTrainingSettings.focusOnSparkStatTarget ? "Yes" : "No"}`)
         settings.push(`Rainbow Bonus: ${currentTrainingSettings.enableRainbowTrainingBonus ? "Yes" : "No"}`)
         settings.push(`Preferred Distance: ${currentTrainingSettings.preferredDistanceOverride}`)

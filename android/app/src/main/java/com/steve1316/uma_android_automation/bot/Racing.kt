@@ -13,7 +13,7 @@ import org.opencv.core.Point
 import android.util.Log
 import android.graphics.Bitmap
 
-import com.steve1316.uma_android_automation.bot.campaigns.Campaign
+import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.bot.DialogHandlerResult
 
 import com.steve1316.uma_android_automation.types.Aptitude
