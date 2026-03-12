@@ -228,9 +228,23 @@ class CampaignRunner(
         }
     }
 
+    /** Starts a campaign task.
+     *
+     * Bot must be inside a campaign screen for this to work.
+     *
+     * @return True if the bot successfully completed the campaign and returned to the
+     * home screen. Otherwise, returns false.
+     */
     private fun startCampaign(): Boolean {
         MessageLog.i(TAG, "[$name] Starting campaign...")
-        campaign.start()
+        val taskResult: TaskResult = campaign.start(maxRuntimeMinutes = 90)
+        if (taskResult is TaskResult.Success &&
+            taskResult.code == TaskResultCode.TASK_RESULT_COMPLETE
+        ) {
+            return handlePostCampaign()
+        }
+
+        MessageLog.e(TAG, "[$name] Campaign did not complete successfully: (${taskResult.code}) ${taskResult.message}")
         return false
     }
 
@@ -300,7 +314,15 @@ class CampaignRunner(
         return null
     }
 
-    private fun handlePostCampaign(timeoutMs: Int = 5000): Boolean {
+    /** Navigates to the home screen from the Career Complete screen.
+     *
+     * @param timeoutMs The max time (in milliseconds) that this operation can run
+     * before timing out and returning false.
+     *
+     * @return True if the bot successfully navigated to the home screen.
+     * False if the bot timed out while attempting to navigate home.
+     */
+    private fun handlePostCampaign(timeoutMs: Int = 5 * (60 * 1000)): Boolean {
         ButtonCompleteCareer.click(game.imageUtils, tries = 5)
 
         val startTime = System.currentTimeMillis()
