@@ -1,6 +1,8 @@
 package com.steve1316.uma_android_automation.bot
 
 import android.util.Log
+import android.graphics.Bitmap
+
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.bot.Campaign
@@ -40,6 +42,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.intArrayOf
 import kotlin.math.pow
 import org.opencv.core.Point
@@ -604,6 +607,7 @@ class Training(private val game: Game, private val campaign: Campaign) {
 	private val riskyTrainingMaxFailureChance: Int = SettingsHelper.getIntSetting("training", "riskyTrainingMaxFailureChance")
 	private val trainWitDuringFinale: Boolean = SettingsHelper.getBooleanSetting("training", "trainWitDuringFinale")
 	private val enablePrioritizeSkillHints: Boolean = SettingsHelper.getBooleanSetting("training", "enablePrioritizeSkillHints")
+    private val enableTrainingAnalysisValidation: Boolean = SettingsHelper.getBooleanSetting("training", "enableTrainingAnalysisValidation")
 	var firstTrainingCheck = true
 	private fun getCurrentStatCap(statName: StatName): Int {
 		return getScenarioStatCap(game.scenario, statName)
@@ -735,36 +739,132 @@ class Training(private val game: Game, private val campaign: Campaign) {
             StatName.WIT to IconTrainingHeaderWit,
         )
 
+        /** Returns the current active (selected) stat in the training screen.
+         *
+         * @param timeoutMs The max time (in milliseconds) for the operation to run
+         * before it times out.
+         *
+         * @return On success, the StatName of the active stat.
+         * On error or timeout, NULL is returned.
+         */
+        fun getActiveStat(timeoutMs: Int = 5000): StatName? {
+            val startTime = System.currentTimeMillis()
+            while (System.currentTimeMillis() - startTime < timeoutMs) {
+                val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
+                // Using threads here is slower only if the active tab is SPEED.
+                // STAM was about even, then each stat after that using threads
+                // gained an additional 100ms improvement.
+                val waitLatch = CountDownLatch(5)
+                val matchFound = AtomicBoolean(false)
+                val matchMap = ConcurrentHashMap<StatName, Boolean>()
+                for ((statName, header) in iconTrainingHeaders) {
+                    Thread {
+                        try {
+                            if (!BotService.isRunning) {
+                                return@Thread
+                            }
+
+                            // Exit thread early if we already found a match.
+                            if (matchFound.get()) {
+                                return@Thread
+                            }
+                            // Return immediately if we get a match.
+                            val bIsFound = header.check(game.imageUtils, sourceBitmap = bitmap)
+                            matchMap[statName] = bIsFound
+                            if (bIsFound) {
+                                matchFound.set(true)
+                                return@Thread
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "[ERROR] Error detecting stat header $statName: ${e.stackTraceToString()}")
+                            matchMap[statName] = false
+                        } finally {
+                            waitLatch.countDown()
+                        }
+                    }.apply { isDaemon = true }.start()
+                }
+
+                // Collect our threads.
+                try {
+                    waitLatch.await(5, java.util.concurrent.TimeUnit.SECONDS)
+                } catch (_: InterruptedException) {
+                    MessageLog.e(TAG, "[TRAINING] getActiveStat: Stat header detection threads timed out.")
+                }
+
+                // If we got a match, then return it. Otherwise, continue the loop.
+                val match = matchMap.entries.firstOrNull { it.value == true }
+                if (match != null) {
+                    return match.key
+                }
+            }
+            MessageLog.w(TAG, "[TRAINING] getActiveStat: Timed out while trying to detect the active stat.")
+            return null
+        }
+
         /** Changes the active (selected) training stat in the training screen.
          *
          * @param statName The stat to switch to.
-         * @param retries The number of times to attempt to switch to the [statName].
+         * @param timeoutMs The max time (in milliseconds) for the operation to run
+         * before it times out.
          *
-         * @return Whether the operation was successful.
+         * @return Whether we successfully navigated to the [statName] training page.
          */
-        fun goToStat(statName: StatName, retries: Int = 3): Boolean {
+        fun goToStat(statName: StatName, timeoutMs: Int = 5000): Boolean {
+            val startTime = System.currentTimeMillis()
+
             // KeyError indicates programmer error.
             val header: ComponentInterface = iconTrainingHeaders[statName]!!
             val button: ComponentInterface = trainingButtons[statName]!!
 
-            // If we're already at the stat, return early.
-            // Otherwise we'd accidentally click the button to train the stat.
+            // Fast early check if we're already at the stat.
+            // Helps to do this before calling getActiveStat so we can save time.
             if (header.check(game.imageUtils)) {
                 return true
             }
 
-            var attempts: Int = 0
-            while (attempts < retries) {
-                button.click(game.imageUtils)
-                // Wait for screen to finish updating before proceeding.
-                game.wait(0.2, skipWaitingForLoading = true)
+            // If this option isn't enabled, then we just do a fast lazy validation.
+            if (!enableTrainingAnalysisValidation) {
+                for (i in 0..2) {
+                    button.click(game.imageUtils)
+                    // Wait for screen to finish updating before proceeding.
+                    game.wait(0.2, skipWaitingForLoading = true)
+                    if (header.check(game.imageUtils)) {
+                        return true
+                    }
+                }
+
+                MessageLog.w(TAG, "[TRAINING] Failed to go to $statName on training screen after 3 attempts.")
+                return false
+            }
+
+            // Perform full validation.
+
+            val activeStat: StatName? = getActiveStat(timeoutMs)
+            if (activeStat == null) {
+                MessageLog.w(TAG, "[TRAINING] goToStat: getActiveStat returned NULL.")
+                return false
+            }
+
+            // If we're already at the stat, return early.
+            // Otherwise we may accidentally click the button to train the stat.
+            if (activeStat == statName) {
+                return true
+            }
+
+            // Now click on the desired stat button.
+            button.click(game.imageUtils)
+
+            // Now wait for the header to be detected.
+            // In case the previous operations took too long, we still want to do
+            // at least one check for the header before we time out since it doesn't
+            // take hardly any time to check just once.
+            do {
                 if (header.check(game.imageUtils)) {
                     return true
                 }
-                attempts++
-            }
+            } while (System.currentTimeMillis() - startTime < timeoutMs)
 
-            MessageLog.w(TAG, "Failed to go to $statName on training screen after $attempts attempts.")
+            MessageLog.w(TAG, "[TRAINING] goToStat: Timed out while waiting for $statName training header.")
             return false
         }
 
