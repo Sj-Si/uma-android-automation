@@ -867,11 +867,6 @@ object ButtonCareerInfo : ButtonInterface {
     override val template = Template("components/button/career_info", region = Region.topHalf)
 }
 
-object ButtonDetails : ButtonInterface {
-    override val TAG: String = "ButtonDetails"
-    override val template = Template("components/button/details", region = Region.topHalf)
-}
-
 object ButtonLegacySelectRemove : ButtonInterface {
     override val TAG: String = "ButtonLegacySelectRemove"
     override val template = Template("components/button/legacy_select_remove", region = Region.bottomHalf)
