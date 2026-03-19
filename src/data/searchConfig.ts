@@ -157,6 +157,13 @@ const searchConfig: SearchOption[] = [
         page: "TrainingSettings",
     },
     {
+        id: "enable-training-analysis-validation",
+        title: "Enable Training Analysis Validation",
+        description:
+            "When enabled, the bot will validate the current selected stat during training analysis. This helps prevent the bot from accidentally training a stat during analysis at the cost of a significant increase in scenario completion time.",
+        page: "TrainingSettings",
+    },
+    {
         id: "preferred-distance-override",
         title: "Preferred Distance Override",
         description: "Set the preferred race distance for training targets.",
@@ -549,6 +556,12 @@ const searchConfig: SearchOption[] = [
         description: "Scales the recording resolution. Lower values produce smaller file sizes but lower quality. 1.0 = full resolution, 0.5 = half resolution.",
         page: "DebugSettings",
         parentId: "enable-screen-recording",
+    },
+    {
+        id: "debug-accessibility-service-check",
+        title: "Accessibility Service Check",
+        description: "The Accessibility Service allows the bot to perform clicks and gestures on your behalf. Check the current registration and initialization status here.",
+        page: "DebugSettings",
     },
     {
         id: "debug-template-matching-test",

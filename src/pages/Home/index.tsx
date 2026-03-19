@@ -9,13 +9,14 @@ import { Snackbar } from "react-native-paper"
 import { MessageLogContext } from "../../context/MessageLogContext"
 import { useTheme } from "../../context/ThemeContext"
 import { Text } from "../../components/ui/text"
-import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../components/ui/alert-dialog"
 import { Ionicons } from "@expo/vector-icons"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../components/ui/tooltip"
 import PageHeader from "../../components/PageHeader"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import SelectButton from "../../components/SelectButton"
 import scenarios from "../../data/scenarios.json"
+import { useNavigation } from "@react-navigation/native"
 
 const styles = StyleSheet.create({
     root: {
@@ -50,6 +51,10 @@ const Home = () => {
     const [snackbarMessage, setSnackbarMessage] = useState<string>("")
     const [deviceMetrics, setDeviceMetrics] = useState<{ width: number; height: number; dpi: number } | null>(null)
     const [unsupportedReason, setUnsupportedReason] = useState<string | null>(null)
+    const [showAccessibilityDialog, setShowAccessibilityDialog] = useState<boolean>(false)
+    const [accessibilityRequirement, setAccessibilityRequirement] = useState<"enable" | "restart" | null>(null)
+
+    const navigation = useNavigation()
 
     const bsc = useContext(BotStateContext)
     const mlc = useContext(MessageLogContext)
@@ -148,6 +153,22 @@ const Home = () => {
         if (isRunning) {
             StartModule.stop()
         } else if (bsc.readyStatus) {
+            // Check accessibility status first.
+            try {
+                const status = await StartModule.getAccessibilityStatus()
+                if (!status.enabled) {
+                    setAccessibilityRequirement("enable")
+                    setShowAccessibilityDialog(true)
+                    return
+                } else if (!status.active) {
+                    setAccessibilityRequirement("restart")
+                    setShowAccessibilityDialog(true)
+                    return
+                }
+            } catch (error) {
+                logErrorWithTimestamp("[Home] Failed to check accessibility status:", error)
+            }
+
             // Save settings before starting the bot.
             // Also has the added benefit of only writing to the SQLite database when the bot is started instead of every time the settings are changed.
             logWithTimestamp("[Home] Saving settings before starting bot...")
@@ -286,6 +307,35 @@ where width and height of the screen is in pixels, and diagonal is the diagonal 
                     <AlertDialogFooter>
                         <AlertDialogAction onPress={() => setShowNotReadyDialog(false)}>
                             <Text>OK</Text>
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={showAccessibilityDialog} onOpenChange={setShowAccessibilityDialog}>
+                <AlertDialogContent onDismiss={() => setShowAccessibilityDialog(false)}>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{accessibilityRequirement === "enable" ? "Accessibility Service Disabled" : "Accessibility Service Error"}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {accessibilityRequirement === "enable"
+                                ? "The Accessibility Service must be enabled in system settings for the bot to perform clicks and gestures."
+                                : "The Accessibility Service is enabled but seems to have been killed by Android in the background. It needs to be toggled off and back on to restart."}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onPress={() => setShowAccessibilityDialog(false)}>
+                            <Text>Cancel</Text>
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onPress={() => {
+                                setShowAccessibilityDialog(false)
+                                ;(navigation.navigate as any)("Settings", {
+                                    screen: "DebugSettings",
+                                    params: { targetId: "debug-accessibility-service-check" },
+                                })
+                            }}
+                        >
+                            <Text>Go to Settings</Text>
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

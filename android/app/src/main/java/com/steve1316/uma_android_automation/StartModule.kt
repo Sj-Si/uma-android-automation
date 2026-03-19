@@ -19,6 +19,8 @@ import com.steve1316.automation_library.events.StartEvent
 import com.steve1316.automation_library.utils.MediaProjectionService
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.MyAccessibilityService
+import android.view.accessibility.AccessibilityManager
+import android.accessibilityservice.AccessibilityServiceInfo
 import com.steve1316.automation_library.utils.BatteryOptimizationUtils
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.utils.LogStreamServer
@@ -170,6 +172,73 @@ class StartModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     @ReactMethod
     fun stop() {
         stopProjection()
+    }
+
+    /**
+     * Opens the system Accessibility settings page to allow the user to toggle the service off and on.
+     */
+    @ReactMethod
+    fun openAccessibilitySettings() {
+        Log.d(TAG, "Opening Accessibility Settings...")
+        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+        this.reactApplicationContext.currentActivity?.startActivity(intent)
+    }
+
+    /**
+     * Checks the status of the Accessibility Service, checking both if it is enabled in settings and if it is actually initialized.
+     *
+     * @param promise The React Native promise that resolves the WritableMap of metrics.
+     */
+    @ReactMethod
+    fun getAccessibilityStatus(promise: Promise) {
+        try {
+            val map = Arguments.createMap()
+            val context = reactApplicationContext
+
+            // Method 1: Check Settings.Secure
+            val prefString = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+            val serviceName = context.packageName + "/" + MyAccessibilityService::class.java.name
+            val enabledInSettings = prefString?.contains(serviceName) == true
+            Log.d(TAG, "Accessibility enabled in Settings: $enabledInSettings")
+
+            // Method 2: Check AccessibilityManager
+            val am = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+            val enabledServices = am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+            var enabledInManager = false
+            for (info in enabledServices) {
+                if (info.resolveInfo.serviceInfo.packageName == context.packageName &&
+                    info.resolveInfo.serviceInfo.name == MyAccessibilityService::class.java.name
+                ) {
+                    enabledInManager = true
+                    break
+                }
+            }
+            Log.d(TAG, "Accessibility enabled in Manager: $enabledInManager")
+
+            map.putBoolean("enabled", enabledInSettings || enabledInManager)
+
+            // Check if active (initialized).
+            var active = false
+            try {
+                MyAccessibilityService.getInstance()
+                active = true
+            } catch (e: IllegalStateException) {
+                // If the message is "not running" but initialized, it means it is actually ready.
+                if (e.message?.contains("not running") == true) {
+                    active = true
+                } else {
+                    Log.d(TAG, "Accessibility Service is not initialized: ${e.message}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Accessibility Service instance check failed: ${e.message}")
+            }
+            map.putBoolean("active", active)
+
+            promise.resolve(map)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to retrieve accessibility status: ${e.message}")
+            promise.reject("ACCESSIBILITY_STATUS_ERROR", "Failed to retrieve accessibility status: ${e.message}")
+        }
     }
 
     ////////////////////////////////////////////////////////////////////

@@ -1,5 +1,5 @@
 import { useMemo, useContext, useRef, useState, useEffect } from "react"
-import { View, Text, ScrollView, StyleSheet, NativeModules, Linking } from "react-native"
+import { View, Text, ScrollView, StyleSheet, NativeModules, Linking, AppState, AppStateStatus } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { BotStateContext } from "../../context/BotStateContext"
 import CustomSlider from "../../components/CustomSlider"
@@ -10,6 +10,7 @@ import { Separator } from "../../components/ui/separator"
 import PageHeader from "../../components/PageHeader"
 import WarningContainer from "../../components/WarningContainer"
 import InfoContainer from "../../components/InfoContainer"
+import CustomButton from "../../components/CustomButton"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 
@@ -69,6 +70,34 @@ const DebugSettings = () => {
     }
 
     const [deviceIp, setDeviceIp] = useState<string>("<phone-ip>")
+    const [accessibilityStatus, setAccessibilityStatus] = useState<{ enabled: boolean; active: boolean } | null>(null)
+    const [isRefreshing, setIsRefreshing] = useState(false)
+
+    /** Checks with the native module if the Accessibility Service is currently running. */
+    const checkAccessibilityStatus = () => {
+        setIsRefreshing(true)
+        const startTime = Date.now()
+
+        NativeModules.StartModule.getAccessibilityStatus()
+            .then((status: { enabled: boolean; active: boolean }) => {
+                const elapsedTime = Date.now() - startTime
+                const remainingTime = Math.max(0, 200 - elapsedTime)
+
+                setTimeout(() => {
+                    setAccessibilityStatus(status)
+                    setIsRefreshing(false)
+                }, remainingTime)
+            })
+            .catch(() => {
+                const elapsedTime = Date.now() - startTime
+                const remainingTime = Math.max(0, 200 - elapsedTime)
+
+                setTimeout(() => {
+                    setAccessibilityStatus({ enabled: false, active: false })
+                    setIsRefreshing(false)
+                }, remainingTime)
+            })
+    }
 
     useEffect(() => {
         if (bsc.settings.debug.enableRemoteLogViewer) {
@@ -77,6 +106,21 @@ const DebugSettings = () => {
                 .catch(() => setDeviceIp("<phone-ip>"))
         }
     }, [bsc.settings.debug.enableRemoteLogViewer])
+
+    useEffect(() => {
+        checkAccessibilityStatus()
+
+        // Refresh accessibility status whenever the app comes back into the foreground.
+        const subscription = AppState.addEventListener("change", (nextAppState: AppStateStatus) => {
+            if (nextAppState === "active") {
+                checkAccessibilityStatus()
+            }
+        })
+
+        return () => {
+            subscription.remove()
+        }
+    }, [])
 
     const styles = useMemo(
         () =>
@@ -385,6 +429,46 @@ const DebugSettings = () => {
                                 showLabels={true}
                                 description="Scales the recording resolution. Lower values produce smaller file sizes but lower quality. 1.0 = full resolution, 0.5 = half resolution."
                             />
+
+                            <Separator style={{ marginVertical: 16 }} />
+
+                            <CustomTitle
+                                searchId="debug-accessibility-service-check"
+                                title="Accessibility Service Check"
+                                description="The Accessibility Service allows the bot to perform clicks and gestures on your behalf."
+                            />
+
+                            <InfoContainer style={{ marginTop: 0 }}>
+                                <View>
+                                    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+                                        <Text style={styles.infoLabel}>System Enabled: </Text>
+                                        <Text style={[styles.infoLabel, { color: accessibilityStatus?.enabled ? colors.success : colors.error }]}>
+                                            {accessibilityStatus === null ? "Checking..." : accessibilityStatus.enabled ? "✅ Registered" : "❌ Not Enabled"}
+                                        </Text>
+                                    </View>
+                                    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+                                        <Text style={styles.infoLabel}>Internal State: </Text>
+                                        <Text style={[styles.infoLabel, { color: accessibilityStatus?.active ? colors.success : colors.error }]}>
+                                            {accessibilityStatus === null ? "Checking..." : accessibilityStatus.active ? "✅ Ready" : "❌ Not Initialized"}
+                                        </Text>
+                                    </View>
+
+                                    {accessibilityStatus?.enabled && !accessibilityStatus?.active && (
+                                        <Text style={styles.infoDescription}>
+                                            The service is enabled but it seems Android killed it in the background. Toggling it off and back on in settings will restart it.
+                                        </Text>
+                                    )}
+
+                                    <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
+                                        <CustomButton variant="outline" onPress={() => checkAccessibilityStatus()} isLoading={isRefreshing} disabled={isRefreshing}>
+                                            Refresh Status
+                                        </CustomButton>
+                                        <CustomButton variant="default" onPress={() => NativeModules.StartModule.openAccessibilitySettings()}>
+                                            Open Settings
+                                        </CustomButton>
+                                    </View>
+                                </View>
+                            </InfoContainer>
 
                             <Separator style={{ marginVertical: 16 }} />
 
